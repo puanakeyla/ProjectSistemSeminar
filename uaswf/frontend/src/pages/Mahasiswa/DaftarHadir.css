@@ -1,0 +1,167 @@
+.daftar-hadir-wrapper {
+  width: 100%;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0A4174 0%, #49769F 50%, #7BBDE8 100%);
+  padding: 40px;
+  box-sizing: border-box;
+}
+
+.daftar-hadir-header {
+  background: #ffffff;
+  padding: 30px 35px;
+  border-radius: 10px;
+  margin-bottom: 30px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.daftar-hadir-header h1 {
+  font-size: 28px;
+  color: #2c3e50;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.daftar-hadir-header p {
+  font-size: 15px;
+  color: #7f8c8d;
+  margin: 0;
+}
+
+.daftar-hadir-content {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.table-responsive {
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.daftar-hadir-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.daftar-hadir-table thead {
+  background: linear-gradient(135deg, #0A4174 0%, #4E8EA2 100%);
+}
+
+.daftar-hadir-table thead th {
+  padding: 18px 20px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 14px;
+  color: #ffffff;
+}
+
+.daftar-hadir-table tbody tr {
+  border-bottom: 1px solid #f0f0f0;
+  transition: background-color 0.2s ease;
+}
+
+.daftar-hadir-table tbody tr:hover {
+  background-color: #f8f9ff;
+}
+
+.daftar-hadir-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.daftar-hadir-table tbody td {
+  padding: 16px 20px;
+  font-size: 14px;
+  color: #2c3e50;
+}
+
+.jenis-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  background: #f8f9ff;
+  color: #0A4174;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status-badge.present {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-badge.absent {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.status-badge.scheduled {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.summary-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.summary-card {
+  background: #ffffff;
+  padding: 25px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s ease;
+}
+
+.summary-card:hover {
+  transform: translateY(-5px);
+}
+
+.summary-icon {
+  font-size: 40px;
+}
+
+.summary-content h3 {
+  font-size: 32px;
+  color: #2c3e50;
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+
+.summary-content p {
+  font-size: 14px;
+  color: #7f8c8d;
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .daftar-hadir-wrapper {
+    padding: 20px;
+  }
+
+  .table-responsive {
+    overflow-x: auto;
+  }
+
+  .daftar-hadir-table {
+    min-width: 800px;
+  }
+
+  .summary-section {
+    grid-template-columns: 1fr;
+  }
+}

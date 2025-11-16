@@ -1,0 +1,218 @@
+.dashboard-wrapper {
+  width: 100%;
+  min-height: 100vh;
+  background: #f8f9fa;
+  padding: 48px;
+  box-sizing: border-box;
+}
+
+.dashboard-header {
+  background: var(--surface-elevated);
+  padding: 24px 30px;
+  border-radius: var(--radius-lg);
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-sm);
+  border-left: 3px solid var(--primary);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.dashboard-header h1 {
+  font-size: 24px;
+  color: var(--text-primary);
+  font-weight: 700;
+  margin: 0 0 4px 0;
+  font-family: 'Inter', sans-serif;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+}
+
+.dashboard-header p {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 24px;
+  margin-bottom: 40px;
+}
+
+.stat-card {
+  background: var(--surface-elevated);
+  padding: 28px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid var(--border-light);
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--primary-dark) 0%, var(--primary) 50%, var(--accent) 100%);
+}
+
+.stat-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-4px);
+  border-color: #0A4174;
+}
+
+.stat-icon {
+  font-size: 44px;
+  opacity: 0.85;
+  line-height: 1;
+  filter: grayscale(0.1);
+}
+
+.stat-content h3 {
+  font-size: 36px;
+  color: var(--text-primary);
+  font-weight: 700;
+  margin: 0 0 4px 0;
+  font-family: 'Inter', sans-serif;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.stat-content p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  font-size: 11px;
+}
+
+.activity-section {
+  background: var(--surface-elevated);
+  padding: 36px 40px;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-light);
+}
+
+.activity-section h2 {
+  font-size: 20px;
+  color: var(--text-primary);
+  font-weight: 700;
+  margin: 0 0 20px 0;
+  font-family: 'Inter', sans-serif;
+  padding-bottom: 16px;
+  border-bottom: 2px solid var(--border-light);
+  letter-spacing: -0.02em;
+}
+
+.activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.activity-item {
+  padding: 18px 22px;
+  background: var(--background-primary);
+  border-radius: var(--radius-md);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-left: 3px solid var(--primary);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid transparent;
+}
+
+.activity-item:hover {
+  background: var(--surface-elevated);
+  border-color: var(--border-medium);
+  border-left-color: #0A4174;
+  transform: translateX(4px);
+  box-shadow: var(--shadow-sm);
+}
+
+.activity-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.activity-info h4 {
+  font-size: 14px;
+  color: var(--text-primary);
+  font-weight: 600;
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  letter-spacing: -0.01em;
+}
+
+.status-badge {
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: 'Inter', sans-serif;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+}
+
+.status-badge.disetujui {
+  background: #d1f4e0;
+  color: #0d6832;
+  border-color: #a7e9c5;
+}
+
+.status-badge.menunggu {
+  background: #fff4d9;
+  color: #8b5a00;
+  border-color: #ffe099;
+}
+
+.status-badge.selesai {
+  background: #0A4174;
+  color: #ffffff;
+  border-color: var(--primary-dark);
+}
+
+.activity-date {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  letter-spacing: -0.01em;
+}
+.activity-date {
+  font-size: 12px;
+  color: #6c757d;
+  font-weight: 400;
+  font-family: 'Inter', sans-serif;
+}
+
+@media (max-width: 768px) {
+  .dashboard-wrapper {
+    padding: 20px;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .activity-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+}

@@ -1,33 +1,64 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Roboto:wght@300;400;500;700;900&display=swap');
+
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
+  font-family: 'Inter', 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  line-height: 1.6;
   font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* Color Palette Biru (sebelumnya) */
+  --blue-darkest: #001D39;
+  --blue-dark: #0A4174;
+  --blue-medium: #49769F;
+  --blue-primary: #4E8EA2;
+  --blue-light: #6EA2B3;
+  --blue-sky: #7BBDE8;
+  --blue-lightest: #BDD8E9;
+
+  /* Semantic Colors */
+  --primary: var(--blue-dark);
+  --primary-dark: var(--blue-darkest);
+  --primary-light: var(--blue-primary);
+  --secondary: var(--blue-sky);
+  --background: #f5f8fa;
+  --card-bg: #ffffff;
+  --text-primary: var(--blue-darkest);
+  --text-secondary: var(--blue-medium);
+  --border-color: var(--blue-lightest);
+
+  /* Compatibility Aliases (to support existing CSS) */
+  --background-primary: var(--background);
+  --background-secondary: #f0f4f7;
+  --surface: #ffffff;
+  --surface-elevated: #ffffff;
+  --border-light: #e5eaf0;
+  --border-medium: #d0d9e3;
+  --text-tertiary: #94a3b8;
+
+  /* Shadows */
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
+  --shadow-md: 0 2px 6px rgba(0,0,0,0.15);
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
   min-width: 320px;
   min-height: 100vh;
+  background: var(--background);
 }
 
 h1 {

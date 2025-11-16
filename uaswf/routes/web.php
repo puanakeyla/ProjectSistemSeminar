@@ -13,6 +13,14 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+Route::get('/login', function () {
+    return view('login');
+});
+
+Route::get('/mahasiswa', function () {
+    return view('mahasiswa');
+});
+
 // Main application route - this will be handled by React
 Route::get('/{any?}', function () {
     return view('welcome');
