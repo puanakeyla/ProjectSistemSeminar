@@ -7,12 +7,28 @@ function Login({ onLogin }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log('Login attempt:', { email, password });
-    // Validasi login
-    if (email.toLowerCase() === 'cindy' && password === '12345') {
-      onLogin();
+    
+    // DAFTAR USER - BISA LOGIN SEMUA
+    const users = [
+      { username: 'cindy', password: '12345', name: 'Cindy' },
+      { username: 'santi', password: '67890', name: 'Santi' },
+      { username: 'putri', password: 'abcde', name: 'Putri' },
+      { username: 'puan', password: 'puan123', name: 'Puan Maharani' },
+      { username: 'admin', password: 'admin123', name: 'Administrator' },
+      { username: 'user1', password: 'user123', name: 'User Satu' },
+      { username: 'user2', password: 'user456', name: 'User Dua' }
+    ];
+
+    const foundUser = users.find(
+      user => user.username === email.toLowerCase() && user.password === password
+    );
+
+    if (foundUser) {
+      localStorage.setItem('currentUser', JSON.stringify(foundUser));
+      onLogin(foundUser);
+      alert(`Login berhasil! Selamat datang, ${foundUser.name}`);
     } else {
-      alert('Username atau password salah!\nUsername: cindy\nPassword: 12345');
+      alert('Username atau password salah!');
     }
   };
 
@@ -48,6 +64,7 @@ function Login({ onLogin }) {
           </div>
           <button type="submit" className="btn-submit">Masuk</button>
         </form>
+        
       </div>
     </div>
   );
