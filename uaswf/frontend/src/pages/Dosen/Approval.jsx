@@ -146,8 +146,18 @@ function Approval() {
   };
 
   const handleReject = async () => {
-    if (!catatan.trim()) {
-      alert('Silakan berikan alasan penolakan');
+    // Prompt for rejection reason if not provided
+    let rejectionReason = catatan.trim();
+    
+    if (!rejectionReason) {
+      rejectionReason = prompt('Alasan Penolakan (wajib diisi):');
+      if (!rejectionReason || !rejectionReason.trim()) {
+        alert('Alasan penolakan harus diisi!');
+        return;
+      }
+    }
+
+    if (!window.confirm('Yakin ingin menolak pengajuan ini?')) {
       return;
     }
 
@@ -155,10 +165,10 @@ function Approval() {
       setSubmitting(true);
       const response = await dosenAPI.updateApproval(selectedApproval.id, {
         status: 'rejected',
-        catatan: catatan
+        catatan: rejectionReason
       });
 
-      alert(response.message || 'Pengajuan ditolak');
+      alert(response.message || 'Pengajuan berhasil ditolak');
       
       // Refresh data
       await fetchPendingApprovals();
@@ -168,7 +178,7 @@ function Approval() {
       setCatatan('');
     } catch (err) {
       console.error('Failed to reject:', err);
-      const errorMsg = err.response?.data?.message || 'Gagal menolak. Silakan coba lagi.';
+      const errorMsg = err.response?.data?.message || 'Gagal menolak pengajuan. Silakan coba lagi.';
       alert(errorMsg);
     } finally {
       setSubmitting(false);

@@ -6,8 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\SeminarSchedule;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Storage;
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use Illuminate\Support\Str;
 
 class QRController extends Controller
 {
@@ -16,45 +15,25 @@ class QRController extends Controller
      */
     public function generateQR(Request $request, $scheduleId): JsonResponse
     {
-        $schedule = SeminarSchedule::with(['seminar'])->findOrFail($scheduleId);
+        $schedule = SeminarSchedule::with(['seminar.mahasiswa'])->findOrFail($scheduleId);
 
-        // Check if QR code already exists
-        if ($schedule->qr_code && Storage::exists($schedule->qr_code)) {
-            return response()->json([
-                'message' => 'QR Code sudah ada untuk seminar ini',
-                'data' => [
-                    'qr_code_url' => Storage::url($schedule->qr_code),
-                    'qr_content' => $this->getQRContent($schedule),
-                ]
-            ]);
-        }
+        // Generate unique token for this schedule
+        $token = $this->getOrCreateToken($schedule);
 
-        // Generate QR content
-        $qrContent = $this->getQRContent($schedule);
+        // Generate QR code URL using Google Charts API
+        $qrCodeUrl = $this->generateQRCodeUrl($token);
 
-        // Generate QR code image
-        $qrCodeImage = QrCode::format('png')
-            ->size(300)
-            ->margin(2)
-            ->generate($qrContent);
-
-        // Save QR code to storage
-        $fileName = 'qr_codes/seminar_' . $schedule->id . '_' . time() . '.png';
-        Storage::put($fileName, $qrCodeImage);
-
-        // Update schedule with QR code path
+        // Update schedule with token
         $schedule->update([
-            'qr_code' => $fileName,
+            'qr_code_path' => $token,
         ]);
 
         return response()->json([
             'message' => 'QR Code berhasil dibuat',
-            'data' => [
-                'qr_code_url' => Storage::url($fileName),
-                'qr_content' => $qrContent,
-                'seminar_title' => $schedule->seminar->judul,
-                'schedule_time' => $schedule->getFormattedDateTime(),
-            ]
+            'qr_code_url' => $qrCodeUrl,
+            'token' => $token,
+            'seminar_title' => $schedule->seminar->judul,
+            'schedule_time' => $schedule->getFormattedDateTime(),
         ]);
     }
 
@@ -63,167 +42,120 @@ class QRController extends Controller
      */
     public function getQR($scheduleId): JsonResponse
     {
-        $schedule = SeminarSchedule::with(['seminar'])->findOrFail($scheduleId);
+        $schedule = SeminarSchedule::with(['seminar.mahasiswa'])->findOrFail($scheduleId);
 
-        if (!$schedule->qr_code) {
+        if (!$schedule->qr_code_path) {
             return response()->json([
                 'message' => 'QR Code belum dibuat untuk seminar ini'
             ], 404);
         }
 
+        $qrCodeUrl = $this->generateQRCodeUrl($schedule->qr_code_path);
+
         return response()->json([
             'message' => 'QR Code retrieved successfully',
-            'data' => [
-                'qr_code_url' => Storage::url($schedule->qr_code),
-                'qr_content' => $this->getQRContent($schedule),
-                'seminar_title' => $schedule->seminar->judul,
-                'schedule_time' => $schedule->getFormattedDateTime(),
-                'ruangan' => $schedule->ruangan,
-            ]
+            'qr_code_url' => $qrCodeUrl,
+            'token' => $schedule->qr_code_path,
+            'seminar_title' => $schedule->seminar->judul,
+            'schedule_time' => $schedule->getFormattedDateTime(),
+            'ruang' => $schedule->ruang,
         ]);
     }
 
     /**
-     * Get all QR codes
+     * Regenerate QR Code
      */
-    public function index(): JsonResponse
+    public function regenerateQR($scheduleId): JsonResponse
     {
-        $schedules = SeminarSchedule::with(['seminar.mahasiswa'])
-            ->whereNotNull('qr_code')
-            ->orderBy('tanggal_jam', 'desc')
-            ->get()
-            ->map(function ($schedule) {
-                return [
-                    'id' => $schedule->id,
-                    'seminar_id' => $schedule->seminar_id,
-                    'judul' => $schedule->seminar->judul,
-                    'mahasiswa_name' => $schedule->seminar->mahasiswa->name,
-                    'ruangan' => $schedule->ruangan,
-                    'tanggal_jam' => $schedule->getFormattedDateTime(),
-                    'qr_code_url' => Storage::url($schedule->qr_code),
-                    'qr_content' => $this->getQRContent($schedule),
-                    'is_upcoming' => $schedule->isUpcoming(),
-                ];
-            });
+        $schedule = SeminarSchedule::with(['seminar.mahasiswa'])->findOrFail($scheduleId);
+
+        // Generate new unique token
+        $token = Str::uuid()->toString();
+
+        // Generate QR code URL
+        $qrCodeUrl = $this->generateQRCodeUrl($token);
+
+        // Update schedule with new token
+        $schedule->update([
+            'qr_code_path' => $token,
+        ]);
 
         return response()->json([
-            'message' => 'QR Codes retrieved successfully',
-            'data' => $schedules
+            'message' => 'QR Code berhasil di-generate ulang',
+            'qr_code_url' => $qrCodeUrl,
+            'token' => $token,
         ]);
     }
 
-    /**
-     * Delete QR code
-     */
-    public function destroy($scheduleId): JsonResponse
-    {
-        $schedule = SeminarSchedule::findOrFail($scheduleId);
 
-        if ($schedule->qr_code && Storage::exists($schedule->qr_code)) {
-            Storage::delete($schedule->qr_code);
+
+    /**
+     * Get or create token for schedule
+     */
+    private function getOrCreateToken(SeminarSchedule $schedule): string
+    {
+        if ($schedule->qr_code_path) {
+            return $schedule->qr_code_path;
         }
-
-        $schedule->update(['qr_code' => null]);
-
-        return response()->json([
-            'message' => 'QR Code berhasil dihapus'
-        ]);
+        return Str::uuid()->toString();
     }
 
     /**
-     * Bulk generate QR codes for upcoming seminars
+     * Generate QR code URL using Google Charts API
      */
-    public function bulkGenerate(): JsonResponse
+    private function generateQRCodeUrl(string $data): string
     {
-        $upcomingSchedules = SeminarSchedule::with(['seminar'])
-            ->upcoming()
-            ->whereNull('qr_code')
-            ->get();
-
-        $generated = 0;
-        $errors = [];
-
-        foreach ($upcomingSchedules as $schedule) {
-            try {
-                $qrContent = $this->getQRContent($schedule);
-                
-                $qrCodeImage = QrCode::format('png')
-                    ->size(300)
-                    ->margin(2)
-                    ->generate($qrContent);
-
-                $fileName = 'qr_codes/seminar_' . $schedule->id . '_' . time() . '.png';
-                Storage::put($fileName, $qrCodeImage);
-
-                $schedule->update(['qr_code' => $fileName]);
-                $generated++;
-            } catch (\Exception $e) {
-                $errors[] = "Gagal generate QR untuk seminar: " . $schedule->seminar->judul;
-            }
-        }
-
-        return response()->json([
-            'message' => 'Bulk QR generation completed',
-            'data' => [
-                'generated' => $generated,
-                'total_processed' => $upcomingSchedules->count(),
-                'errors' => $errors,
-            ]
-        ]);
+        $size = '300x300';
+        $encodedData = urlencode($data);
+        return "https://api.qrserver.com/v1/create-qr-code/?size={$size}&data={$encodedData}";
     }
 
     /**
-     * Get QR code content
-     */
-    private function getQRContent(SeminarSchedule $schedule): string
-    {
-        return "SEMAR-" . $schedule->id . "-" . $schedule->seminar_id;
-    }
-
-    /**
-     * Validate QR code content
+     * Validate QR code and check time validity
      */
     public function validateQR(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'qr_content' => 'required|string',
+            'token' => 'required|string',
         ]);
 
-        // Parse QR content
-        $parts = explode('-', $validated['qr_content']);
-        
-        if (count($parts) !== 3 || $parts[0] !== 'SEMAR') {
-            return response()->json([
-                'message' => 'Format QR Code tidak valid'
-            ], 422);
-        }
-
-        $scheduleId = $parts[1];
-        $seminarId = $parts[2];
-
-        $schedule = SeminarSchedule::with(['seminar'])->find($scheduleId);
+        $schedule = SeminarSchedule::with(['seminar.mahasiswa'])
+            ->where('qr_code_path', $validated['token'])
+            ->first();
 
         if (!$schedule) {
             return response()->json([
-                'message' => 'QR Code tidak valid - jadwal tidak ditemukan'
+                'message' => 'QR Code tidak valid'
             ], 422);
         }
 
-        if ($schedule->seminar_id != $seminarId) {
+        // Check if seminar time is now (±15 minutes tolerance)
+        $now = now();
+        $startTime = $schedule->waktu_mulai;
+        $endTime = $startTime->copy()->addMinutes($schedule->durasi_menit);
+        $toleranceStart = $startTime->copy()->subMinutes(15);
+        $toleranceEnd = $endTime->copy()->addMinutes(15);
+
+        if ($now < $toleranceStart || $now > $toleranceEnd) {
             return response()->json([
-                'message' => 'QR Code tidak valid - data tidak sesuai'
+                'message' => 'QR Code hanya berlaku pada waktu seminar (±15 menit)',
+                'valid_time' => false,
+                'seminar_time' => $schedule->getFormattedDateTime(),
             ], 422);
         }
 
         return response()->json([
             'message' => 'QR Code valid',
-            'data' => [
-                'schedule_id' => $schedule->id,
-                'seminar_title' => $schedule->seminar->judul,
-                'schedule_time' => $schedule->getFormattedDateTime(),
-                'ruangan' => $schedule->ruangan,
-                'is_valid' => true,
-            ]
+            'schedule_id' => $schedule->id,
+            'seminar_id' => $schedule->seminar_id,
+            'seminar_title' => $schedule->seminar->judul,
+            'mahasiswa' => [
+                'name' => $schedule->seminar->mahasiswa->name,
+                'npm' => $schedule->seminar->mahasiswa->npm,
+            ],
+            'schedule_time' => $schedule->getFormattedDateTime(),
+            'ruang' => $schedule->ruang,
+            'valid_time' => true,
         ]);
     }
 }

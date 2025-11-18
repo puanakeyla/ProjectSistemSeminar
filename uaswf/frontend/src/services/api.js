@@ -89,6 +89,152 @@ export const dosenAPI = {
   },
 };
 
+// Admin API
+export const adminAPI = {
+  // Dashboard & Overview
+  getDashboard: async () => {
+    const response = await api.get('/admin/dashboard');
+    return response.data;
+  },
+
+  getSystemOverview: async () => {
+    const response = await api.get('/admin/system-overview');
+    return response.data;
+  },
+
+  // Verification
+  getSeminarsForVerification: async (status = 'all') => {
+    const response = await api.get('/admin/verification/seminars', {
+      params: { status }
+    });
+    return response.data;
+  },
+
+  getPendingVerification: async () => {
+    const response = await api.get('/admin/verification/seminars/pending');
+    return response.data;
+  },
+
+  getSeminarDetail: async (id) => {
+    const response = await api.get(`/admin/verification/seminars/${id}`);
+    return response.data;
+  },
+
+  verifySeminar: async (id, data) => {
+    // data: { status: 'approved'|'rejected', catatan?: string }
+    const response = await api.post(`/admin/verification/seminars/${id}/verify`, data);
+    return response.data;
+  },
+
+  getVerificationStatistics: async () => {
+    const response = await api.get('/admin/verification/statistics');
+    return response.data;
+  },
+
+  // Schedule Management
+  getSchedules: async () => {
+    const response = await api.get('/admin/schedules');
+    return response.data;
+  },
+
+  getAvailableSeminars: async () => {
+    const response = await api.get('/admin/schedules/available-seminars');
+    return response.data;
+  },
+
+  createSchedule: async (data) => {
+    // data: { seminar_id, waktu_mulai, durasi_menit, ruang }
+    const response = await api.post('/admin/schedules', data);
+    return response.data;
+  },
+
+  updateSchedule: async (id, data) => {
+    const response = await api.put(`/admin/schedules/${id}`, data);
+    return response.data;
+  },
+
+  deleteSchedule: async (id) => {
+    const response = await api.delete(`/admin/schedules/${id}`);
+    return response.data;
+  },
+
+  getScheduleStatistics: async () => {
+    const response = await api.get('/admin/schedules/statistics');
+    return response.data;
+  },
+
+  // QR Code
+  generateQR: async (scheduleId) => {
+    const response = await api.post(`/admin/qr-codes/generate/${scheduleId}`);
+    return response.data;
+  },
+
+  getQRCode: async (scheduleId) => {
+    const response = await api.get(`/admin/qr-codes/${scheduleId}`);
+    return response.data;
+  },
+
+  regenerateQR: async (scheduleId) => {
+    const response = await api.post(`/admin/qr-codes/regenerate/${scheduleId}`);
+    return response.data;
+  },
+
+  // Attendance Management
+  getAttendances: async () => {
+    const response = await api.get('/admin/attendances');
+    return response.data;
+  },
+
+  getScheduleAttendances: async (scheduleId) => {
+    const response = await api.get(`/admin/attendances/schedule/${scheduleId}`);
+    return response.data;
+  },
+
+  getAttendanceStatistics: async () => {
+    const response = await api.get('/admin/attendances/statistics');
+    return response.data;
+  },
+
+  manualAttendance: async (data) => {
+    // data: { seminar_schedule_id, mahasiswa_id, status: 'present'|'late' }
+    const response = await api.post('/admin/attendances/manual', data);
+    return response.data;
+  },
+
+  deleteAttendance: async (attendanceId) => {
+    const response = await api.delete(`/admin/attendances/${attendanceId}`);
+    return response.data;
+  },
+
+  getMahasiswaList: async () => {
+    const response = await api.get('/admin/attendances/mahasiswa-list');
+    return response.data;
+  },
+
+  // Revision Management
+  getRevisions: async (status = null) => {
+    const params = status ? { status } : {};
+    const response = await api.get('/admin/revisions', { params });
+    return response.data;
+  },
+
+  getRevisionDetail: async (id) => {
+    const response = await api.get(`/admin/revisions/${id}`);
+    return response.data;
+  },
+
+  validateRevision: async (id, data) => {
+    // data: { status: 'approved'|'rejected', catatan_admin?: string }
+    const response = await api.post(`/admin/revisions/${id}/validate`, data);
+    return response.data;
+  },
+
+  getRevisionStatistics: async () => {
+    const response = await api.get('/admin/revisions/statistics');
+    return response.data;
+  },
+};
+
 // Health check
 export const healthCheck = async () => {
   try {

@@ -196,7 +196,7 @@ class ApprovalController extends Controller
         ]);
 
         $user = $request->user();
-        $schedule = \App\Models\SeminarSchedule::with(['seminar'])->find($validated['seminar_schedule_id']);
+        $schedule = \App\Models\SeminarSchedule::with(['seminar'])->findOrFail($validated['seminar_schedule_id']);
 
         // Check if dosen is involved in this seminar
         $seminar = $schedule->seminar;
@@ -206,13 +206,26 @@ class ApprovalController extends Controller
             ], 403);
         }
 
-        // Here you would typically save to a separate table for dosen attendance
-        // For now, we'll just return success message
-        // In real implementation, you might have a `dosen_attendances` table
+        // Determine dosen role in this seminar
+        $role = $this->getDosenRole($seminar, $user);
+
+        // Create or update dosen attendance
+        $attendance = \App\Models\DosenAttendance::updateOrCreate(
+            [
+                'seminar_schedule_id' => $validated['seminar_schedule_id'],
+                'dosen_id' => $user->id,
+            ],
+            [
+                'role' => $role,
+                'status' => $validated['status'],
+                'alasan' => $validated['alasan'] ?? null,
+                'confirmed_at' => now(),
+            ]
+        );
 
         $statusMessage = $validated['status'] === 'hadir' 
-            ? 'Konfirmasi kehadiran berhasil' 
-            : 'Konfirmasi ketidakhadiran berhasil';
+            ? 'Konfirmasi kehadiran berhasil dicatat' 
+            : 'Konfirmasi ketidakhadiran berhasil dicatat. Admin akan diberitahu.';
 
         return response()->json([
             'message' => $statusMessage,
@@ -220,7 +233,9 @@ class ApprovalController extends Controller
                 'seminar_title' => $seminar->judul,
                 'tanggal_jam' => $schedule->getFormattedDateTime(),
                 'ruangan' => $schedule->ruangan,
+                'role' => $attendance->getRoleDisplay(),
                 'status' => $validated['status'],
+                'status_display' => $attendance->getStatusDisplay(),
                 'alasan' => $validated['alasan'] ?? null,
                 'confirmed_at' => now()->format('d M Y H:i'),
             ]
@@ -370,6 +385,21 @@ class ApprovalController extends Controller
             ] : null,
             'approval_status' => $seminar->getApprovalStatus($user->id),
         ];
+    }
+
+    /**
+     * Get dosen role in seminar
+     */
+    private function getDosenRole(Seminar $seminar, $user): string
+    {
+        if ($seminar->pembimbing1_id == $user->id) {
+            return 'pembimbing1';
+        } elseif ($seminar->pembimbing2_id == $user->id) {
+            return 'pembimbing2';
+        } elseif ($seminar->penguji_id == $user->id) {
+            return 'penguji';
+        }
+        return 'unknown';
     }
 
     /**

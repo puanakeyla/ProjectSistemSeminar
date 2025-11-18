@@ -15,9 +15,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('seminar_id')->constrained('seminars')->cascadeOnDelete();
             $table->dateTime('waktu_mulai');
-            $table->unsignedSmallInteger('durasi_menit')->default(60);
-            $table->string('ruang')->nullable();
-            $table->enum('status', ['scheduled','ongoing','finished','canceled'])->default('scheduled');
+            $table->unsignedSmallInteger('durasi_menit')->default(120);
+            $table->string('ruang', 100)->nullable();
+            $table->enum('status', ['scheduled','completed','cancelled'])->default('scheduled');
             $table->string('qr_code_path')->nullable();
             $table->timestamps();
         });

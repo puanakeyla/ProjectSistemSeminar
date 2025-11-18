@@ -11,14 +11,15 @@ class SeminarSchedule extends Model
 
     protected $fillable = [
         'seminar_id',
-        'ruangan',
-        'tanggal_jam',
-        'qr_code',
+        'waktu_mulai',
+        'durasi_menit',
+        'ruang',
+        'qr_code_path',
         'status',
     ];
 
     protected $casts = [
-        'tanggal_jam' => 'datetime',
+        'waktu_mulai' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
@@ -37,42 +38,42 @@ class SeminarSchedule extends Model
     // Scopes
     public function scopeUpcoming($query)
     {
-        return $query->where('tanggal_jam', '>=', now());
+        return $query->where('waktu_mulai', '>=', now());
     }
 
     public function scopePast($query)
     {
-        return $query->where('tanggal_jam', '<', now());
+        return $query->where('waktu_mulai', '<', now());
     }
 
     public function scopeToday($query)
     {
-        return $query->whereDate('tanggal_jam', today());
+        return $query->whereDate('waktu_mulai', today());
     }
 
     // Helpers
     public function isUpcoming()
     {
-        return $this->tanggal_jam >= now();
+        return $this->waktu_mulai >= now();
     }
 
     public function isPast()
     {
-        return $this->tanggal_jam < now();
+        return $this->waktu_mulai < now();
     }
 
     public function getFormattedDateTime()
     {
-        return $this->tanggal_jam->format('d F Y H:i');
+        return $this->waktu_mulai->format('d F Y H:i');
     }
 
     public function getFormattedDate()
     {
-        return $this->tanggal_jam->format('d F Y');
+        return $this->waktu_mulai->format('d F Y');
     }
 
     public function getFormattedTime()
     {
-        return $this->tanggal_jam->format('H:i');
+        return $this->waktu_mulai->format('H:i');
     }
 }

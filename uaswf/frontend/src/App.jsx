@@ -11,6 +11,14 @@ import Revisi from './pages/Mahasiswa/Revisi'
 import NavbarDosen from './pages/Dosen/Navbar'
 import DashboardDosen from './pages/Dosen/Dashboard'
 import Approval from './pages/Dosen/Approval'
+// Admin Components
+import NavbarAdmin from './pages/Admin/Navbar'
+import DashboardAdmin from './pages/Admin/Dashboard'
+import Verification from './pages/Admin/Verification'
+import Schedule from './pages/Admin/Schedule'
+import QRCodePage from './pages/Admin/QRCode'
+import AttendancePage from './pages/Admin/Attendance'
+import RevisionPage from './pages/Admin/Revision'
 import './App.css'
 
 function App() {
@@ -150,10 +158,34 @@ function App() {
     </div>
   );
 
+  const renderAdminLayout = () => (
+    <div className="app-layout-admin">
+      {/* Navbar Horizontal */}
+      <NavbarAdmin 
+        currentPage={currentPage}
+        onNavigate={setCurrentPage}
+        onLogout={handleLogout}
+        user={userData}
+      />
+      
+      {/* Content Area */}
+      <main className="content-area">
+        {currentPage === 'dashboard' && <DashboardAdmin />}
+        {currentPage === 'verification' && <Verification />}
+        {currentPage === 'schedule' && <Schedule />}
+        {currentPage === 'qrcode' && <QRCodePage />}
+        {currentPage === 'attendance' && <AttendancePage />}
+        {currentPage === 'revision' && <RevisionPage />}
+      </main>
+    </div>
+  );
+
   return (
     <div className="app-wrapper">
       {!isLoggedIn ? (
         <Login onLogin={handleLogin} />
+      ) : userRole === 'admin' ? (
+        renderAdminLayout()
       ) : userRole === 'dosen' ? (
         renderDosenLayout()
       ) : (
