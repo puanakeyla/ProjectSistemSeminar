@@ -1,34 +1,37 @@
 import { useState } from 'react';
+import { authAPI } from '../../services/api';
 import '../../Login.css';
 
 function Login({ onLogin }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setError('');
     
-    // DAFTAR USER - BISA LOGIN SEMUA
-    const users = [
-      { username: 'cindy', password: '12345', name: 'Cindy' },
-      { username: 'santi', password: '67890', name: 'Santi' },
-      { username: 'putri', password: 'abcde', name: 'Putri' },
-      { username: 'puan', password: 'puan123', name: 'Puan Maharani' },
-      { username: 'admin', password: 'admin123', name: 'Administrator' },
-      { username: 'user1', password: 'user123', name: 'User Satu' },
-      { username: 'user2', password: 'user456', name: 'User Dua' }
-    ];
-
-    const foundUser = users.find(
-      user => user.username === email.toLowerCase() && user.password === password
-    );
-
-    if (foundUser) {
-      localStorage.setItem('currentUser', JSON.stringify(foundUser));
-      onLogin(foundUser);
-      alert(`Login berhasil! Selamat datang, ${foundUser.name}`);
-    } else {
-      alert('Username atau password salah!');
+    try {
+      // Call Laravel API
+      const response = await authAPI.login(email, password);
+      
+      // Save token and user data
+      localStorage.setItem('token', response.token);
+      localStorage.setItem('user', JSON.stringify(response.user));
+      
+      // Call parent callback
+      onLogin(response.user);
+      
+      alert(`Login berhasil! Selamat datang, ${response.user.name}`);
+    } catch (err) {
+      console.error('Login error:', err);
+      const errorMsg = err.response?.data?.message || 'Email atau password salah!';
+      setError(errorMsg);
+      alert(errorMsg);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -42,14 +45,27 @@ function Login({ onLogin }) {
           </p>
         </div>
         <form onSubmit={handleSubmit}>
+          {error && (
+            <div style={{ 
+              padding: '10px', 
+              marginBottom: '15px', 
+              backgroundColor: '#fee', 
+              color: '#c33', 
+              borderRadius: '5px',
+              fontSize: '14px'
+            }}>
+              {error}
+            </div>
+          )}
           <div className="input-group">
-            <label>Username</label>
+            <label>Email</label>
             <input
-              type="text"
+              type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="masukkan username"
+              placeholder="masukkan email"
               required
+              disabled={loading}
             />
           </div>
           <div className="input-group">
@@ -60,9 +76,12 @@ function Login({ onLogin }) {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="masukkan password"
               required
+              disabled={loading}
             />
           </div>
-          <button type="submit" className="btn-submit">Masuk</button>
+          <button type="submit" className="btn-submit" disabled={loading}>
+            {loading ? 'Loading...' : 'Masuk'}
+          </button>
         </form>
         
       </div>

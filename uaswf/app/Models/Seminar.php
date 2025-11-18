@@ -12,18 +12,20 @@ class Seminar extends Model
     protected $fillable = [
         'mahasiswa_id',
         'judul',
-        'jenis_seminar',
+        'tipe',
         'pembimbing1_id',
         'pembimbing2_id',
         'penguji_id',
-        'file_persyaratan',
+        'abstrak',
         'status',
-        'alasan_ditolak',
+        'skor_total',
+        'verified_at',
     ];
 
     protected $casts = [
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'verified_at' => 'datetime',
     ];
 
     // Relationships
@@ -67,40 +69,40 @@ class Seminar extends Model
         return $this->hasMany(SeminarAttendance::class);
     }
 
-    // Scopes
-    public function scopeMenunggu($query)
+    // Helpers / Presenters
+    public function getJenisSeminarDisplay(): string
     {
-        return $query->where('status', 'menunggu');
+        return match ($this->tipe) {
+            'proposal' => 'Seminar Proposal',
+            'hasil' => 'Seminar Hasil',
+            'kompre' => 'Komprehensif',
+            default => ucfirst($this->tipe ?? '-')
+        };
     }
 
-    public function scopeDisetujui($query)
+    public function getStatusDisplay(): string
     {
-        return $query->where('status', 'disetujui');
+        return match ($this->status) {
+            'draft' => 'Draft',
+            'pending_verification' => 'Menunggu Verifikasi',
+            'approved' => 'Disetujui',
+            'scheduled' => 'Terjadwal',
+            'finished' => 'Selesai',
+            'revising' => 'Revisi',
+            default => ucfirst($this->status ?? '-')
+        };
     }
 
-    public function scopeDitolak($query)
+    public function getStatusColor(): string
     {
-        return $query->where('status', 'ditolak');
-    }
-
-    // Helpers
-    public function getAllDosenIds()
-    {
-        return [
-            $this->pembimbing1_id,
-            $this->pembimbing2_id,
-            $this->penguji_id
-        ];
-    }
-
-    public function isApprovedByAllDosen()
-    {
-        return $this->approvals()->where('status', 'setuju')->count() === 3;
-    }
-
-    public function getApprovalStatus($dosenId)
-    {
-        $approval = $this->approvals()->where('dosen_id', $dosenId)->first();
-        return $approval ? $approval->status : 'menunggu';
+        return match ($this->status) {
+            'draft' => 'gray',
+            'pending_verification' => 'yellow',
+            'approved' => 'green',
+            'scheduled' => 'blue',
+            'finished' => 'emerald',
+            'revising' => 'orange',
+            default => 'gray'
+        };
     }
 }
