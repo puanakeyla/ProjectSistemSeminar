@@ -100,12 +100,12 @@ function Pengajuan() {
       // Prepare FormData untuk upload file
       const formDataToSend = new FormData();
       formDataToSend.append('judul', formData.judul);
-      formDataToSend.append('tipe', formData.jenis);
+      formDataToSend.append('tipe', formData.jenis); // jenis -> tipe
       formDataToSend.append('abstrak', formData.abstrak);
       formDataToSend.append('pembimbing1_id', formData.pembimbing1_id);
       formDataToSend.append('pembimbing2_id', formData.pembimbing2_id);
       formDataToSend.append('penguji_id', formData.penguji_id);
-      formDataToSend.append('berkas', formData.berkas);
+      formDataToSend.append('file_berkas', formData.berkas); // berkas -> file_berkas
 
       const response = await axios.post(
         `${API_URL}/mahasiswa/seminars`,

@@ -17,6 +17,7 @@ class Seminar extends Model
         'pembimbing2_id',
         'penguji_id',
         'abstrak',
+        'file_berkas',
         'status',
         'skor_total',
         'verified_at',

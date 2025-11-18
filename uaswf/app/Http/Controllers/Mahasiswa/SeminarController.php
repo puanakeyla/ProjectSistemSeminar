@@ -43,7 +43,7 @@ class SeminarController extends Controller
         ]);
     }
 
-    /** Store new seminar (versi sederhana tanpa upload & approvals) */
+    /** Store new seminar with dosen selection and file upload */
     public function store(Request $request): JsonResponse
     {
         $user = $request->user();
@@ -51,19 +51,52 @@ class SeminarController extends Controller
             'judul' => 'required|string|max:255',
             'tipe' => ['required', Rule::in(['proposal','hasil','kompre'])],
             'abstrak' => 'nullable|string',
+            'pembimbing1_id' => 'required|exists:users,id',
+            'pembimbing2_id' => 'required|exists:users,id|different:pembimbing1_id',
+            'penguji_id' => 'required|exists:users,id|different:pembimbing1_id,pembimbing2_id',
+            'file_berkas' => 'required|file|mimes:pdf,zip|max:10240', // 10MB
         ]);
 
+        // Upload file
+        $filePath = null;
+        if ($request->hasFile('file_berkas')) {
+            $file = $request->file('file_berkas');
+            $fileName = time() . '_' . $user->npm . '_' . $file->getClientOriginalName();
+            $filePath = $file->storeAs('seminar_berkas', $fileName, 'public');
+        }
+
+        // Create seminar
         $seminar = Seminar::create([
             'mahasiswa_id' => $user->id,
+            'pembimbing1_id' => $validated['pembimbing1_id'],
+            'pembimbing2_id' => $validated['pembimbing2_id'],
+            'penguji_id' => $validated['penguji_id'],
             'judul' => $validated['judul'],
             'tipe' => $validated['tipe'],
             'abstrak' => $validated['abstrak'] ?? null,
-            'status' => 'draft',
+            'file_berkas' => $filePath,
+            'status' => 'menunggu',
         ]);
 
+        // Create approval records for all 3 dosen
+        $dosenIds = [
+            ['dosen_id' => $validated['pembimbing1_id'], 'peran' => 'Pembimbing 1'],
+            ['dosen_id' => $validated['pembimbing2_id'], 'peran' => 'Pembimbing 2'],
+            ['dosen_id' => $validated['penguji_id'], 'peran' => 'Penguji'],
+        ];
+
+        foreach ($dosenIds as $dosen) {
+            SeminarApproval::create([
+                'seminar_id' => $seminar->id,
+                'dosen_id' => $dosen['dosen_id'],
+                'peran' => $dosen['peran'],
+                'status' => 'pending',
+            ]);
+        }
+
         return response()->json([
-            'message' => 'Seminar created (draft)',
-            'data' => $this->mapSeminar($seminar),
+            'message' => 'Pengajuan seminar berhasil dikirim. Menunggu persetujuan dosen.',
+            'data' => $this->mapSeminar($seminar->fresh(['pembimbing1', 'pembimbing2', 'penguji'])),
         ], 201);
     }
 
@@ -82,12 +115,17 @@ class SeminarController extends Controller
         ]);
     }
 
-    /** Dosen list sementara kosong (karena skema dosen belum selaras) */
+    /** Get list of dosen for selection */
     public function getDosenList(): JsonResponse
     {
+        $dosenList = User::where('role', 'dosen')
+            ->select('id', 'name', 'email', 'npm')
+            ->orderBy('name')
+            ->get();
+
         return response()->json([
-            'message' => 'Fitur dosen list belum diaktifkan',
-            'data' => []
+            'message' => 'Dosen list retrieved successfully',
+            'data' => $dosenList
         ]);
     }
 

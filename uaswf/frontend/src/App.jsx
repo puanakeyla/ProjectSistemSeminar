@@ -7,6 +7,7 @@ import Status from './pages/Mahasiswa/Status'
 import Jadwal from './pages/Mahasiswa/Jadwal'
 import DaftarHadir from './pages/Mahasiswa/DaftarHadir'
 import Revisi from './pages/Mahasiswa/Revisi'
+import ScanQR from './pages/Mahasiswa/ScanQR'
 // Dosen Components
 import NavbarDosen from './pages/Dosen/Navbar'
 import DashboardDosen from './pages/Dosen/Dashboard'
@@ -60,6 +61,7 @@ function App() {
     { id: 'status', label: 'Status Pengajuan', icon: '📋' },
     { id: 'jadwal', label: 'Jadwal Seminar', icon: '📅' },
     { id: 'daftarhadir', label: 'Daftar Hadir', icon: '✅' },
+    { id: 'scanqr', label: 'Scan QR Absensi', icon: '📱' },
     { id: 'revisi', label: 'Revisi & Upload', icon: '📄' }
   ]
 
@@ -132,6 +134,7 @@ function App() {
           {currentPage === 'status' && <Status />}
           {currentPage === 'jadwal' && <Jadwal />}
           {currentPage === 'daftarhadir' && <DaftarHadir />}
+          {currentPage === 'scanqr' && <ScanQR />}
           {currentPage === 'revisi' && <Revisi />}
         </main>
       </div>
