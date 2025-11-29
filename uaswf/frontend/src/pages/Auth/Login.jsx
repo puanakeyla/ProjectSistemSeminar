@@ -3,14 +3,6 @@ import { authAPI } from '../../services/api';
 import '../../Login.css';
 import teamworkIllustration from '../../assets/logologin.jpg';
 
-const demoCredentials = [
-  { role: 'Admin', identifier: 'admin@kampus.ac.id', password: 'admin123' },
-  { role: 'Mahasiswa', identifier: '2201001', password: 'mahasiswa123' },
-  { role: 'Dosen 1', identifier: 'dosen1@kampus.ac.id', password: 'dosen123' },
-  { role: 'Dosen 2', identifier: 'dosen2@kampus.ac.id', password: 'dosen123' },
-  { role: 'Dosen 3', identifier: 'dosen3@kampus.ac.id', password: 'dosen123' }
-];
-
 function Login({ onLogin }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -49,21 +41,22 @@ function Login({ onLogin }) {
             <img src={teamworkIllustration} alt="Ilustrasi Teamwork" />
           </div>
           <div className="info-copy">
-            <span className="info-badge">SMART ATTENDANCE PLATFORM</span>
-            <h1>Absensi pintar untuk kampus modern</h1>
-            <p>Automasi validasi lokasi, kelola izin, dan hadirkan data kehadiran real-time.</p>
+            <span className="info-badge">SISTEM PENGELOLAAN SEMINAR ELEKTRO</span>
+            <h1>SEMAR - Platform Seminar Digital Terintegrasi</h1>
+            <p>Sistem informasi modern untuk mengelola pengajuan, penjadwalan, dan dokumentasi seminar mahasiswa secara efisien dan terstruktur.</p>
             <ul>
-              <li>Integrasi cepat dengan kelas dan jadwal</li>
-              <li>Verifikasi multi-faktor untuk admin dan mahasiswa</li>
-              <li>Laporan kehadiran siap pakai</li>
+              <li>Pengajuan seminar online dengan approval multi-level</li>
+              <li>Penjadwalan otomatis dengan notifikasi real-time</li>
+              <li>Manajemen revisi dan dokumentasi tersentralisasi</li>
+              <li>QR Code absensi dan laporan kehadiran digital</li>
             </ul>
           </div>
         </div>
         <div className="form-panel">
           <div className="form-header">
-            <span className="portal-label">Portal Absensi Kampus</span>
+            <span className="portal-label">Portal SEMAR - Teknik Elektro</span>
             <h2>Masuk ke Sistem</h2>
-            <p>Masukkan email atau NIM. Sistem akan mengenali peran Anda otomatis.</p>
+            <p>Masukkan email atau NIM untuk mengakses sistem pengelolaan seminar.</p>
           </div>
           <form onSubmit={handleSubmit}>
             {error && (
@@ -77,48 +70,29 @@ function Login({ onLogin }) {
                 type="text"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="CASS"
+                placeholder="Masukkan email atau NIM Anda"
                 required
                 disabled={loading}
               />
             </div>
             <div className="input-group">
-              <label>Password</label>
+              <label>Kata Sandi</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder="Masukkan kata sandi Anda"
                 required
                 disabled={loading}
               />
             </div>
-            <div className="form-actions">
-              <button type="submit" className="btn-submit" disabled={loading}>
-                {loading ? 'Memuat...' : 'Masuk'}
-              </button>
-              <button type="button" className="link-button">Lupa password?</button>
-            </div>
+            <button type="submit" className="btn-submit" disabled={loading}>
+              {loading ? 'Memuat...' : 'Masuk ke Sistem'}
+            </button>
           </form>
-          <div className="demo-credentials">
-            <div className="demo-header">
-              <span>Kredensial Demo</span>
-            </div>
-            <div className="credential-list">
-              {demoCredentials.map((cred) => (
-                <div className="credential-item" key={cred.role}>
-                  <div>
-                    <p className="credential-role">{cred.role}</p>
-                    <p className="credential-identifier">{cred.identifier}</p>
-                  </div>
-                  <span className="credential-password">{cred.password}</span>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
       </div>
-      <footer className="login-footer">© 2025 Sistem Absensi Kampus</footer>
+      <footer className="login-footer">© 2025 SEMAR - Sistem Pengelolaan Seminar Elektro Universitas Lampung</footer>
     </div>
   );
 }
