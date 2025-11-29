@@ -28,9 +28,9 @@ class DashboardController extends Controller
         // Seminar statistics
         $seminarStats = [
             'total' => Seminar::count(),
-            'menunggu' => Seminar::menunggu()->count(),
-            'disetujui' => Seminar::disetujui()->count(),
-            'ditolak' => Seminar::ditolak()->count(),
+            'pending_verification' => Seminar::menunggu()->count(),
+            'approved' => Seminar::disetujui()->count(),
+            'revising' => Seminar::ditolak()->count(),
             'scheduled' => Seminar::has('schedule')->count(),
         ];
 

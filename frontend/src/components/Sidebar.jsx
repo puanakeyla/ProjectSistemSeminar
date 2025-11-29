@@ -8,8 +8,8 @@ const Sidebar = ({ currentPage, setCurrentPage, sidebarOpen, setSidebarOpen, use
         <div className="brand">
           <div className="brand-icon"><GraduationCap className="w-7 h-7" /></div>
           <div className="brand-text">
-            <h3>SISEMAR</h3>
-            <p>Sistem Seminar Elektro</p>
+            <h3>SEMAR</h3>
+            <p>Seminar Management and Registration</p>
           </div>
         </div>
       </div>

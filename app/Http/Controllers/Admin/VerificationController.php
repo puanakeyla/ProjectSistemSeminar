@@ -17,7 +17,7 @@ class VerificationController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $status = $request->get('status', 'all'); // all, menunggu, disetujui, ditolak
+        $status = $request->get('status', 'all'); // all, pending_verification, approved, revising
 
         $query = Seminar::with(['mahasiswa', 'pembimbing1', 'pembimbing2', 'penguji', 'approvals.dosen']);
 
@@ -81,29 +81,29 @@ class VerificationController extends Controller
     public function verifySeminar(Request $request, $id): JsonResponse
     {
         $validated = $request->validate([
-            'action' => ['required', Rule::in(['approve', 'reject'])],
-            'alasan' => 'required_if:action,reject|nullable|string|max:1000',
+            'status' => ['required', Rule::in(['approved', 'rejected'])],
+            'alasan' => 'required_if:status,rejected|nullable|string|max:1000',
         ]);
 
         $seminar = Seminar::with(['approvals'])->findOrFail($id);
 
         // Check if all dosen have approved
-        if ($validated['action'] === 'approve' && !$seminar->isApprovedByAllDosen()) {
+        if ($validated['status'] === 'approved' && !$seminar->isApprovedByAllDosen()) {
             return response()->json([
                 'message' => 'Tidak dapat menyetujui seminar. Belum semua dosen memberikan persetujuan.'
             ], 422);
         }
 
         // Update seminar status
-        $newStatus = $validated['action'] === 'approve' ? 'disetujui' : 'ditolak';
+        $newStatus = $validated['status'] === 'approved' ? 'approved' : 'revising';
         $seminar->update([
             'status' => $newStatus,
-            'alasan_ditolak' => $validated['action'] === 'reject' ? $validated['alasan'] : null,
+            'alasan_ditolak' => $validated['status'] === 'rejected' ? $validated['alasan'] : null,
         ]);
 
-        $message = $validated['action'] === 'approve' 
+        $message = $validated['status'] === 'approved' 
             ? 'Seminar berhasil disetujui' 
-            : 'Seminar berhasil ditolak';
+            : 'Seminar membutuhkan revisi';
 
         return response()->json([
             'message' => $message,
@@ -117,7 +117,7 @@ class VerificationController extends Controller
     public function pendingVerification(): JsonResponse
     {
         $seminars = Seminar::with(['mahasiswa', 'pembimbing1', 'pembimbing2', 'penguji', 'approvals.dosen'])
-            ->where('status', 'menunggu')
+            ->where('status', 'pending_verification')
             ->whereHas('approvals', function ($query) {
                 $query->setuju();
             }, '=', 3) // All 3 dosen have approved
@@ -140,14 +140,14 @@ class VerificationController extends Controller
     {
         $stats = [
             'total_seminars' => Seminar::count(),
-            'pending_verification' => Seminar::where('status', 'menunggu')
+            'pending_verification' => Seminar::where('status', 'pending_verification')
                 ->whereHas('approvals', function ($query) {
                     $query->setuju();
                 }, '=', 3)
                 ->count(),
             'approved_seminars' => Seminar::disetujui()->count(),
-            'rejected_seminars' => Seminar::ditolak()->count(),
-            'awaiting_dosen_approval' => Seminar::where('status', 'menunggu')
+            'revising_seminars' => Seminar::ditolak()->count(),
+            'awaiting_dosen_approval' => Seminar::where('status', 'pending_verification')
                 ->whereHas('approvals', function ($query) {
                     $query->menunggu();
                 })

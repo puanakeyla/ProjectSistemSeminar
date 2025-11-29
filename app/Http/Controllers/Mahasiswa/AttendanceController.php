@@ -18,7 +18,7 @@ class AttendanceController extends Controller
     {
         $schedules = SeminarSchedule::with(['seminar.mahasiswa', 'seminar.pembimbing1', 'seminar.pembimbing2', 'seminar.penguji'])
             ->whereHas('seminar', function ($query) {
-                $query->where('status', 'disetujui');
+                $query->where('status', 'approved');
             })
             ->where('tanggal_jam', '>=', now()->subDay()) // Include today and future
             ->orderBy('tanggal_jam')

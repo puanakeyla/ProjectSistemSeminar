@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class SeminarApproval extends Model
 {
@@ -83,6 +84,68 @@ class SeminarApproval extends Model
     public function isPending()
     {
         return $this->status === 'pending';
+    }
+
+    public function getStatusDisplay(): string
+    {
+        return match ($this->status) {
+            'pending' => 'Menunggu Persetujuan',
+            'approved' => 'Disetujui',
+            'rejected' => 'Ditolak',
+            default => ucfirst($this->status ?? '-'),
+        };
+    }
+
+    public function getStatusColor(): string
+    {
+        return match ($this->status) {
+            'pending' => 'yellow',
+            'approved' => 'green',
+            'rejected' => 'red',
+            default => 'gray',
+        };
+    }
+
+    public function setPeranAttribute($value)
+    {
+        $this->attributes['peran'] = $this->normalizePeran($value);
+    }
+
+    public function setStatusAttribute($value)
+    {
+        $this->attributes['status'] = $this->normalizeStatus($value);
+    }
+
+    private function normalizePeran($value)
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $key = Str::lower(str_replace([' ', '-'], '', $value));
+
+        return match ($key) {
+            'pembimbing1', 'pembimbing_1' => 'pembimbing1',
+            'pembimbing2', 'pembimbing_2' => 'pembimbing2',
+            'penguji' => 'penguji',
+            default => $value,
+        };
+    }
+
+    private function normalizeStatus($value)
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $key = Str::lower(str_replace(' ', '_', $value));
+
+        return match ($key) {
+            'pending', 'pending_verification', 'pendingapproval', 'pending_approval' => 'pending',
+            'approved', 'approved_by_admin', 'disetujui', 'setuju' => 'approved',
+            'rejected', 'ditolak', 'revising', 'revision', 'needs_revision', 'reviewed' => 'rejected',
+            default => $value,
+        };
     }
 
     /**

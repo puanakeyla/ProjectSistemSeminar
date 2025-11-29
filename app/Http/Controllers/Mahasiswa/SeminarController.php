@@ -18,7 +18,7 @@ class SeminarController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $seminars = Seminar::with(['schedule'])
+        $seminars = Seminar::with(['schedule', 'approvals.dosen'])
             ->where('mahasiswa_id', $request->user()->id)
             ->orderByDesc('created_at')
             ->get()
@@ -33,7 +33,7 @@ class SeminarController extends Controller
     /** Show single seminar */
     public function show(Request $request, int $id): JsonResponse
     {
-        $seminar = Seminar::with(['schedule'])
+        $seminar = Seminar::with(['schedule', 'approvals.dosen'])
             ->where('mahasiswa_id', $request->user()->id)
             ->findOrFail($id);
 
@@ -75,21 +75,21 @@ class SeminarController extends Controller
             'tipe' => $validated['tipe'],
             'abstrak' => $validated['abstrak'] ?? null,
             'file_berkas' => $filePath,
-            'status' => 'menunggu',
+            'status' => 'pending_verification',
         ]);
 
         // Create approval records for all 3 dosen
-        $dosenIds = [
-            ['dosen_id' => $validated['pembimbing1_id'], 'peran' => 'Pembimbing 1'],
-            ['dosen_id' => $validated['pembimbing2_id'], 'peran' => 'Pembimbing 2'],
-            ['dosen_id' => $validated['penguji_id'], 'peran' => 'Penguji'],
+        $dosenAssignments = [
+            ['dosen_id' => $validated['pembimbing1_id'], 'peran' => 'pembimbing1'],
+            ['dosen_id' => $validated['pembimbing2_id'], 'peran' => 'pembimbing2'],
+            ['dosen_id' => $validated['penguji_id'], 'peran' => 'penguji'],
         ];
 
-        foreach ($dosenIds as $dosen) {
+        foreach ($dosenAssignments as $assignment) {
             SeminarApproval::create([
                 'seminar_id' => $seminar->id,
-                'dosen_id' => $dosen['dosen_id'],
-                'peran' => $dosen['peran'],
+                'dosen_id' => $assignment['dosen_id'],
+                'peran' => $assignment['peran'],
                 'status' => 'pending',
             ]);
         }
@@ -139,8 +139,31 @@ class SeminarController extends Controller
             'status' => $s->status,
             'status_display' => $s->getStatusDisplay(),
             'status_color' => $s->getStatusColor(),
+            'admin_status' => match ($s->status) {
+                'approved', 'scheduled', 'finished' => 'approved',
+                'revising' => 'rejected',
+                default => 'pending',
+            },
             'created_at' => $s->created_at?->toIso8601String(),
         ];
+
+        if ($s->relationLoaded('approvals')) {
+            $data['approvals'] = $s->approvals->map(function ($approval) {
+                return [
+                    'id' => $approval->id,
+                    'peran' => $approval->peran,
+                    'status' => $approval->status,
+                    'status_display' => $approval->getStatusDisplay(),
+                    'status_color' => $approval->getStatusColor(),
+                    'dosen' => $approval->dosen ? [
+                        'id' => $approval->dosen->id,
+                        'name' => $approval->dosen->name,
+                        'nidn' => $approval->dosen->nidn,
+                    ] : null,
+                    'updated_at' => $approval->updated_at?->toIso8601String(),
+                ];
+            });
+        }
 
         if ($s->schedule) {
             $data['schedule'] = [

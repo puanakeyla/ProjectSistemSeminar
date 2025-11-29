@@ -32,19 +32,15 @@ function Status() {
   };
 
   const getStatusClass = (status) => {
-    switch(status) {
+    switch (status) {
       case 'approved':
       case 'scheduled':
-      case 'completed':
+      case 'finished':
         return 'approved';
-      case 'pending_approval':
-      case 'pending_schedule':
-        return 'pending';
-      case 'rejected':
-      case 'cancelled':
-        return 'rejected';
-      case 'revision_required':
+      case 'revising':
         return 'revision';
+      case 'draft':
+      case 'pending_verification':
       default:
         return 'pending';
     }
@@ -53,14 +49,11 @@ function Status() {
   const getStatusText = (status) => {
     const statusMap = {
       'draft': 'Draft',
-      'pending_approval': 'Menunggu Persetujuan',
+      'pending_verification': 'Menunggu Verifikasi',
       'approved': 'Disetujui',
-      'rejected': 'Ditolak',
-      'revision_required': 'Perlu Revisi',
-      'pending_schedule': 'Menunggu Jadwal',
+      'revising': 'Perlu Revisi',
       'scheduled': 'Terjadwal',
-      'completed': 'Selesai',
-      'cancelled': 'Dibatalkan'
+      'finished': 'Selesai'
     };
     return statusMap[status] || status;
   };
@@ -72,7 +65,7 @@ function Status() {
     const rejected = approvals.filter(a => a.status === 'rejected').length;
     const pending = approvals.filter(a => a.status === 'pending').length;
 
-    return `${approved} Disetujui, ${rejected} Ditolak, ${pending} Menunggu`;
+    return `${approved} Approved, ${rejected} Rejected, ${pending} Pending`;
   };
 
   if (loading) {
@@ -119,7 +112,7 @@ function Status() {
                   <h3>{item.judul}</h3>
                 </div>
                 <span className={`status-badge ${getStatusClass(item.status)}`}>
-                  {getStatusText(item.status)}
+                  {item.status_display || getStatusText(item.status)}
                 </span>
               </div>
               <div className="status-card-body">

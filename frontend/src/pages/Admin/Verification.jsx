@@ -101,6 +101,15 @@ function Verification() {
     }
   };
 
+  const getRoleLabel = (role) => {
+    switch (role) {
+      case 'pembimbing1': return 'Pembimbing 1';
+      case 'pembimbing2': return 'Pembimbing 2';
+      case 'penguji': return 'Penguji';
+      default: return role;
+    }
+  };
+
   if (loading) {
     return (
       <div className="admin-verification">
@@ -223,7 +232,7 @@ function Verification() {
                       <div key={index} className={`approval-card ${getApprovalStatusClass(approval.status)}`}>
                         <div className="approval-header">
                           <div className="approval-role">
-                            <span className="role-badge">{approval.peran}</span>
+                            <span className="role-badge">{getRoleLabel(approval.peran)}</span>
                             <span className="dosen-name">{approval.dosen?.name || 'N/A'}</span>
                           </div>
                           <div className="approval-status">

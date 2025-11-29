@@ -31,7 +31,7 @@ function Dashboard() {
       // Set stats from API response
       setStats({
         totalSeminars: data.seminar_statistics?.total || 0,
-        pendingVerification: data.seminar_statistics?.menunggu || 0,
+        pendingVerification: data.seminar_statistics?.pending_verification || 0,
         scheduledToday: data.today_seminars?.length || 0,
         totalAttendance: data.attendance_statistics?.total_attendances || 0,
         verificationRate: 0,

@@ -224,7 +224,7 @@ export const adminAPI = {
   },
 
   validateRevision: async (id, data) => {
-    // data: { status: 'approved'|'rejected', catatan_admin?: string }
+    // data: { status: 'accepted'|'rejected', catatan_admin?: string }
     const response = await api.post(`/admin/revisions/${id}/validate`, data);
     return response.data;
   },

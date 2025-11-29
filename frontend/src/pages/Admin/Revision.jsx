@@ -26,7 +26,7 @@ function Revision() {
   };
 
   const handleValidate = async (revisionId, status, catatan = '') => {
-    if (!window.confirm(`${status === 'approved' ? 'Setujui' : 'Tolak'} revisi ini?`)) {
+    if (!window.confirm(`${status === 'accepted' ? 'Setujui' : 'Tolak'} revisi ini?`)) {
       return;
     }
 
@@ -38,7 +38,7 @@ function Revision() {
         catatan_admin: catatan || undefined
       });
 
-      alert(`Revisi berhasil ${status === 'approved' ? 'disetujui' : 'ditolak'}`);
+      alert(`Revisi berhasil ${status === 'accepted' ? 'disetujui' : 'ditolak'}`);
       setSelectedRevision(null);
       await fetchRevisions();
     } catch (err) {
@@ -68,11 +68,12 @@ function Revision() {
 
   const getStatusBadge = (status) => {
     const badges = {
-      pending: { label: '⏳ Menunggu', class: 'pending' },
-      approved: { label: '✅ Disetujui', class: 'approved' },
-      rejected: { label: '❌ Ditolak', class: 'rejected' }
+      submitted: { label: '⏳ Menunggu', class: 'pending' },
+      accepted: { label: '✅ Disetujui', class: 'approved' },
+      rejected: { label: '❌ Ditolak', class: 'rejected' },
+      reviewed: { label: '✏️ Perlu Revisi', class: 'pending' }
     };
-    return badges[status] || badges.pending;
+    return badges[status] || badges.submitted;
   };
 
   if (loading) {
@@ -252,7 +253,7 @@ function Revision() {
               )}
 
               {/* Actions */}
-              {selectedRevision.status === 'pending' && (
+              {selectedRevision.status === 'submitted' && (
                 <div className="action-section">
                   <h3>Validasi Revisi</h3>
                   <div className="action-buttons">
@@ -268,7 +269,7 @@ function Revision() {
                     </button>
                     <button
                       className="btn-approve"
-                      onClick={() => handleValidate(selectedRevision.id, 'approved')}
+                      onClick={() => handleValidate(selectedRevision.id, 'accepted')}
                       disabled={validating}
                     >
                       {validating ? 'Memproses...' : '✅ Setujui Revisi'}

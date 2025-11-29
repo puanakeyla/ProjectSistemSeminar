@@ -273,9 +273,9 @@ class ApprovalController extends Controller
             ->toArray();
 
         $statistics['current_month'] = [
-            'approved' => $monthlyStats['setuju'] ?? 0,
-            'rejected' => $monthlyStats['ditolak'] ?? 0,
-            'pending' => $monthlyStats['menunggu'] ?? 0,
+            'approved' => $monthlyStats['approved'] ?? 0,
+            'rejected' => $monthlyStats['rejected'] ?? 0,
+            'pending' => $monthlyStats['pending'] ?? 0,
         ];
 
         return response()->json([
@@ -291,9 +291,9 @@ class ApprovalController extends Controller
     {
         $approvals = $seminar->approvals;
 
-        // If any approval is rejected, seminar is rejected
+        // If any approval is rejected, seminar requires revision
         if ($approvals->where('status', 'rejected')->count() > 0) {
-            $seminar->update(['status' => 'rejected']);
+            $seminar->update(['status' => 'revising']);
             return;
         }
 

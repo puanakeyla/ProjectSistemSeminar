@@ -107,6 +107,7 @@ function Pengajuan() {
       formDataToSend.append('pembimbing2_id', formData.pembimbing2_id);
       formDataToSend.append('penguji_id', formData.penguji_id);
       formDataToSend.append('file_berkas', formData.berkas); // berkas -> file_berkas
+      formDataToSend.append('status', 'pending_verification'); // status harus valid
 
       const response = await axios.post(
         `${API_URL}/mahasiswa/seminars`,

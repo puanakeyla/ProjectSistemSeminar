@@ -20,9 +20,9 @@ class DashboardController extends Controller
         // Count seminars by status
         $seminarCounts = [
             'total' => Seminar::where('mahasiswa_id', $user->id)->count(),
-            'menunggu' => Seminar::where('mahasiswa_id', $user->id)->menunggu()->count(),
-            'disetujui' => Seminar::where('mahasiswa_id', $user->id)->disetujui()->count(),
-            'ditolak' => Seminar::where('mahasiswa_id', $user->id)->ditolak()->count(),
+            'pending_verification' => Seminar::where('mahasiswa_id', $user->id)->menunggu()->count(),
+            'approved' => Seminar::where('mahasiswa_id', $user->id)->disetujui()->count(),
+            'revising' => Seminar::where('mahasiswa_id', $user->id)->ditolak()->count(),
         ];
 
         // Count attended seminars

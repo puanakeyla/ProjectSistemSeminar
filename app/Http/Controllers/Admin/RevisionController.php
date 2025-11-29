@@ -14,7 +14,7 @@ class RevisionController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $status = $request->get('status'); // pending, approved, rejected
+        $status = $request->get('status'); // submitted, accepted, rejected, reviewed
 
         $query = SeminarRevision::with([
             'seminar.mahasiswa',
@@ -25,7 +25,7 @@ class RevisionController extends Controller
         ->orderBy('created_at', 'desc');
 
         // Filter by status if provided
-        if ($status && in_array($status, ['pending', 'approved', 'rejected'])) {
+        if ($status && in_array($status, ['submitted', 'accepted', 'rejected', 'reviewed'])) {
             $query->where('status', $status);
         }
 
@@ -64,14 +64,14 @@ class RevisionController extends Controller
     public function validate(Request $request, $id): JsonResponse
     {
         $validated = $request->validate([
-            'status' => 'required|in:approved,rejected',
+            'status' => 'required|in:accepted,rejected',
             'catatan_admin' => 'nullable|string|max:1000',
         ]);
 
         $revision = SeminarRevision::findOrFail($id);
 
         // Prevent re-validation
-        if ($revision->status !== 'pending') {
+        if ($revision->status !== 'submitted') {
             return response()->json([
                 'message' => 'Revisi sudah divalidasi sebelumnya'
             ], 422);
@@ -85,14 +85,14 @@ class RevisionController extends Controller
         ]);
 
         // If approved, update seminar status to completed
-        if ($validated['status'] === 'approved') {
+        if ($validated['status'] === 'accepted') {
             $revision->seminar->update([
-                'status' => 'selesai'
+                'status' => 'finished'
             ]);
         }
 
         return response()->json([
-            'message' => $validated['status'] === 'approved' 
+            'message' => $validated['status'] === 'accepted' 
                 ? 'Revisi berhasil disetujui' 
                 : 'Revisi ditolak',
             'data' => $this->formatRevisionData($revision->fresh())
@@ -104,18 +104,20 @@ class RevisionController extends Controller
      */
     public function statistics(): JsonResponse
     {
-        $pending = SeminarRevision::where('status', 'pending')->count();
-        $approved = SeminarRevision::where('status', 'approved')->count();
+        $submitted = SeminarRevision::where('status', 'submitted')->count();
+        $accepted = SeminarRevision::where('status', 'accepted')->count();
         $rejected = SeminarRevision::where('status', 'rejected')->count();
+        $reviewed = SeminarRevision::where('status', 'reviewed')->count();
         $total = SeminarRevision::count();
 
         return response()->json([
             'message' => 'Revision statistics retrieved successfully',
             'data' => [
                 'total' => $total,
-                'pending' => $pending,
-                'approved' => $approved,
+                'submitted' => $submitted,
+                'accepted' => $accepted,
                 'rejected' => $rejected,
+                'reviewed' => $reviewed,
             ]
         ]);
     }
@@ -196,9 +198,10 @@ class RevisionController extends Controller
     private function getStatusDisplay(string $status): string
     {
         return match($status) {
-            'pending' => 'Menunggu Validasi',
-            'approved' => 'Disetujui',
+            'submitted' => 'Menunggu Validasi',
+            'accepted' => 'Disetujui',
             'rejected' => 'Ditolak',
+            'reviewed' => 'Perlu Revisi',
             default => ucfirst($status),
         };
     }

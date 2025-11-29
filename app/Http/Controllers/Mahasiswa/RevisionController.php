@@ -51,7 +51,7 @@ class RevisionController extends Controller
             ->firstOrFail();
 
         // Check if seminar is approved
-        if ($seminar->status !== 'disetujui') {
+        if ($seminar->status !== 'approved') {
             return response()->json([
                 'message' => 'Hanya dapat mengumpulkan revisi untuk seminar yang telah disetujui'
             ], 422);
@@ -65,7 +65,7 @@ class RevisionController extends Controller
             'seminar_id' => $validated['seminar_id'],
             'file_revisi' => $filePath,
             'catatan_mahasiswa' => $validated['catatan_mahasiswa'],
-            'status' => 'menunggu',
+            'status' => 'submitted',
             'tanggal_pengumpulan' => now(),
         ]);
 
@@ -99,7 +99,7 @@ class RevisionController extends Controller
     {
         $seminars = Seminar::with(['schedule'])
             ->where('mahasiswa_id', $request->user()->id)
-            ->where('status', 'disetujui')
+            ->where('status', 'approved')
             ->whereHas('schedule') // Only seminars that have been scheduled
             ->orderBy('created_at', 'desc')
             ->get()

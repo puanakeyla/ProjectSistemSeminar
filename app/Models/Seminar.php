@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class Seminar extends Model
 {
@@ -28,6 +29,30 @@ class Seminar extends Model
         'updated_at' => 'datetime',
         'verified_at' => 'datetime',
     ];
+
+    public function setStatusAttribute($value)
+    {
+        $this->attributes['status'] = $this->normalizeStatus($value);
+    }
+
+    private function normalizeStatus($value)
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $key = Str::lower(str_replace(' ', '_', $value));
+
+        return match ($key) {
+            'pending', 'menunggu', 'pending_verification' => 'pending_verification',
+            'approved', 'disetujui' => 'approved',
+            'scheduled', 'terjadwal' => 'scheduled',
+            'finished', 'selesai', 'completed' => 'finished',
+            'revising', 'revisi', 'revision' => 'revising',
+            'draft' => 'draft',
+            default => $value,
+        };
+    }
 
     // Relationships
     public function mahasiswa()
@@ -73,17 +98,17 @@ class Seminar extends Model
     // Query Scopes
     public function scopeMenunggu($query)
     {
-        return $query->where('status', 'menunggu');
+        return $query->where('status', 'pending_verification');
     }
 
     public function scopeDisetujui($query)
     {
-        return $query->where('status', 'disetujui');
+        return $query->where('status', 'approved');
     }
 
     public function scopeDitolak($query)
     {
-        return $query->where('status', 'ditolak');
+        return $query->where('status', 'revising');
     }
 
     // Helpers / Presenters

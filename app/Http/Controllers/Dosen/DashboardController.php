@@ -133,7 +133,7 @@ class DashboardController extends Controller
                         ->orWhere('pembimbing2_id', $user->id)
                         ->orWhere('penguji_id', $user->id);
                 })
-                ->where('status', 'disetujui');
+                ->where('status', 'approved');
             })
             ->upcoming()
             ->orderBy('tanggal_jam')

@@ -16,9 +16,9 @@ const API_URL = 'http://localhost:8000/api';
 function Dashboard() {
   const [stats, setStats] = useState({
     total: 0,
-    disetujui: 0,
-    menunggu: 0,
-    ditolak: 0,
+    approved: 0,
+    pending_verification: 0,
+    revising: 0,
     attended: 0
   });
   const [recentActivities, setRecentActivities] = useState([]);
@@ -47,9 +47,9 @@ function Dashboard() {
       const data = response.data.data;
       setStats({
         total: data.seminar_counts?.total || 0,
-        disetujui: data.seminar_counts?.disetujui || 0,
-        menunggu: data.seminar_counts?.menunggu || 0,
-        ditolak: data.seminar_counts?.ditolak || 0,
+        approved: data.seminar_counts?.approved || 0,
+        pending_verification: data.seminar_counts?.pending_verification || 0,
+        revising: data.seminar_counts?.revising || 0,
         attended: data.attended_seminars_count || 0
       });
       setRecentActivities(data.recent_seminars || []);
@@ -77,11 +77,11 @@ function Dashboard() {
   }
 
   const statsDisplay = [
-    { label: 'Total Pengajuan', value: stats.total, icon: FileText, color: '#3B82F6' },
-    { label: 'Disetujui', value: stats.disetujui, icon: CheckCircle, color: '#10b981' },
-    { label: 'Menunggu', value: stats.menunggu, icon: Clock, color: '#f59e0b' },
-    { label: 'Ditolak', value: stats.ditolak, icon: XCircle, color: '#ef4444' },
-    { label: 'Seminar Diikuti', value: stats.attended, icon: GraduationCap, color: '#8b5cf6' }
+    { label: 'Total Submissions', value: stats.total, icon: FileText, color: '#3B82F6' },
+    { label: 'Approved', value: stats.approved, icon: CheckCircle, color: '#10b981' },
+    { label: 'Pending Verification', value: stats.pending_verification, icon: Clock, color: '#f59e0b' },
+    { label: 'Needs Revision', value: stats.revising, icon: XCircle, color: '#ef4444' },
+    { label: 'Attended Seminars', value: stats.attended, icon: GraduationCap, color: '#8b5cf6' }
   ];
 
   const quickActions = [
@@ -109,7 +109,7 @@ function Dashboard() {
                 Dashboard
               </h1>
               <p className="text-base text-gray-600 dark:text-gray-400">
-                Selamat datang, <span className="font-semibold text-primary-600 dark:text-primary-400">{userName}</span>
+                Welcome, <span className="font-semibold text-primary-600 dark:text-primary-400">{userName}</span>
               </p>
             </div>
           </div>
@@ -137,7 +137,7 @@ function Dashboard() {
             <div className="flex items-center gap-3 mb-6 pb-4 border-b-2 border-gray-200 dark:border-dark-700">
               <Calendar className="w-6 h-6 text-primary-500" />
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                Seminar Terbaru
+                Latest Seminars
               </h2>
             </div>
 
@@ -147,7 +147,7 @@ function Dashboard() {
                   <FileCheck className="w-10 h-10 text-gray-400 dark:text-gray-600" />
                 </div>
                 <p className="text-gray-500 dark:text-gray-400 font-medium">
-                  Belum ada pengajuan seminar
+                  No seminar submissions yet
                 </p>
               </div>
             ) : (
@@ -200,7 +200,7 @@ function Dashboard() {
           transition={{ duration: 0.4, delay: 0.4 }}
         >
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-            Aksi Cepat
+            Quick Actions
           </h2>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {quickActions.map((action, index) => {

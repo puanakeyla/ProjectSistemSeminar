@@ -20,7 +20,7 @@ class RevisionStoreRequest extends FormRequest
         // Check if seminar belongs to the mahasiswa and is approved
         $seminar = Seminar::where('id', $this->seminar_id)
             ->where('mahasiswa_id', $this->user()->id)
-            ->where('status', 'disetujui')
+            ->where('status', 'approved')
             ->first();
 
         return (bool) $seminar;
@@ -107,7 +107,7 @@ class RevisionStoreRequest extends FormRequest
 
         // Add additional data to validated data
         $validated['tanggal_pengumpulan'] = now();
-        $validated['status'] = 'menunggu';
+        $validated['status'] = 'submitted';
 
         return $validated;
     }
@@ -127,7 +127,7 @@ class RevisionStoreRequest extends FormRequest
             abort(403, 'Anda tidak memiliki akses ke seminar ini.');
         }
 
-        if ($seminar->status !== 'disetujui') {
+        if ($seminar->status !== 'approved') {
             abort(422, 'Hanya dapat mengumpulkan revisi untuk seminar yang telah disetujui.');
         }
 

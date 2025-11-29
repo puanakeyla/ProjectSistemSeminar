@@ -108,18 +108,20 @@ function Revisi() {
 
   const getStatusBadge = (status) => {
     const statusMap = {
-      'menunggu': 'pending',
-      'disetujui': 'uploaded',
-      'ditolak': 'rejected'
+      'submitted': 'pending',
+      'accepted': 'uploaded',
+      'rejected': 'rejected',
+      'reviewed': 'pending'
     };
     return statusMap[status] || 'pending';
   };
 
   const getStatusText = (status) => {
     const textMap = {
-      'menunggu': 'Menunggu Validasi',
-      'disetujui': 'Disetujui',
-      'ditolak': 'Ditolak'
+      'submitted': 'Menunggu Validasi',
+      'accepted': 'Disetujui',
+      'rejected': 'Ditolak',
+      'reviewed': 'Perlu Revisi'
     };
     return textMap[status] || status;
   };
@@ -225,10 +227,10 @@ function Revisi() {
             </div>
 
             <div className="revisi-card-footer">
-              {revisi.status === 'disetujui' && (
+              {revisi.status === 'accepted' && (
                 <div className="approval-info"><CheckCircle className="w-4 h-4 inline-block mr-1" />Revisi telah disetujui admin</div>
               )}
-              {revisi.status === 'ditolak' && (
+              {['rejected', 'reviewed'].includes(revisi.status) && (
                 <button className="btn-reupload" onClick={() => handleUpload(revisi)}>
                   Upload Ulang
                 </button>
