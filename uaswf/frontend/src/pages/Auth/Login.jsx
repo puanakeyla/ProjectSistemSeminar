@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { authAPI } from '../../services/api';
 import '../../Login.css';
+import teamworkIllustration from '../../assets/logologin.jpg';
 
 function Login({ onLogin }) {
   const [email, setEmail] = useState('');
@@ -14,20 +15,17 @@ function Login({ onLogin }) {
     setError('');
 
     try {
-      // Call Laravel API
       const response = await authAPI.login(email, password);
 
-      // Save token and user data
       localStorage.setItem('token', response.token);
       localStorage.setItem('user', JSON.stringify(response.user));
 
-      // Call parent callback
       onLogin(response.user);
 
       alert(`Login berhasil! Selamat datang, ${response.user.name}`);
     } catch (err) {
       console.error('Login error:', err);
-      const errorMsg = err.response?.data?.message || 'Email atau password salah!';
+      const errorMsg = err.response?.data?.message || 'Email atau kata sandi salah!';
       setError(errorMsg);
       alert(errorMsg);
     } finally {
@@ -37,11 +35,18 @@ function Login({ onLogin }) {
 
   return (
     <div className="login-wrapper">
+      <div className="login-illustration">
+        <img src={teamworkIllustration} alt="Ilustrasi Teamwork" />
+      </div>
       <div className="login-box">
         <div className="login-header">
-          <h2>Login</h2>
+          <div className="semar-logo">
+            <div className="logo-icon">🎓</div>
+            <h1 className="logo-text">SEMAR</h1>
+          </div>
+          <h2>Masuk ke Akun Anda</h2>
           <p style={{ fontSize: '14px', color: '#7f8c8d', marginTop: '10px' }}>
-            Sistem Informasi Seminar
+            Sistem Informasi Seminar Elektro
           </p>
         </div>
         <form onSubmit={handleSubmit}>
@@ -58,29 +63,29 @@ function Login({ onLogin }) {
             </div>
           )}
           <div className="input-group">
-            <label>Email</label>
+            <label>Alamat Email</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="masukkan email"
+              placeholder="Masukkan alamat email Anda"
               required
               disabled={loading}
             />
           </div>
           <div className="input-group">
-            <label>Password</label>
+            <label>Kata Sandi</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="masukkan password"
+              placeholder="Masukkan kata sandi Anda"
               required
               disabled={loading}
             />
           </div>
           <button type="submit" className="btn-submit" disabled={loading}>
-            {loading ? 'Loading...' : 'Masuk'}
+            {loading ? 'Memuat...' : 'Masuk'}
           </button>
         </form>
 
