@@ -41,9 +41,6 @@ const Sidebar = ({ currentPage, setCurrentPage, sidebarOpen, setSidebarOpen, use
           <LogOut className="w-4 h-4 mr-2" />
           <span className="logout-text">Logout</span>
         </button>
-        <button className="collapse-toggle" onClick={() => setSidebarOpen(!sidebarOpen)} aria-label="toggle sidebar">
-          {sidebarOpen ? '⟨' : '⟩'}
-        </button>
       </div>
     </aside>
   )
