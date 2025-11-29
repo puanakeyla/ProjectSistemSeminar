@@ -12,11 +12,16 @@ class SeminarApproval extends Model
     protected $fillable = [
         'seminar_id',
         'dosen_id',
+        'peran',
         'status',
-        'alasan',
+        'catatan',
+        'available_dates',
+        'approved_at',
     ];
 
     protected $casts = [
+        'available_dates' => 'array',
+        'approved_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
@@ -33,34 +38,64 @@ class SeminarApproval extends Model
     }
 
     // Scopes
+    public function scopeApproved($query)
+    {
+        return $query->where('status', 'approved');
+    }
+
+    public function scopeRejected($query)
+    {
+        return $query->where('status', 'rejected');
+    }
+
+    public function scopePending($query)
+    {
+        return $query->where('status', 'pending');
+    }
+
+    // Legacy scopes for backward compatibility
     public function scopeSetuju($query)
     {
-        return $query->where('status', 'setuju');
+        return $query->where('status', 'approved');
     }
 
     public function scopeDitolak($query)
     {
-        return $query->where('status', 'ditolak');
+        return $query->where('status', 'rejected');
     }
 
     public function scopeMenunggu($query)
     {
-        return $query->where('status', 'menunggu');
+        return $query->where('status', 'pending');
     }
 
     // Helpers
     public function isApproved()
     {
-        return $this->status === 'setuju';
+        return $this->status === 'approved';
     }
 
     public function isRejected()
     {
-        return $this->status === 'ditolak';
+        return $this->status === 'rejected';
     }
 
     public function isPending()
     {
-        return $this->status === 'menunggu';
+        return $this->status === 'pending';
+    }
+
+    /**
+     * Get formatted available dates for display
+     */
+    public function getFormattedAvailableDates(): ?array
+    {
+        if (!$this->available_dates) {
+            return null;
+        }
+
+        return array_map(function ($date) {
+            return \Carbon\Carbon::parse($date)->format('d M Y');
+        }, $this->available_dates);
     }
 }

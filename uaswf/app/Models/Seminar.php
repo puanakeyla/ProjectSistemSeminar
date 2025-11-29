@@ -12,18 +12,21 @@ class Seminar extends Model
     protected $fillable = [
         'mahasiswa_id',
         'judul',
-        'jenis_seminar',
+        'tipe',
         'pembimbing1_id',
         'pembimbing2_id',
         'penguji_id',
-        'file_persyaratan',
+        'abstrak',
+        'file_berkas',
         'status',
-        'alasan_ditolak',
+        'skor_total',
+        'verified_at',
     ];
 
     protected $casts = [
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'verified_at' => 'datetime',
     ];
 
     // Relationships
@@ -67,7 +70,7 @@ class Seminar extends Model
         return $this->hasMany(SeminarAttendance::class);
     }
 
-    // Scopes
+    // Query Scopes
     public function scopeMenunggu($query)
     {
         return $query->where('status', 'menunggu');
@@ -83,24 +86,40 @@ class Seminar extends Model
         return $query->where('status', 'ditolak');
     }
 
-    // Helpers
-    public function getAllDosenIds()
+    // Helpers / Presenters
+    public function getJenisSeminarDisplay(): string
     {
-        return [
-            $this->pembimbing1_id,
-            $this->pembimbing2_id,
-            $this->penguji_id
-        ];
+        return match ($this->tipe) {
+            'proposal' => 'Seminar Proposal',
+            'hasil' => 'Seminar Hasil',
+            'kompre' => 'Komprehensif',
+            default => ucfirst($this->tipe ?? '-')
+        };
     }
 
-    public function isApprovedByAllDosen()
+    public function getStatusDisplay(): string
     {
-        return $this->approvals()->where('status', 'setuju')->count() === 3;
+        return match ($this->status) {
+            'draft' => 'Draft',
+            'pending_verification' => 'Menunggu Verifikasi',
+            'approved' => 'Disetujui',
+            'scheduled' => 'Terjadwal',
+            'finished' => 'Selesai',
+            'revising' => 'Revisi',
+            default => ucfirst($this->status ?? '-')
+        };
     }
 
-    public function getApprovalStatus($dosenId)
+    public function getStatusColor(): string
     {
-        $approval = $this->approvals()->where('dosen_id', $dosenId)->first();
-        return $approval ? $approval->status : 'menunggu';
+        return match ($this->status) {
+            'draft' => 'gray',
+            'pending_verification' => 'yellow',
+            'approved' => 'green',
+            'scheduled' => 'blue',
+            'finished' => 'emerald',
+            'revising' => 'orange',
+            default => 'gray'
+        };
     }
 }

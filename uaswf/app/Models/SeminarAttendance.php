@@ -12,12 +12,14 @@ class SeminarAttendance extends Model
     protected $fillable = [
         'mahasiswa_id',
         'seminar_schedule_id',
-        'waktu_absen',
-        'metode_absen', // qr, manual
+        'waktu_scan',
+        'metode', // qr, manual
+        'status', // present, late, invalid
+        'qr_token',
     ];
 
     protected $casts = [
-        'waktu_absen' => 'datetime',
+        'waktu_scan' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
@@ -35,7 +37,14 @@ class SeminarAttendance extends Model
 
     public function seminar()
     {
-        return $this->hasOneThrough(Seminar::class, SeminarSchedule::class, 'id', 'id', 'seminar_schedule_id', 'seminar_id');
+        return $this->hasOneThrough(
+            Seminar::class,
+            SeminarSchedule::class,
+            'id', // SeminarSchedule primary key
+            'id', // Seminar primary key
+            'seminar_schedule_id', // Foreign key on attendance
+            'seminar_id' // Foreign key on schedule
+        );
     }
 
     // Scopes
@@ -51,17 +60,17 @@ class SeminarAttendance extends Model
 
     public function scopeToday($query)
     {
-        return $query->whereDate('waktu_absen', today());
+        return $query->whereDate('waktu_scan', today());
     }
 
     // Helpers
     public function isQRAttendance()
     {
-        return $this->metode_absen === 'qr';
+        return $this->metode === 'qr';
     }
 
     public function isManualAttendance()
     {
-        return $this->metode_absen === 'manual';
+        return $this->metode === 'manual';
     }
 }

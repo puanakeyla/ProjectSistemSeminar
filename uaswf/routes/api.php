@@ -14,6 +14,7 @@ use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Admin\AttendanceController as AdminAttendanceController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\QRController as AdminQRController;
+use App\Http\Controllers\Admin\RevisionController as AdminRevisionController;
 use App\Http\Controllers\Admin\ScheduleController as AdminScheduleController;
 use App\Http\Controllers\Admin\VerificationController as AdminVerificationController;
 
@@ -147,6 +148,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/attendances/manual', [AdminAttendanceController::class, 'manualAttendance']);
         Route::delete('/attendances/{attendanceId}', [AdminAttendanceController::class, 'destroy']);
         Route::get('/attendances/mahasiswa-list', [AdminAttendanceController::class, 'getMahasiswaList']);
+        
+        // Revisions
+        Route::get('/revisions', [AdminRevisionController::class, 'index']);
+        Route::get('/revisions/{id}', [AdminRevisionController::class, 'show']);
+        Route::post('/revisions/{id}/validate', [AdminRevisionController::class, 'validate']);
+        Route::get('/revisions/statistics', [AdminRevisionController::class, 'statistics']);
     });
 
     // ==================== SEMINAR OWNER PROTECTED ROUTES ====================

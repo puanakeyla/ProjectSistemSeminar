@@ -97,11 +97,14 @@
 .status-badge.pending {
   background: #fff3cd;
   color: #856404;
-}
-
 .status-badge.rejected {
   background: #f8d7da;
   color: #721c24;
+}
+
+.status-badge.revision {
+  background: #fff3cd;
+  color: #856404;
 }
 
 .status-card-body {
@@ -112,6 +115,7 @@
   display: flex;
   margin-bottom: 12px;
   gap: 10px;
+  align-items: flex-start;
 }
 
 .info-row:last-child {
@@ -123,35 +127,128 @@
   color: #7f8c8d;
   font-weight: 500;
   min-width: 150px;
+  flex-shrink: 0;
 }
 
 .info-value {
   font-size: 14px;
   color: #2c3e50;
+  flex: 1;
 }
 
-.status-card-footer {
-  padding: 20px 30px;
+/* Approval Section */
+.approval-section {
+  margin-top: 20px;
+  padding: 15px;
   background: #f8f9fa;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.btn-detail {
-  padding: 10px 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
   border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
 }
 
-.btn-detail:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+.approval-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.approval-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 15px;
+  background: white;
+  border-radius: 6px;
+  border-left: 3px solid #ddd;
+}
+
+.approval-item .approval-role {
+  font-size: 13px;
+  font-weight: 600;
+  color: #2c3e50;
+  min-width: 130px;
+}
+
+.approval-item .approval-name {
+  font-size: 13px;
+  color: #7f8c8d;
+  flex: 1;
+}
+
+.approval-item .approval-status {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 12px;
+}
+
+.approval-item .approval-status.approved {
+  background: #d4edda;
+  color: #155724;
+}
+
+.approval-item .approval-status.rejected {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.approval-item .approval-status.pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+/* Schedule Info */
+.schedule-info {
+  margin-top: 15px;
+  padding: 15px;
+  background: #e7f3ff;
+  border-radius: 8px;
+  border-left: 3px solid #3498db;
+}
+
+.schedule-details {
+  margin-top: 10px;
+}
+
+.schedule-details p {
+  margin: 5px 0;
+  font-size: 13px;
+  color: #2c3e50;
+}
+
+/* Admin Status */
+.admin-status {
+  font-weight: 600;
+}
+
+.admin-status.approved {
+  color: #27ae60;
+}
+
+.admin-status.rejected {
+  color: #e74c3c;
+}
+
+.admin-status.pending {
+  color: #f39c12;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 10px;
+}
+
+.empty-state p {
+  font-size: 18px;
+  color: #7f8c8d;
+  margin-bottom: 10px;
+}
+
+.empty-state small {
+  font-size: 14px;
+  color: #95a5a6;
 }
 
 @media (max-width: 768px) {

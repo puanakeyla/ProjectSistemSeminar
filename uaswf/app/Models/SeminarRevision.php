@@ -14,6 +14,7 @@ class SeminarRevision extends Model
         'file_revisi',
         'catatan_mahasiswa',
         'catatan_dosen',
+        'catatan_admin',
         'status',
         'tanggal_pengumpulan',
         'tanggal_verifikasi',

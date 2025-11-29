@@ -14,237 +14,146 @@ use Illuminate\Validation\Rule;
 class SeminarController extends Controller
 {
     /**
-     * Get all seminars for current mahasiswa
+     * List seminars milik mahasiswa login
      */
     public function index(Request $request): JsonResponse
     {
-        $seminars = Seminar::with(['pembimbing1', 'pembimbing2', 'penguji', 'approvals', 'schedule'])
+        $seminars = Seminar::with(['schedule'])
             ->where('mahasiswa_id', $request->user()->id)
-            ->orderBy('created_at', 'desc')
+            ->orderByDesc('created_at')
             ->get()
-            ->map(function ($seminar) {
-                return $this->formatSeminarData($seminar);
-            });
+            ->map(fn($s) => $this->mapSeminar($s));
 
         return response()->json([
-            'message' => 'Seminars retrieved successfully',
-            'data' => $seminars
+            'message' => 'Seminars retrieved',
+            'data' => $seminars,
         ]);
     }
 
-    /**
-     * Get specific seminar
-     */
-    public function show(Request $request, $id): JsonResponse
+    /** Show single seminar */
+    public function show(Request $request, int $id): JsonResponse
     {
-        $seminar = Seminar::with(['pembimbing1', 'pembimbing2', 'penguji', 'approvals', 'schedule', 'revisions'])
+        $seminar = Seminar::with(['schedule'])
             ->where('mahasiswa_id', $request->user()->id)
             ->findOrFail($id);
 
         return response()->json([
-            'message' => 'Seminar retrieved successfully',
-            'data' => $this->formatSeminarData($seminar, true)
+            'message' => 'Seminar detail',
+            'data' => $this->mapSeminar($seminar, true),
         ]);
     }
 
-    /**
-     * Create new seminar submission
-     */
+    /** Store new seminar with dosen selection and file upload */
     public function store(Request $request): JsonResponse
     {
         $user = $request->user();
-
-        // Validate request
         $validated = $request->validate([
-            'judul' => 'required|string|max:500',
-            'jenis_seminar' => ['required', Rule::in(['proposal', 'hasil', 'kompre'])],
+            'judul' => 'required|string|max:255',
+            'tipe' => ['required', Rule::in(['proposal','hasil','kompre'])],
+            'abstrak' => 'nullable|string',
             'pembimbing1_id' => 'required|exists:users,id',
-            'pembimbing2_id' => 'required|exists:users,id',
-            'penguji_id' => 'required|exists:users,id',
-            'file_persyaratan' => 'required|file|mimes:pdf|max:10240', // 10MB max
+            'pembimbing2_id' => 'required|exists:users,id|different:pembimbing1_id',
+            'penguji_id' => 'required|exists:users,id|different:pembimbing1_id,pembimbing2_id',
+            'file_berkas' => 'required|file|mimes:pdf,zip|max:10240', // 10MB
         ]);
 
-        // Check if pembimbing and penguji are dosen
-        $this->validateDosen($validated['pembimbing1_id'], 'Pembimbing 1');
-        $this->validateDosen($validated['pembimbing2_id'], 'Pembimbing 2');
-        $this->validateDosen($validated['penguji_id'], 'Penguji');
-
         // Upload file
-        $filePath = $request->file('file_persyaratan')->store('seminar_files');
+        $filePath = null;
+        if ($request->hasFile('file_berkas')) {
+            $file = $request->file('file_berkas');
+            $fileName = time() . '_' . $user->npm . '_' . $file->getClientOriginalName();
+            $filePath = $file->storeAs('seminar_berkas', $fileName, 'public');
+        }
 
         // Create seminar
         $seminar = Seminar::create([
             'mahasiswa_id' => $user->id,
-            'judul' => $validated['judul'],
-            'jenis_seminar' => $validated['jenis_seminar'],
             'pembimbing1_id' => $validated['pembimbing1_id'],
             'pembimbing2_id' => $validated['pembimbing2_id'],
             'penguji_id' => $validated['penguji_id'],
-            'file_persyaratan' => $filePath,
+            'judul' => $validated['judul'],
+            'tipe' => $validated['tipe'],
+            'abstrak' => $validated['abstrak'] ?? null,
+            'file_berkas' => $filePath,
             'status' => 'menunggu',
         ]);
 
-        // Create approval records
+        // Create approval records for all 3 dosen
         $dosenIds = [
-            $validated['pembimbing1_id'],
-            $validated['pembimbing2_id'],
-            $validated['penguji_id']
+            ['dosen_id' => $validated['pembimbing1_id'], 'peran' => 'Pembimbing 1'],
+            ['dosen_id' => $validated['pembimbing2_id'], 'peran' => 'Pembimbing 2'],
+            ['dosen_id' => $validated['penguji_id'], 'peran' => 'Penguji'],
         ];
 
-        foreach ($dosenIds as $dosenId) {
+        foreach ($dosenIds as $dosen) {
             SeminarApproval::create([
                 'seminar_id' => $seminar->id,
-                'dosen_id' => $dosenId,
-                'status' => 'menunggu',
+                'dosen_id' => $dosen['dosen_id'],
+                'peran' => $dosen['peran'],
+                'status' => 'pending',
             ]);
         }
 
         return response()->json([
-            'message' => 'Pengajuan seminar berhasil dikirim',
-            'data' => $this->formatSeminarData($seminar->load(['pembimbing1', 'pembimbing2', 'penguji', 'approvals']))
+            'message' => 'Pengajuan seminar berhasil dikirim. Menunggu persetujuan dosen.',
+            'data' => $this->mapSeminar($seminar->fresh(['pembimbing1', 'pembimbing2', 'penguji'])),
         ], 201);
     }
 
-    /**
-     * Get available dosen for dropdown
-     */
-    public function getDosenList(): JsonResponse
+    /** Status seminar (ringkas) */
+    public function getStatus(Request $request, int $id): JsonResponse
     {
-        $dosens = User::dosen()
-            ->select('id', 'name', 'nidn')
-            ->orderBy('name')
-            ->get()
-            ->map(function ($dosen) {
-                return [
-                    'id' => $dosen->id,
-                    'name' => $dosen->name,
-                    'nidn' => $dosen->nidn,
-                    'display' => $dosen->name . ' (' . $dosen->nidn . ')'
-                ];
-            });
-
+        $seminar = Seminar::where('mahasiswa_id', $request->user()->id)->findOrFail($id);
         return response()->json([
-            'message' => 'Dosen list retrieved successfully',
-            'data' => $dosens
-        ]);
-    }
-
-    /**
-     * Get seminar status with approval details
-     */
-    public function getStatus(Request $request, $id): JsonResponse
-    {
-        $seminar = Seminar::with(['approvals.dosen', 'pembimbing1', 'pembimbing2', 'penguji'])
-            ->where('mahasiswa_id', $request->user()->id)
-            ->findOrFail($id);
-
-        $approvalDetails = $seminar->approvals->map(function ($approval) {
-            return [
-                'dosen_id' => $approval->dosen_id,
-                'dosen_name' => $approval->dosen->name,
-                'status' => $approval->status,
-                'status_display' => $approval->getStatusDisplay(),
-                'status_color' => $approval->getStatusColor(),
-                'alasan' => $approval->alasan,
-                'updated_at' => $approval->updated_at->format('d M Y H:i'),
-            ];
-        });
-
-        return response()->json([
-            'message' => 'Seminar status retrieved successfully',
+            'message' => 'Seminar status',
             'data' => [
-                'seminar' => $this->formatSeminarData($seminar),
-                'approval_details' => $approvalDetails,
-                'overall_status' => [
-                    'status' => $seminar->status,
-                    'status_display' => $seminar->getStatusDisplay(),
-                    'status_color' => $seminar->getStatusColor(),
-                    'is_approved_by_all' => $seminar->isApprovedByAllDosen(),
-                ]
+                'id' => $seminar->id,
+                'status' => $seminar->status,
+                'status_display' => $seminar->getStatusDisplay(),
+                'status_color' => $seminar->getStatusColor(),
             ]
         ]);
     }
 
-    /**
-     * Validate that user is a dosen
-     */
-    private function validateDosen($userId, $roleName): void
+    /** Get list of dosen for selection */
+    public function getDosenList(): JsonResponse
     {
-        $dosen = User::find($userId);
-        if (!$dosen || !$dosen->isDosen()) {
-            throw \Illuminate\Validation\ValidationException::withMessages([
-                strtolower($roleName) => ["User yang dipilih harus berperan sebagai dosen."]
-            ]);
-        }
+        $dosenList = User::where('role', 'dosen')
+            ->select('id', 'name', 'email', 'npm')
+            ->orderBy('name')
+            ->get();
+
+        return response()->json([
+            'message' => 'Dosen list retrieved successfully',
+            'data' => $dosenList
+        ]);
     }
 
-    /**
-     * Format seminar data for response
-     */
-    private function formatSeminarData(Seminar $seminar, $detailed = false): array
+    private function mapSeminar(Seminar $s, bool $detailed = false): array
     {
         $data = [
-            'id' => $seminar->id,
-            'judul' => $seminar->judul,
-            'jenis_seminar' => $seminar->jenis_seminar,
-            'jenis_seminar_display' => $seminar->getJenisSeminarDisplay(),
-            'status' => $seminar->status,
-            'status_display' => $seminar->getStatusDisplay(),
-            'status_color' => $seminar->getStatusColor(),
-            'file_persyaratan' => $seminar->file_persyaratan,
-            'file_persyaratan_url' => Storage::url($seminar->file_persyaratan),
-            'created_at' => $seminar->created_at->format('d M Y H:i'),
-            'updated_at' => $seminar->updated_at->format('d M Y H:i'),
-            'pembimbing1' => [
-                'id' => $seminar->pembimbing1->id,
-                'name' => $seminar->pembimbing1->name,
-                'nidn' => $seminar->pembimbing1->nidn,
-            ],
-            'pembimbing2' => [
-                'id' => $seminar->pembimbing2->id,
-                'name' => $seminar->pembimbing2->name,
-                'nidn' => $seminar->pembimbing2->nidn,
-            ],
-            'penguji' => [
-                'id' => $seminar->penguji->id,
-                'name' => $seminar->penguji->name,
-                'nidn' => $seminar->penguji->nidn,
-            ],
+            'id' => $s->id,
+            'judul' => $s->judul,
+            'tipe' => $s->tipe,
+            'tipe_display' => $s->getJenisSeminarDisplay(),
+            'status' => $s->status,
+            'status_display' => $s->getStatusDisplay(),
+            'status_color' => $s->getStatusColor(),
+            'created_at' => $s->created_at?->toIso8601String(),
         ];
 
+        if ($s->schedule) {
+            $data['schedule'] = [
+                'waktu_mulai' => $s->schedule->waktu_mulai?->toIso8601String(),
+                'durasi_menit' => $s->schedule->durasi_menit,
+                'ruang' => $s->schedule->ruang,
+                'status' => $s->schedule->status,
+            ];
+        }
+
         if ($detailed) {
-            $data['approvals'] = $seminar->approvals->map(function ($approval) {
-                return [
-                    'dosen_id' => $approval->dosen_id,
-                    'dosen_name' => $approval->dosen->name,
-                    'status' => $approval->status,
-                    'status_display' => $approval->getStatusDisplay(),
-                    'alasan' => $approval->alasan,
-                    'updated_at' => $approval->updated_at->format('d M Y H:i'),
-                ];
-            });
-
-            $data['schedule'] = $seminar->schedule ? [
-                'ruangan' => $seminar->schedule->ruangan,
-                'tanggal_jam' => $seminar->schedule->tanggal_jam->format('Y-m-d\TH:i'),
-                'tanggal_jam_display' => $seminar->schedule->getFormattedDateTime(),
-                'qr_code' => $seminar->schedule->qr_code,
-            ] : null;
-
-            $data['revisions'] = $seminar->revisions->map(function ($revision) {
-                return [
-                    'id' => $revision->id,
-                    'file_revisi' => $revision->file_revisi,
-                    'file_revisi_url' => Storage::url($revision->file_revisi),
-                    'status' => $revision->status,
-                    'status_display' => $revision->getStatusDisplay(),
-                    'status_color' => $revision->getStatusColor(),
-                    'catatan_mahasiswa' => $revision->catatan_mahasiswa,
-                    'catatan_dosen' => $revision->catatan_dosen,
-                    'tanggal_pengumpulan' => $revision->tanggal_pengumpulan?->format('d M Y H:i'),
-                    'tanggal_verifikasi' => $revision->tanggal_verifikasi?->format('d M Y H:i'),
-                ];
-            });
+            $data['abstrak'] = $s->abstrak;
+            $data['skor_total'] = $s->skor_total;
         }
 
         return $data;

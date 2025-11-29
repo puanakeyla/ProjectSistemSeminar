@@ -117,27 +117,37 @@ class ApprovalController extends Controller
     public function updateApproval(Request $request, $id): JsonResponse
     {
         $validated = $request->validate([
-            'status' => ['required', Rule::in(['setuju', 'ditolak'])],
-            'alasan' => 'required_if:status,ditolak|nullable|string|max:1000',
+            'status' => ['required', Rule::in(['approved', 'rejected'])],
+            'catatan' => 'nullable|string|max:1000',
+            'available_dates' => 'required_if:status,approved|nullable|array|min:1',
+            'available_dates.*' => 'date|after:today',
         ]);
 
         $approval = SeminarApproval::with(['seminar'])
             ->where('dosen_id', $request->user()->id)
-            ->where('status', 'menunggu') // Only allow updating pending approvals
+            ->where('status', 'pending') // Only allow updating pending approvals
             ->findOrFail($id);
 
         // Update approval
-        $approval->update([
+        $updateData = [
             'status' => $validated['status'],
-            'alasan' => $validated['alasan'] ?? null,
-        ]);
+            'catatan' => $validated['catatan'] ?? null,
+        ];
+
+        // Add available_dates and approved_at if approved
+        if ($validated['status'] === 'approved') {
+            $updateData['available_dates'] = $validated['available_dates'];
+            $updateData['approved_at'] = now();
+        }
+
+        $approval->update($updateData);
 
         // Check if all approvals are completed
         $this->checkSeminarOverallStatus($approval->seminar);
 
         return response()->json([
-            'message' => $validated['status'] === 'setuju' 
-                ? 'Seminar berhasil disetujui' 
+            'message' => $validated['status'] === 'approved' 
+                ? 'Seminar berhasil disetujui. Tanggal ketersediaan Anda telah tersimpan.' 
                 : 'Seminar berhasil ditolak',
             'data' => $this->formatApprovalData($approval->fresh(['seminar.mahasiswa']), true)
         ]);
@@ -186,7 +196,7 @@ class ApprovalController extends Controller
         ]);
 
         $user = $request->user();
-        $schedule = \App\Models\SeminarSchedule::with(['seminar'])->find($validated['seminar_schedule_id']);
+        $schedule = \App\Models\SeminarSchedule::with(['seminar'])->findOrFail($validated['seminar_schedule_id']);
 
         // Check if dosen is involved in this seminar
         $seminar = $schedule->seminar;
@@ -196,13 +206,26 @@ class ApprovalController extends Controller
             ], 403);
         }
 
-        // Here you would typically save to a separate table for dosen attendance
-        // For now, we'll just return success message
-        // In real implementation, you might have a `dosen_attendances` table
+        // Determine dosen role in this seminar
+        $role = $this->getDosenRole($seminar, $user);
+
+        // Create or update dosen attendance
+        $attendance = \App\Models\DosenAttendance::updateOrCreate(
+            [
+                'seminar_schedule_id' => $validated['seminar_schedule_id'],
+                'dosen_id' => $user->id,
+            ],
+            [
+                'role' => $role,
+                'status' => $validated['status'],
+                'alasan' => $validated['alasan'] ?? null,
+                'confirmed_at' => now(),
+            ]
+        );
 
         $statusMessage = $validated['status'] === 'hadir' 
-            ? 'Konfirmasi kehadiran berhasil' 
-            : 'Konfirmasi ketidakhadiran berhasil';
+            ? 'Konfirmasi kehadiran berhasil dicatat' 
+            : 'Konfirmasi ketidakhadiran berhasil dicatat. Admin akan diberitahu.';
 
         return response()->json([
             'message' => $statusMessage,
@@ -210,7 +233,9 @@ class ApprovalController extends Controller
                 'seminar_title' => $seminar->judul,
                 'tanggal_jam' => $schedule->getFormattedDateTime(),
                 'ruangan' => $schedule->ruangan,
+                'role' => $attendance->getRoleDisplay(),
                 'status' => $validated['status'],
+                'status_display' => $attendance->getStatusDisplay(),
                 'alasan' => $validated['alasan'] ?? null,
                 'confirmed_at' => now()->format('d M Y H:i'),
             ]
@@ -267,18 +292,22 @@ class ApprovalController extends Controller
         $approvals = $seminar->approvals;
 
         // If any approval is rejected, seminar is rejected
-        if ($approvals->where('status', 'ditolak')->count() > 0) {
-            $seminar->update(['status' => 'ditolak']);
+        if ($approvals->where('status', 'rejected')->count() > 0) {
+            $seminar->update(['status' => 'rejected']);
             return;
         }
 
         // If all approvals are approved, seminar is approved
-        if ($approvals->where('status', 'setuju')->count() === 3) {
-            $seminar->update(['status' => 'disetujui']);
+        $totalApprovals = $approvals->count();
+        if ($totalApprovals > 0 && $approvals->where('status', 'approved')->count() === $totalApprovals) {
+            $seminar->update([
+                'status' => 'approved',
+                'verified_at' => now()
+            ]);
             return;
         }
 
-        // Otherwise, status remains 'menunggu'
+        // Otherwise, status remains 'pending_verification'
     }
 
     /**
@@ -306,23 +335,25 @@ class ApprovalController extends Controller
             'mahasiswa_name' => $seminar->mahasiswa->name,
             'mahasiswa_npm' => $seminar->mahasiswa->npm,
             'judul' => $seminar->judul,
-            'jenis_seminar' => $seminar->getJenisSeminarDisplay(),
+            'tipe' => $seminar->tipe,
+            'abstrak' => $seminar->abstrak,
+            'peran' => $approval->peran,
             'status' => $approval->status,
-            'status_display' => $approval->getStatusDisplay(),
-            'status_color' => $approval->getStatusColor(),
             'created_at' => $approval->created_at->format('d M Y'),
             'updated_at' => $approval->updated_at->format('d M Y H:i'),
             'days_pending' => $approval->created_at->diffInDays(now()),
         ];
 
         if ($detailed) {
-            $data['alasan'] = $approval->alasan;
+            $data['catatan'] = $approval->catatan;
+            $data['available_dates'] = $approval->available_dates;
+            $data['approved_at'] = $approval->approved_at?->format('d M Y H:i');
             $data['seminar_details'] = [
-                'file_persyaratan' => $seminar->file_persyaratan,
-                'pembimbing1' => $seminar->pembimbing1->name,
-                'pembimbing2' => $seminar->pembimbing2->name,
-                'penguji' => $seminar->penguji->name,
-                'seminar_status' => $seminar->getStatusDisplay(),
+                'pembimbing1' => $seminar->pembimbing1?->name,
+                'pembimbing2' => $seminar->pembimbing2?->name,
+                'penguji' => $seminar->penguji?->name,
+                'seminar_status' => $seminar->status,
+                'skor_total' => $seminar->skor_total,
             ];
         }
 
@@ -354,6 +385,21 @@ class ApprovalController extends Controller
             ] : null,
             'approval_status' => $seminar->getApprovalStatus($user->id),
         ];
+    }
+
+    /**
+     * Get dosen role in seminar
+     */
+    private function getDosenRole(Seminar $seminar, $user): string
+    {
+        if ($seminar->pembimbing1_id == $user->id) {
+            return 'pembimbing1';
+        } elseif ($seminar->pembimbing2_id == $user->id) {
+            return 'pembimbing2';
+        } elseif ($seminar->penguji_id == $user->id) {
+            return 'penguji';
+        }
+        return 'unknown';
     }
 
     /**
