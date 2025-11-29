@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import './Dashboard.css';
 import { adminAPI } from '../../services/api';
+import { BarChart, Clock, Calendar, CheckCircle } from 'lucide-react';
 
 function Dashboard() {
   const [stats, setStats] = useState({
@@ -92,7 +93,7 @@ function Dashboard() {
       {/* Stats Grid */}
       <div className="stats-grid">
         <div className="stat-card primary">
-          <div className="stat-icon">📊</div>
+          <div className="stat-icon"><BarChart className="w-7 h-7" /></div>
           <div className="stat-content">
             <h3>{stats.totalSeminars}</h3>
             <p>Total Seminar</p>
@@ -101,7 +102,7 @@ function Dashboard() {
         </div>
 
         <div className="stat-card warning">
-          <div className="stat-icon">⏳</div>
+          <div className="stat-icon"><Clock className="w-7 h-7" /></div>
           <div className="stat-content">
             <h3>{stats.pendingVerification}</h3>
             <p>Menunggu Verifikasi</p>
@@ -110,7 +111,7 @@ function Dashboard() {
         </div>
 
         <div className="stat-card success">
-          <div className="stat-icon">📅</div>
+          <div className="stat-icon"><Calendar className="w-7 h-7" /></div>
           <div className="stat-content">
             <h3>{stats.scheduledToday}</h3>
             <p>Jadwal Hari Ini</p>
@@ -119,7 +120,7 @@ function Dashboard() {
         </div>
 
         <div className="stat-card info">
-          <div className="stat-icon">✅</div>
+          <div className="stat-icon"><CheckCircle className="w-7 h-7" /></div>
           <div className="stat-content">
             <h3>{stats.totalAttendance}</h3>
             <p>Total Kehadiran</p>

@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import './Schedule.css';
 import { adminAPI } from '../../services/api';
+import { Calendar, CheckCircle, XCircle } from 'lucide-react';
+import { FileText } from 'lucide-react';
 
 function Schedule() {
   const [schedules, setSchedules] = useState([]);
@@ -170,9 +172,9 @@ function Schedule() {
 
   const getStatusBadge = (status) => {
     const badges = {
-      scheduled: { icon: '📅', label: 'Terjadwal', class: 'scheduled' },
-      completed: { icon: '✅', label: 'Selesai', class: 'completed' },
-      cancelled: { icon: '❌', label: 'Dibatalkan', class: 'cancelled' }
+      scheduled: { icon: <Calendar className="w-5 h-5" />, label: 'Scheduled', class: 'scheduled' },
+      completed: { icon: <CheckCircle className="w-5 h-5" />, label: 'Completed', class: 'completed' },
+      cancelled: { icon: <XCircle className="w-5 h-5" />, label: 'Cancelled', class: 'cancelled' }
     };
     return badges[status] || badges.scheduled;
   };
@@ -210,7 +212,7 @@ function Schedule() {
 
         {availableSeminars.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-icon">📋</div>
+            <div className="empty-icon"><FileText className="w-8 h-8" /></div>
             <h3>Tidak Ada Seminar</h3>
             <p>Semua seminar yang sudah diverifikasi telah dijadwalkan</p>
           </div>
@@ -278,7 +280,7 @@ function Schedule() {
 
         {schedules.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-icon">📅</div>
+            <div className="empty-icon"><Calendar className="w-8 h-8" /></div>
             <h3>Belum Ada Jadwal</h3>
             <p>Jadwal yang dibuat akan muncul di sini</p>
           </div>

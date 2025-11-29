@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import './Revision.css';
 import { adminAPI } from '../../services/api';
+import { FileText } from 'lucide-react';
 
 function Revision() {
   const [revisions, setRevisions] = useState([]);
@@ -110,7 +111,7 @@ function Revision() {
 
           {revisions.length === 0 ? (
             <div className="empty-state">
-              <div className="empty-icon">📄</div>
+              <div className="empty-icon"><FileText className="w-8 h-8" /></div>
               <h3>Tidak Ada Revisi</h3>
               <p>Belum ada revisi yang diajukan</p>
             </div>
@@ -175,7 +176,7 @@ function Revision() {
         <div className="detail-panel">
           {!selectedRevision ? (
             <div className="no-selection">
-              <div className="no-selection-icon">📄</div>
+              <div className="no-selection-icon"><FileText className="w-8 h-8" /></div>
               <h3>Pilih Revisi</h3>
               <p>Pilih revisi dari daftar untuk melihat detail dan melakukan validasi</p>
             </div>

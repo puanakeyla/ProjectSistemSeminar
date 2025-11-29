@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import './Attendance.css';
 import { adminAPI } from '../../services/api';
+import { Calendar, CheckCircle } from 'lucide-react';
 
 function Attendance() {
   const [attendances, setAttendances] = useState([]);
@@ -171,7 +172,7 @@ function Attendance() {
 
           {schedules.length === 0 ? (
             <div className="empty-state">
-              <div className="empty-icon">📅</div>
+              <div className="empty-icon"><Calendar className="w-8 h-8" /></div>
               <p>Tidak ada jadwal</p>
             </div>
           ) : (
@@ -224,7 +225,7 @@ function Attendance() {
 
           {attendances.length === 0 ? (
             <div className="empty-state">
-              <div className="empty-icon">✅</div>
+              <div className="empty-icon"><CheckCircle className="w-8 h-8" /></div>
               <h3>Tidak Ada Data</h3>
               <p>{selectedSchedule ? 'Belum ada yang absen untuk seminar ini' : 'Pilih jadwal untuk melihat absensi'}</p>
             </div>

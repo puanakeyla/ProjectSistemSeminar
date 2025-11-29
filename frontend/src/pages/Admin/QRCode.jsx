@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import './QRCode.css';
 import { adminAPI } from '../../services/api';
+import { Calendar, Smartphone } from 'lucide-react';
 
 function QRCode() {
   const [schedules, setSchedules] = useState([]);
@@ -152,7 +153,7 @@ function QRCode() {
 
           {schedules.length === 0 ? (
             <div className="empty-state">
-              <div className="empty-icon">📅</div>
+              <div className="empty-icon"><Calendar className="w-8 h-8" /></div>
               <h3>Tidak Ada Jadwal</h3>
               <p>Belum ada jadwal seminar yang terjadwal</p>
             </div>
@@ -239,7 +240,7 @@ function QRCode() {
         <div className="qr-display-panel">
           {!selectedSchedule ? (
             <div className="no-selection">
-              <div className="no-selection-icon">📱</div>
+              <div className="no-selection-icon"><Smartphone className="w-8 h-8" /></div>
               <h3>Pilih Jadwal</h3>
               <p>Pilih jadwal dari daftar untuk generate atau melihat QR code</p>
             </div>
