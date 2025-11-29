@@ -10,29 +10,8 @@ function Login({ onLogin }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError('');
-    
-    try {
-      // Call Laravel API
-      const response = await authAPI.login(email, password);
-      
-      // Save token and user data
-      localStorage.setItem('token', response.token);
-      localStorage.setItem('user', JSON.stringify(response.user));
-      
-      // Call parent callback
-      onLogin(response.user);
-      
-      alert(`Login berhasil! Selamat datang, ${response.user.name}`);
-    } catch (err) {
-      console.error('Login error:', err);
-      const errorMsg = err.response?.data?.message || 'Email atau password salah!';
-      setError(errorMsg);
-      alert(errorMsg);
-    } finally {
-      setLoading(false);
-    }
+
+}
   };
 
   return (
@@ -46,11 +25,11 @@ function Login({ onLogin }) {
         </div>
         <form onSubmit={handleSubmit}>
           {error && (
-            <div style={{ 
-              padding: '10px', 
-              marginBottom: '15px', 
-              backgroundColor: '#fee', 
-              color: '#c33', 
+            <div style={{
+              padding: '10px',
+              marginBottom: '15px',
+              backgroundColor: '#fee',
+              color: '#c33',
               borderRadius: '5px',
               fontSize: '14px'
             }}>
@@ -83,7 +62,7 @@ function Login({ onLogin }) {
             {loading ? 'Loading...' : 'Masuk'}
           </button>
         </form>
-        
+
       </div>
     </div>
   );
