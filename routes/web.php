@@ -23,7 +23,12 @@ Route::get('/mahasiswa', function () {
 
 // Main application route - this will be handled by React
 Route::get('/{any?}', function () {
-    return view('welcome');
+    return response()->json([
+        'message' => 'SEMAR Backend API is running!',
+        'frontend' => 'Please access the React frontend application',
+        'api_docs' => 'API endpoints are available at /api/*',
+        'login_test' => 'Test login at /api/login with {"email": "mahasiswa@semar.com", "password": "password"}'
+    ]);
 })->where('any', '.*');
 
 // Alternative: You can also return a simple message
