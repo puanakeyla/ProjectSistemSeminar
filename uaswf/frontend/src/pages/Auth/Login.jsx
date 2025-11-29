@@ -7,13 +7,13 @@ function Login({ onLogin }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     // DAFTAR USER - BISA LOGIN SEMUA
     const users = [
       { username: 'cindy', password: '12345', name: 'Cindy' },
       { username: 'santi', password: '67890', name: 'Santi' },
       { username: 'putri', password: 'abcde', name: 'Putri' },
-      { username: 'puan', password: 'puan123', name: 'Puan Maharani' },
+      { username: 'puan', password: '123', name: 'Puan Maharani' },
       { username: 'admin', password: 'admin123', name: 'Administrator' },
       { username: 'user1', password: 'user123', name: 'User Satu' },
       { username: 'user2', password: 'user456', name: 'User Dua' }
@@ -64,7 +64,7 @@ function Login({ onLogin }) {
           </div>
           <button type="submit" className="btn-submit">Masuk</button>
         </form>
-        
+
       </div>
     </div>
   );
