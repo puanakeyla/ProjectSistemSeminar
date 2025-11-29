@@ -3,14 +3,6 @@ import { authAPI } from '../../services/api';
 import '../../Login.css';
 import teamworkIllustration from '../../assets/logologin.jpg';
 
-const demoCredentials = [
-  { role: 'Admin', identifier: 'admin@kampus.ac.id', password: 'admin123' },
-  { role: 'Mahasiswa', identifier: '2201001', password: 'mahasiswa123' },
-  { role: 'Dosen 1', identifier: 'dosen1@kampus.ac.id', password: 'dosen123' },
-  { role: 'Dosen 2', identifier: 'dosen2@kampus.ac.id', password: 'dosen123' },
-  { role: 'Dosen 3', identifier: 'dosen3@kampus.ac.id', password: 'dosen123' }
-];
-
 function Login({ onLogin }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
