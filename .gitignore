@@ -19,6 +19,13 @@
 /storage/*.key
 /storage/pail
 /vendor
+/uaswf/vendor
+/uaswf/storage
+/uaswf/bootstrap/cache
+/uaswf/database/database.sqlite
 Homestead.json
 Homestead.yaml
 Thumbs.db
+node_modules/
+**/node_modules/
+
