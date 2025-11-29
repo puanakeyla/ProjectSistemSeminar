@@ -70,6 +70,22 @@ class Seminar extends Model
         return $this->hasMany(SeminarAttendance::class);
     }
 
+    // Query Scopes
+    public function scopeMenunggu($query)
+    {
+        return $query->where('status', 'menunggu');
+    }
+
+    public function scopeDisetujui($query)
+    {
+        return $query->where('status', 'disetujui');
+    }
+
+    public function scopeDitolak($query)
+    {
+        return $query->where('status', 'ditolak');
+    }
+
     // Helpers / Presenters
     public function getJenisSeminarDisplay(): string
     {

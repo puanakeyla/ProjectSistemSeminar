@@ -25,12 +25,21 @@ function Dashboard() {
       setError(null);
 
       // Fetch dashboard statistics
-      const dashboardData = await adminAPI.getDashboard();
-      setStats(dashboardData);
+      const response = await adminAPI.getDashboard();
+      const data = response.data;
 
-      // Fetch recent seminars (pending verification)
-      const seminars = await adminAPI.getPendingVerification();
-      setRecentSeminars(seminars.slice(0, 5)); // Show latest 5
+      // Set stats from API response
+      setStats({
+        totalSeminars: data.seminar_statistics?.total || 0,
+        pendingVerification: data.seminar_statistics?.menunggu || 0,
+        scheduledToday: data.today_seminars?.length || 0,
+        totalAttendance: data.attendance_statistics?.total_attendances || 0,
+        verificationRate: 0,
+        scheduleRate: 0
+      });
+
+      // Set recent seminars
+      setRecentSeminars(data.recent_seminars || []);
       
     } catch (err) {
       console.error('Error fetching dashboard data:', err);

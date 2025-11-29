@@ -30,13 +30,8 @@ function DaftarHadir() {
     }
   };
 
-  const getStatusClass = (status) => {
-    switch(status.toLowerCase()) {
-      case 'hadir': return 'present';
-      case 'tidak hadir': return 'absent';
-      case 'terjadwal': return 'scheduled';
-      default: return '';
-    }
+  const getStatusClass = (metode) => {
+    return metode === 'qr' ? 'present' : 'manual';
   };
 
   if (loading) {
@@ -80,71 +75,73 @@ function DaftarHadir() {
             <p style={{ color: '#94a3b8' }}>Anda belum mengikuti seminar apapun</p>
           </div>
         ) : (
-          <div className="table-responsive">
-            <table className="daftar-hadir-table">
-              <thead>
-                <tr>
-                  <th>No</th>
-                  <th>Jenis Seminar</th>
-                  <th>Mahasiswa Pemateri</th>
-                  <th>Tanggal</th>
-                <th>Waktu</th>
-                <th>Status</th>
-                <th>Keterangan</th>
-              </tr>
-            </thead>
-            <tbody>
-              {daftarHadirList.map((item, index) => (
-                <tr key={item.id}>
-                  <td>{index + 1}</td>
-                  <td>
-                    <span className="jenis-badge">{item.jenis_seminar}</span>
-                  </td>
-                  <td>
-                    <div>
-                      <div>{item.mahasiswa_name}</div>
-                      <small style={{ color: '#64748b' }}>{item.mahasiswa_npm}</small>
-                    </div>
-                  </td>
-                  <td>{item.tanggal_display}</td>
-                  <td>{item.waktu_absen_display}</td>
-                  <td>
-                    <span className={`status-badge ${getStatusClass(item.metode_absen)}`}>
-                      {item.metode_absen === 'qr' ? '🎫 QR Scan' : '✍️ Manual'}
-                    </span>
-                  </td>
-                  <td>{item.ruangan || '-'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="summary-section">
-          <div className="summary-card">
-            <div className="summary-icon">✅</div>
-            <div className="summary-content">
-              <h3>1</h3>
-              <p>Hadir</p>
+          <>
+            <div className="table-responsive">
+              <table className="daftar-hadir-table">
+                <thead>
+                  <tr>
+                    <th>No</th>
+                    <th>Jenis Seminar</th>
+                    <th>Mahasiswa Pemateri</th>
+                    <th>Tanggal</th>
+                    <th>Waktu</th>
+                    <th>Status</th>
+                    <th>Keterangan</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {daftarHadirList.map((item, index) => (
+                    <tr key={item.id}>
+                      <td>{index + 1}</td>
+                      <td>
+                        <span className="jenis-badge">{item.jenis_seminar}</span>
+                      </td>
+                      <td>
+                        <div>
+                          <div>{item.mahasiswa_name}</div>
+                          <small style={{ color: '#64748b' }}>{item.mahasiswa_npm}</small>
+                        </div>
+                      </td>
+                      <td>{item.tanggal_display}</td>
+                      <td>{item.waktu_absen_display}</td>
+                      <td>
+                        <span className={`status-badge ${getStatusClass(item.metode_absen)}`}>
+                          {item.metode_absen === 'qr' ? '🎫 QR Scan' : '✍️ Manual'}
+                        </span>
+                      </td>
+                      <td>{item.ruangan || '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          </div>
 
-          <div className="summary-card">
-            <div className="summary-icon">❌</div>
-            <div className="summary-content">
-              <h3>0</h3>
-              <p>Tidak Hadir</p>
-            </div>
-          </div>
+            <div className="summary-section">
+              <div className="summary-card">
+                <div className="summary-icon">✅</div>
+                <div className="summary-content">
+                  <h3>{daftarHadirList.length}</h3>
+                  <p>Total Hadir</p>
+                </div>
+              </div>
 
-          <div className="summary-card">
-            <div className="summary-icon">📅</div>
-            <div className="summary-content">
-              <h3>1</h3>
-              <p>Terjadwal</p>
+              <div className="summary-card">
+                <div className="summary-icon">📊</div>
+                <div className="summary-content">
+                  <h3>{daftarHadirList.filter(item => item.metode_absen === 'qr').length}</h3>
+                  <p>Via QR Code</p>
+                </div>
+              </div>
+
+              <div className="summary-card">
+                <div className="summary-icon">✍️</div>
+                <div className="summary-content">
+                  <h3>{daftarHadirList.filter(item => item.metode_absen === 'manual').length}</h3>
+                  <p>Manual</p>
+                </div>
+              </div>
             </div>
-            </table>
-          </div>
+          </>
         )}
       </div>
     </div>

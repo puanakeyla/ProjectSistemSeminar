@@ -37,9 +37,9 @@ class DashboardController extends Controller
         // Attendance statistics
         $attendanceStats = [
             'total_attendances' => SeminarAttendance::count(),
-            'qr_attendances' => SeminarAttendance::where('metode_absen', 'qr')->count(),
-            'manual_attendances' => SeminarAttendance::where('metode_absen', 'manual')->count(),
-            'today_attendances' => SeminarAttendance::whereDate('waktu_absen', today())->count(),
+            'qr_attendances' => SeminarAttendance::where('metode', 'qr')->count(),
+            'manual_attendances' => SeminarAttendance::where('metode', 'manual')->count(),
+            'today_attendances' => SeminarAttendance::whereDate('waktu_scan', today())->count(),
         ];
 
         // Recent seminars
