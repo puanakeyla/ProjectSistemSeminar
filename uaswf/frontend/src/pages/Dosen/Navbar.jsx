@@ -15,7 +15,7 @@ function Navbar({ currentPage, onNavigate, onLogout, user }) {
         <div className="navbar-brand">
           <div className="brand-icon">🎓</div>
           <div className="brand-text">
-            <h3>UNILA</h3>
+            <h3>SISEMAR</h3>
             <p>Portal Dosen</p>
           </div>
         </div>

@@ -37,7 +37,7 @@ function App() {
       setIsLoggedIn(true);
       setUserRole(user.role);
       setUserData(user);
-      setCurrentPage('dashboard'); 
+      setCurrentPage('dashboard');
     }
   }, []);
 
@@ -74,8 +74,8 @@ function App() {
           <div className="brand">
             <div className="brand-icon">🎓</div>
             <div className="brand-text">
-              <h3>UNILA</h3>
-              <p>Sistem Seminar</p>
+              <h3>SISEMAR</h3>
+              <p>Sistem Seminar Elektro</p>
             </div>
           </div>
         </div>
@@ -144,13 +144,13 @@ function App() {
   const renderDosenLayout = () => (
     <div className="app-layout-dosen">
       {/* Navbar Horizontal */}
-      <NavbarDosen 
+      <NavbarDosen
         currentPage={currentPage}
         onNavigate={setCurrentPage}
         onLogout={handleLogout}
         user={userData}
       />
-      
+
       {/* Content Area */}
       <main className="content-area">
         {currentPage === 'dashboard' && <DashboardDosen />}
@@ -164,13 +164,13 @@ function App() {
   const renderAdminLayout = () => (
     <div className="app-layout-admin">
       {/* Navbar Horizontal */}
-      <NavbarAdmin 
+      <NavbarAdmin
         currentPage={currentPage}
         onNavigate={setCurrentPage}
         onLogout={handleLogout}
         user={userData}
       />
-      
+
       {/* Content Area */}
       <main className="content-area">
         {currentPage === 'dashboard' && <DashboardAdmin />}
