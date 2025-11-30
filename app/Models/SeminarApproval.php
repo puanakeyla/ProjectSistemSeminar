@@ -92,6 +92,7 @@ class SeminarApproval extends Model
             'pending' => 'Menunggu Persetujuan',
             'approved' => 'Disetujui',
             'rejected' => 'Ditolak',
+            'cancelled' => 'Dibatalkan',
             default => ucfirst($this->status ?? '-'),
         };
     }
@@ -102,6 +103,7 @@ class SeminarApproval extends Model
             'pending' => 'yellow',
             'approved' => 'green',
             'rejected' => 'red',
+            'cancelled' => 'gray',
             default => 'gray',
         };
     }
@@ -144,6 +146,7 @@ class SeminarApproval extends Model
             'pending', 'pending_verification', 'pendingapproval', 'pending_approval' => 'pending',
             'approved', 'approved_by_admin', 'disetujui', 'setuju' => 'approved',
             'rejected', 'ditolak', 'revising', 'revision', 'needs_revision', 'reviewed' => 'rejected',
+            'cancelled', 'dibatalkan' => 'cancelled',
             default => $value,
         };
     }

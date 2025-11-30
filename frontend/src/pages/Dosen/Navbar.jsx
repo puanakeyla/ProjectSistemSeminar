@@ -4,9 +4,8 @@ import { GraduationCap, BarChart3, CheckCircle, Calendar, Users, LogOut } from '
 function Navbar({ currentPage, onNavigate, onLogout, user }) {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: <BarChart3 className="w-4 h-4" /> },
-    { id: 'approval', label: 'Persetujuan Seminar', icon: <CheckCircle className="w-4 h-4" /> },
-    { id: 'jadwal', label: 'Jadwal Seminar', icon: <Calendar className="w-4 h-4" /> },
-    { id: 'mahasiswa', label: 'Mahasiswa Bimbingan', icon: <Users className="w-4 h-4" /> }
+    { id: 'approval', label: 'Persetujuan', icon: <CheckCircle className="w-4 h-4" /> },
+    { id: 'jadwal', label: 'Jadwal', icon: <Calendar className="w-4 h-4" /> }
   ];
 
   return (

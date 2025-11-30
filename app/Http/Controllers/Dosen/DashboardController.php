@@ -74,6 +74,31 @@ class DashboardController extends Controller
                 ];
             });
 
+        // Get recently cancelled seminars
+        $cancelledSeminars = Seminar::with(['mahasiswa'])
+            ->whereNotNull('cancelled_at')
+            ->where(function ($query) use ($user) {
+                $query->where('pembimbing1_id', $user->id)
+                    ->orWhere('pembimbing2_id', $user->id)
+                    ->orWhere('penguji_id', $user->id);
+            })
+            ->orderBy('cancelled_at', 'desc')
+            ->limit(5)
+            ->get()
+            ->map(function ($seminar) use ($user) {
+                return [
+                    'id' => $seminar->id,
+                    'mahasiswa_name' => $seminar->mahasiswa->name,
+                    'mahasiswa_npm' => $seminar->mahasiswa->npm,
+                    'judul' => $seminar->judul,
+                    'jenis_seminar' => $seminar->getJenisSeminarDisplay(),
+                    'cancel_reason' => $seminar->cancel_reason,
+                    'cancelled_at' => $seminar->cancelled_at->format('d M Y H:i'),
+                    'days_ago' => $seminar->cancelled_at->diffInDays(now()),
+                    'user_role' => $this->getUserRoleInSeminar($seminar, $user),
+                ];
+            });
+
         return response()->json([
             'message' => 'Dashboard data retrieved successfully',
             'data' => [
@@ -86,6 +111,7 @@ class DashboardController extends Controller
                 'seminar_counts' => $seminarCounts,
                 'today_seminars' => $todaySeminars,
                 'pending_approvals' => $pendingApprovals,
+                'cancelled_seminars' => $cancelledSeminars,
             ]
         ]);
     }

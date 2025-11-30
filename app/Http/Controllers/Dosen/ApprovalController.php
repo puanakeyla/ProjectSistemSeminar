@@ -23,6 +23,9 @@ class ApprovalController extends Controller
                 'seminar.penguji'
             ])
             ->where('dosen_id', $request->user()->id)
+            ->whereHas('seminar', function ($query) {
+                $query->where('status', '!=', 'cancelled');
+            })
             ->menunggu()
             ->orderBy('created_at', 'desc')
             ->get()
@@ -127,6 +130,12 @@ class ApprovalController extends Controller
             ->where('dosen_id', $request->user()->id)
             ->where('status', 'pending') // Only allow updating pending approvals
             ->findOrFail($id);
+
+        if ($approval->seminar->isCancelled()) {
+            return response()->json([
+                'message' => 'Mahasiswa telah membatalkan pengajuan ini.'
+            ], 422);
+        }
 
         // Update approval
         $updateData = [
@@ -337,6 +346,7 @@ class ApprovalController extends Controller
             'judul' => $seminar->judul,
             'tipe' => $seminar->tipe,
             'abstrak' => $seminar->abstrak,
+            'file_berkas' => $seminar->file_berkas,
             'peran' => $approval->peran,
             'status' => $approval->status,
             'created_at' => $approval->created_at->format('d M Y'),
@@ -419,5 +429,62 @@ class ApprovalController extends Controller
         }
 
         return 'Unknown';
+    }
+
+    /**
+     * Cancel seminar by dosen
+     * If any dosen cancels, the entire seminar is cancelled
+     */
+    public function cancelSeminar(Request $request, $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'cancel_reason' => 'required|string|max:500',
+        ]);
+
+        $seminar = Seminar::with(['mahasiswa', 'pembimbing1', 'pembimbing2', 'penguji', 'schedule'])->findOrFail($id);
+        $user = $request->user();
+
+        // Check if dosen is involved in this seminar
+        if (!$this->isDosenInvolvedInSeminar($seminar, $user)) {
+            return response()->json([
+                'message' => 'Anda tidak terlibat dalam seminar ini'
+            ], 403);
+        }
+
+        // Check if seminar is already cancelled
+        if ($seminar->cancelled_at) {
+            return response()->json([
+                'message' => 'Seminar ini sudah dibatalkan sebelumnya'
+            ], 400);
+        }
+
+        // Get dosen role for the cancellation reason
+        $dosenRole = $this->getUserRoleInSeminar($seminar, $user);
+        $fullCancelReason = "[Dibatalkan oleh {$dosenRole}: {$user->name}] {$validated['cancel_reason']}";
+
+        // Cancel the seminar
+        $seminar->update([
+            'cancelled_at' => now(),
+            'cancel_reason' => $fullCancelReason,
+            'status' => 'cancelled'
+        ]);
+
+        // Delete the schedule if exists
+        if ($seminar->schedule) {
+            $seminar->schedule->delete();
+        }
+
+        return response()->json([
+            'message' => 'Seminar berhasil dibatalkan. Mahasiswa akan menerima notifikasi.',
+            'data' => [
+                'seminar_id' => $seminar->id,
+                'mahasiswa_name' => $seminar->mahasiswa->name,
+                'judul' => $seminar->judul,
+                'cancelled_by' => $user->name,
+                'cancelled_role' => $dosenRole,
+                'cancel_reason' => $validated['cancel_reason'],
+                'cancelled_at' => now()->format('d M Y H:i')
+            ]
+        ]);
     }
 }

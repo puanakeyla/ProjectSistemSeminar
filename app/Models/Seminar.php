@@ -22,12 +22,15 @@ class Seminar extends Model
         'status',
         'skor_total',
         'verified_at',
+        'cancelled_at',
+        'cancel_reason',
     ];
 
     protected $casts = [
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'verified_at' => 'datetime',
+        'cancelled_at' => 'datetime',
     ];
 
     public function setStatusAttribute($value)
@@ -50,6 +53,7 @@ class Seminar extends Model
             'finished', 'selesai', 'completed' => 'finished',
             'revising', 'revisi', 'revision' => 'revising',
             'draft' => 'draft',
+            'cancelled', 'dibatalkan' => 'cancelled',
             default => $value,
         };
     }
@@ -131,6 +135,7 @@ class Seminar extends Model
             'scheduled' => 'Terjadwal',
             'finished' => 'Selesai',
             'revising' => 'Revisi',
+            'cancelled' => 'Dibatalkan',
             default => ucfirst($this->status ?? '-')
         };
     }
@@ -144,8 +149,14 @@ class Seminar extends Model
             'scheduled' => 'blue',
             'finished' => 'emerald',
             'revising' => 'orange',
+            'cancelled' => 'red',
             default => 'gray'
         };
+    }
+
+    public function isCancelled(): bool
+    {
+        return $this->status === 'cancelled';
     }
 
     /**

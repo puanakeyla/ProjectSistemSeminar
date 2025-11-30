@@ -20,6 +20,7 @@ function Dashboard() {
     attended: 0
   });
   const [recentActivities, setRecentActivities] = useState([]);
+  const [cancelledSeminars, setCancelledSeminars] = useState([]);
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState('');
 
@@ -44,13 +45,14 @@ function Dashboard() {
 
       const data = response.data.data;
       setStats({
-        total: data.seminar_counts?.total || 0,
-        approved: data.seminar_counts?.approved || 0,
-        pending_verification: data.seminar_counts?.pending_verification || 0,
-        revising: data.seminar_counts?.revising || 0,
+        total: data.counts?.total || 0,
+        approved: data.counts?.approved || 0,
+        pending_verification: data.counts?.pending_verification || 0,
+        revising: data.counts?.revising || 0,
         attended: data.attended_seminars_count || 0
       });
       setRecentActivities(data.recent_seminars || []);
+      setCancelledSeminars(data.cancelled_seminars || []);
     } catch (err) {
       console.error('Error fetching dashboard:', err);
     } finally {
@@ -75,19 +77,26 @@ function Dashboard() {
   }
 
   const statsDisplay = [
-    { label: 'Total Submissions', value: stats.total, icon: FileText, color: '#3B82F6' },
-    { label: 'Approved', value: stats.approved, icon: CheckCircle, color: '#10b981' },
-    { label: 'Pending Verification', value: stats.pending_verification, icon: Clock, color: '#f59e0b' },
-    { label: 'Needs Revision', value: stats.revising, icon: XCircle, color: '#ef4444' },
-    { label: 'Attended Seminars', value: stats.attended, icon: GraduationCap, color: '#8b5cf6' }
+    { label: 'Total Pengajuan', value: stats.total, icon: FileText, color: '#3B82F6' },
+    { label: 'Disetujui', value: stats.approved, icon: CheckCircle, color: '#10b981' },
+    { label: 'Menunggu Verifikasi', value: stats.pending_verification, icon: Clock, color: '#f59e0b' },
+    { label: 'Butuh Revisi', value: stats.revising, icon: XCircle, color: '#ef4444' },
+    { label: 'Seminar Dihadiri', value: stats.attended, icon: GraduationCap, color: '#8b5cf6' }
   ];
 
   const quickActions = [
-    { icon: FileText, label: 'Ajukan Seminar Baru', path: '/mahasiswa/pengajuan', color: '#3B82F6' },
-    { icon: ClipboardList, label: 'Cek Status', path: '/mahasiswa/status', color: '#10b981' },
-    { icon: QrCode, label: 'Scan QR Absensi', path: '/mahasiswa/scanqr', color: '#8b5cf6' },
-    { icon: Upload, label: 'Upload Revisi', path: '/mahasiswa/revisi', color: '#f59e0b' }
+    { icon: FileText, label: 'Ajukan Seminar Baru', targetPage: 'pengajuan', color: '#3B82F6' },
+    { icon: ClipboardList, label: 'Cek Status', targetPage: 'status', color: '#10b981' },
+    { icon: QrCode, label: 'Scan QR Absensi', targetPage: 'scanqr', color: '#8b5cf6' },
+    { icon: Upload, label: 'Upload Revisi', targetPage: 'revisi', color: '#f59e0b' }
   ];
+
+  const handleQuickAction = (page) => {
+    if (!page) return;
+
+    // Broadcast lightweight navigation intent so App layout can switch pages without page reloads
+    window.dispatchEvent(new CustomEvent('semar:navigate', { detail: { page } }));
+  };
 
   const getStatusStyle = (status, fallbackColor) => {
     const key = (status || '').toLowerCase();
@@ -98,7 +107,8 @@ function Dashboard() {
       'disetujui': { background: '#d4edda', color: '#155724' },
       'approved': { background: '#d4edda', color: '#155724' },
       'ditolak': { background: '#f8d7da', color: '#721c24' },
-      'revisi': { background: '#fff3cd', color: '#856404' }
+      'revisi': { background: '#fff3cd', color: '#856404' },
+      'dibatalkan': { background: '#fdecea', color: '#c0392b' }
     };
     return styles[key] || { background: fallbackColor || '#E5E7EB', color: '#111827' };
   };
@@ -121,10 +131,10 @@ function Dashboard() {
             </div>
             <div>
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
-                Dashboard
+                Dasbor Mahasiswa
               </h1>
               <p className="text-base text-gray-600 dark:text-gray-400">
-                Welcome, <span className="font-semibold text-primary-600 dark:text-primary-400">{userName}</span>
+                Selamat datang, <span className="font-semibold text-primary-600 dark:text-primary-400">{userName}</span>
               </p>
             </div>
           </div>
@@ -143,14 +153,79 @@ function Dashboard() {
           ))}
         </div>
 
+        {cancelledSeminars.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.2 }}
+            className="bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/30 rounded-2xl p-6 border-2 border-red-200 dark:border-red-800 shadow-lg"
+          >
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-red-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">
+                <XCircle className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-bold text-red-900 dark:text-red-100 mb-1">
+                  Seminar Dibatalkan
+                </h3>
+                <p className="text-sm text-red-700 dark:text-red-300 mb-4">
+                  {cancelledSeminars.length} seminar Anda dibatalkan oleh dosen pembimbing/penguji
+                </p>
+                <div className="space-y-3">
+                  {cancelledSeminars.map((seminar, index) => (
+                    <motion.div
+                      key={seminar.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.3, delay: 0.1 * index }}
+                      className="bg-white dark:bg-dark-800 rounded-xl p-4 border border-red-200 dark:border-red-800"
+                    >
+                      <div className="flex items-start justify-between gap-3 mb-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="inline-flex px-2.5 py-0.5 text-xs font-bold rounded-full bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300">
+                              {seminar.jenis_seminar}
+                            </span>
+                          </div>
+                          <p className="text-sm font-semibold text-gray-900 dark:text-white line-clamp-2">
+                            {seminar.judul}
+                          </p>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-xs text-red-600 dark:text-red-400 font-medium">
+                            {seminar.days_ago === 0 ? 'Hari ini' : `${seminar.days_ago} hari lalu`}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                            {seminar.cancelled_at}
+                          </p>
+                        </div>
+                      </div>
+                      {seminar.cancel_reason && (
+                        <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
+                          <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                            Alasan Pembatalan:
+                          </p>
+                          <p className="text-xs text-gray-600 dark:text-gray-400 italic">
+                            "{seminar.cancel_reason}"
+                          </p>
+                        </div>
+                      )}
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.3 }}
         >
           <SectionCard
-            title="Latest Seminars"
-            description="Update terbaru pengajuan seminar Anda"
+            title="Pengajuan Terbaru"
+            description="Pantau perkembangan pengajuan seminar Anda di sini"
             icon={Calendar}
           >
             {recentActivities.length === 0 ? (
@@ -159,7 +234,7 @@ function Dashboard() {
                   <FileCheck className="w-10 h-10 text-gray-400 dark:text-gray-600" />
                 </div>
                 <p className="text-gray-500 dark:text-gray-400 font-medium">
-                  No seminar submissions yet
+                  Belum ada pengajuan seminar
                 </p>
               </div>
             ) : (
@@ -208,7 +283,7 @@ function Dashboard() {
           transition={{ duration: 0.4, delay: 0.4 }}
         >
           <SectionCard
-            title="Quick Actions"
+            title="Aksi Cepat"
             description="Akses cepat fitur penting"
             icon={Zap}
           >
@@ -225,8 +300,12 @@ function Dashboard() {
                     <div
                       role="button"
                       tabIndex={0}
-                      onClick={() => window.location.href = action.path}
-                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { window.location.href = action.path } }}
+                      onClick={() => handleQuickAction(action.targetPage)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          handleQuickAction(action.targetPage);
+                        }
+                      }}
                       className="action-card w-full h-auto p-6 flex-col gap-4 hover:scale-105 hover:shadow-glow transition-all duration-200"
                     >
                       <div

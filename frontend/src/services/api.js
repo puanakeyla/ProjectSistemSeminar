@@ -87,6 +87,19 @@ export const dosenAPI = {
     const response = await api.get('/dosen/statistics');
     return response.data;
   },
+
+  // Get dashboard data
+  getDashboard: async () => {
+    const response = await api.get('/dosen/dashboard');
+    return response.data;
+  },
+
+  // Cancel seminar
+  cancelSeminar: async (id, data) => {
+    // data: { cancel_reason: string }
+    const response = await api.post(`/dosen/seminars/${id}/cancel`, data);
+    return response.data;
+  },
 };
 
 // Admin API

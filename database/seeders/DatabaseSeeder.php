@@ -17,83 +17,78 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // Create Admin
-        User::firstOrCreate(
-            ['email' => 'admin@test.com'],
+        $admin = User::firstOrCreate(
+            ['email' => 'admin@univ.ac.id'],
             [
-                'name' => 'Admin Test',
-                'password' => Hash::make('password'),
+                'name' => 'Admin System',
+                'password' => Hash::make('admin123'),
                 'role' => 'admin',
             ]
         );
 
         // Create Mahasiswa
-        User::firstOrCreate(
-            ['email' => 'mahasiswa@test.com'],
+        $mahasiswa = User::firstOrCreate(
+            ['email' => 'andi@student.univ.ac.id'],
             [
-                'name' => 'Mahasiswa Test',
-                'password' => Hash::make('password'),
+                'name' => 'Andi Prasetyo',
+                'password' => Hash::make('mhs123'),
                 'role' => 'mahasiswa',
-                'npm' => '2101010001',
+                'npm' => '2021001',
             ]
         );
 
-        // Create Dosen 1
-        User::firstOrCreate(
-            ['email' => 'dosen1@test.com'],
+        // Dosen 1 - Dr. Ahmad Wijaya
+        $dosen1 = User::firstOrCreate(
+            ['email' => 'ahmad.wijaya@univ.ac.id'],
             [
-                'name' => 'Dr. Budi Santoso, M.Kom',
-                'password' => Hash::make('password'),
+                'name' => 'Dr. Ahmad Wijaya, M.Kom',
+                'password' => Hash::make('dosen123'),
                 'role' => 'dosen',
                 'nidn' => '0123456789',
             ]
         );
 
-        // Create Dosen 2
-        User::firstOrCreate(
-            ['email' => 'dosen2@test.com'],
+        // Dosen 2 - Prof. Budi Santoso
+        $dosen2 = User::firstOrCreate(
+            ['email' => 'budi.santoso@univ.ac.id'],
             [
-                'name' => 'Dr. Siti Aminah, M.T',
-                'password' => Hash::make('password'),
+                'name' => 'Prof. Budi Santoso, Ph.D',
+                'password' => Hash::make('dosen123'),
                 'role' => 'dosen',
                 'nidn' => '0123456790',
             ]
         );
 
-        // Create Dosen 3
+        // Dosen 3 - Dr. Siti Nurhaliza
         $dosen3 = User::firstOrCreate(
-            ['email' => 'dosen3@test.com'],
+            ['email' => 'siti.nurhaliza@univ.ac.id'],
             [
-                'name' => 'Dr. Ahmad Hidayat, M.Kom',
-                'password' => Hash::make('password'),
+                'name' => 'Dr. Siti Nurhaliza, M.T',
+                'password' => Hash::make('dosen123'),
                 'role' => 'dosen',
                 'nidn' => '0123456791',
             ]
         );
 
-        // Get created users
-        $admin = User::where('email', 'admin@test.com')->first();
-        $mahasiswa = User::where('email', 'mahasiswa@test.com')->first();
-        $dosen1 = User::where('email', 'dosen1@test.com')->first();
-        $dosen2 = User::where('email', 'dosen2@test.com')->first();
-
-        // Create more mahasiswa for testing
+        // Mahasiswa 2
         $mahasiswa2 = User::firstOrCreate(
-            ['email' => 'mahasiswa2@test.com'],
+            ['email' => 'dewi@student.univ.ac.id'],
             [
-                'name' => 'Siti Nurhaliza',
-                'password' => Hash::make('password'),
+                'name' => 'Dewi Kusuma',
+                'password' => Hash::make('mhs123'),
                 'role' => 'mahasiswa',
-                'npm' => '2101010002',
+                'npm' => '2021002',
             ]
         );
 
+        // Mahasiswa 3
         $mahasiswa3 = User::firstOrCreate(
-            ['email' => 'mahasiswa3@test.com'],
+            ['email' => 'raka@student.univ.ac.id'],
             [
-                'name' => 'Ahmad Fauzi',
-                'password' => Hash::make('password'),
+                'name' => 'Raka Firmansyah',
+                'password' => Hash::make('mhs123'),
                 'role' => 'mahasiswa',
-                'npm' => '2101010003',
+                'npm' => '2021003',
             ]
         );
 
@@ -193,13 +188,14 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $this->command->info('');
-        $this->command->info('✅ Seeder completed!');
-        $this->command->info('📊 Created: 3 Seminars, 9 Pending Approvals');
-        $this->command->info('📧 Login credentials:');
-        $this->command->info('   Admin: admin@test.com / password');
-        $this->command->info('   Mahasiswa: mahasiswa@test.com / password');
-        $this->command->info('   Dosen 1: dosen1@test.com / password (3 approvals pending)');
-        $this->command->info('   Dosen 2: dosen2@test.com / password (3 approvals pending)');
-        $this->command->info('   Dosen 3: dosen3@test.com / password (3 approvals pending)');
+        $this->command->info('✅ Database seeded successfully!');
+        $this->command->info('📊 Created: 3 Mahasiswa, 3 Dosen, 3 Seminars, 9 Approvals');
+        $this->command->info('');
+        $this->command->info('📧 Login Credentials:');
+        $this->command->info('   👤 Admin: admin@univ.ac.id / admin123');
+        $this->command->info('   🎓 Mahasiswa: andi@student.univ.ac.id / mhs123');
+        $this->command->info('   👨‍🏫 Dosen Ahmad: ahmad.wijaya@univ.ac.id / dosen123');
+        $this->command->info('   👨‍🏫 Dosen Budi: budi.santoso@univ.ac.id / dosen123');
+        $this->command->info('   👨‍🏫 Dosen Siti: siti.nurhaliza@univ.ac.id / dosen123');
     }
 }

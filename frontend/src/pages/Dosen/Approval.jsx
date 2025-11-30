@@ -1,4 +1,21 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import {
+  ClipboardCheck,
+  Loader2,
+  AlertTriangle,
+  Inbox,
+  ClipboardList,
+  UserRound,
+  CalendarDays,
+  FileText,
+  AlignLeft,
+  CalendarClock,
+  MessageSquare,
+  CheckCircle2,
+  XCircle,
+  Download,
+  ExternalLink,
+} from 'lucide-react';
 import { dosenAPI } from '../../services/api';
 import './Approval.css';
 
@@ -11,97 +28,95 @@ function Approval() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const [activeFilter, setActiveFilter] = useState('all');
+
+  const filterOptions = useMemo(
+    () => [
+      { id: 'all', label: 'Semua' },
+      { id: 'pembimbing1', label: 'Pembimbing 1' },
+      { id: 'pembimbing2', label: 'Pembimbing 2' },
+      { id: 'penguji', label: 'Penguji' },
+    ],
+    []
+  );
+
+  const normalizeRole = (role) => {
+    const value = (role || '').toLowerCase();
+    if (value.includes('penguji')) return 'penguji';
+    if (value.includes('pembimbing 2') || value.includes('pembimbing2')) return 'pembimbing2';
+    if (value.includes('pembimbing')) return 'pembimbing1';
+    return null;
+  };
+
+  const approvalCounts = useMemo(() => {
+    return pendingApprovals.reduce(
+      (acc, approval) => {
+        const roleKey = normalizeRole(approval?.peran);
+        if (roleKey && acc[roleKey] !== undefined) {
+          acc[roleKey] += 1;
+        }
+        return acc;
+      },
+      { pembimbing1: 0, pembimbing2: 0, penguji: 0 }
+    );
+  }, [pendingApprovals]);
+
+  const filteredApprovals = useMemo(() => {
+    if (activeFilter === 'all') {
+      return pendingApprovals;
+    }
+
+    return pendingApprovals.filter((approval) => normalizeRole(approval?.peran) === activeFilter);
+  }, [pendingApprovals, activeFilter]);
 
   // Fetch pending approvals on mount
   useEffect(() => {
     fetchPendingApprovals();
   }, []);
 
+  // Reset detail panel if current selection no longer available in active filter
+  useEffect(() => {
+    if (selectedApproval && !filteredApprovals.some((item) => item.id === selectedApproval.id)) {
+      setSelectedApproval(null);
+      setShowDatePicker(false);
+      setSelectedDates([]);
+      setCatatan('');
+    }
+  }, [filteredApprovals, selectedApproval]);
+
   const fetchPendingApprovals = async () => {
     try {
       setLoading(true);
       setError(null);
       const response = await dosenAPI.getPendingApprovals();
-      setPendingApprovals(response.data || []);
+      
+      // Backend Laravel return { message, data: [...] }
+      const approvalsList = response?.data?.data || response?.data || response || [];
+      setPendingApprovals(Array.isArray(approvalsList) ? approvalsList : []);
     } catch (err) {
       console.error('Failed to fetch approvals:', err);
       setError('Gagal memuat data persetujuan. Silakan coba lagi.');
+      setPendingApprovals([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const dummyPendingApprovals = [
-    {
-      id: 1,
-      mahasiswa: 'Ahmad Fauzi',
-      npm: '2155051001',
-      judul: 'Implementasi Machine Learning untuk Prediksi Cuaca',
-      abstrak: 'Penelitian ini membahas tentang implementasi algoritma machine learning untuk memprediksi pola cuaca berdasarkan data historis. Menggunakan metode Random Forest dan Neural Network untuk analisis prediksi...',
-      tipe: 'Proposal',
-      tanggal_pengajuan: '20 Jan 2025',
-      peran: 'Pembimbing 1',
-      status: 'pending'
-    },
-    {
-      id: 2,
-      mahasiswa: 'Siti Nurhaliza',
-      npm: '2155051002',
-      judul: 'Sistem Informasi Manajemen Perpustakaan Berbasis Web',
-      abstrak: 'Pengembangan sistem informasi perpustakaan menggunakan framework Laravel dan React. Sistem ini dirancang untuk mempermudah pengelolaan buku, peminjaman, dan administrasi perpustakaan...',
-      tipe: 'Hasil',
-      tanggal_pengajuan: '19 Jan 2025',
-      peran: 'Pembimbing 2',
-      status: 'pending'
-    },
-    {
-      id: 3,
-      mahasiswa: 'Budi Santoso',
-      npm: '2155051003',
-      judul: 'Analisis Kinerja Algoritma Sorting pada Big Data',
-      abstrak: 'Melakukan perbandingan kinerja berbagai algoritma sorting (Quick Sort, Merge Sort, Heap Sort) dalam menangani dataset besar. Menggunakan metode benchmark untuk mengukur efisiensi waktu dan memori...',
-      tipe: 'Komprehensif',
-      tanggal_pengajuan: '18 Jan 2025',
-      peran: 'Penguji',
-      status: 'pending'
-    },
-    {
-      id: 4,
-      mahasiswa: 'Dewi Kusuma',
-      npm: '2155051004',
-      judul: 'Aplikasi Mobile E-Commerce dengan Flutter',
-      abstrak: 'Pengembangan aplikasi e-commerce berbasis mobile menggunakan Flutter dan Firebase. Aplikasi ini mencakup fitur katalog produk, keranjang belanja, payment gateway, dan tracking pesanan...',
-      tipe: 'Proposal',
-      tanggal_pengajuan: '17 Jan 2025',
-      peran: 'Pembimbing 1',
-      status: 'pending'
-    },
-    {
-      id: 5,
-      mahasiswa: 'Rizky Pratama',
-      npm: '2155051005',
-      judul: 'Sistem Keamanan Jaringan Menggunakan Intrusion Detection System',
-      abstrak: 'Implementasi sistem deteksi intrusi pada jaringan komputer menggunakan teknik machine learning. Sistem ini mampu mendeteksi anomali dan serangan jaringan secara real-time...',
-      tipe: 'Hasil',
-      tanggal_pengajuan: '16 Jan 2025',
-      peran: 'Penguji',
-      status: 'pending'
-    }
-  ];
-
   const getTipeColor = (tipe) => {
     const colors = {
-      'Proposal': '#3B82F6',
-      'Hasil': '#F59E0B',
-      'Komprehensif': '#8B5CF6'
+      proposal: '#2563eb',
+      hasil: '#f59e0b',
+      komprehensif: '#8b5cf6',
+      kompre: '#8b5cf6',
     };
-    return colors[tipe] || '#6B7280';
+    return colors[(tipe || '').toLowerCase()] || '#64748b';
   };
 
   const handleApprovalClick = (approval) => {
     setSelectedApproval(approval);
     setSelectedDates([]);
     setCatatan('');
+    setShowDatePicker(false);
   };
 
   const handleDateSelect = (date) => {
@@ -208,17 +223,53 @@ function Approval() {
     return dates;
   };
 
+  const formatTitleCase = (value) => {
+    if (!value) return '-';
+    return value
+      .toString()
+      .replace(/_/g, ' ')
+      .split(' ')
+      .filter(Boolean)
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  };
+
+  const formatDateDisplay = (value) => {
+    if (!value) return '-';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return value;
+    }
+    return date.toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+  };
+
   const dateOptions = generateDateOptions();
   const selectedMahasiswaName = selectedApproval?.mahasiswa ?? selectedApproval?.mahasiswa_name ?? 'Mahasiswa';
   const selectedMahasiswaNpm = selectedApproval?.npm ?? selectedApproval?.mahasiswa_npm ?? '-';
-  const selectedTanggalPengajuan = selectedApproval?.tanggal_pengajuan ?? selectedApproval?.created_at ?? '-';
+  const selectedTanggalPengajuan = formatDateDisplay(
+    selectedApproval?.tanggal_pengajuan ?? selectedApproval?.created_at
+  );
+  const selectedPeranDisplay = formatTitleCase(selectedApproval?.peran);
+  const selectedSeminarType = selectedApproval
+    ? formatTitleCase(selectedApproval.tipe || selectedApproval.jenis_seminar)
+    : '-';
+  const selectedSeminarBadge = selectedSeminarType === '-' ? '-' : `Seminar ${selectedSeminarType}`;
 
   if (loading) {
     return (
       <div className="approval-page">
-        <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-          <div style={{ fontSize: '48px', marginBottom: '20px' }}>⏳</div>
-          <h2>Memuat data...</h2>
+        <div className="approval-card">
+          <div className="approval-state">
+            <div className="approval-state-icon">
+              <Loader2 size={32} className="icon-spin" />
+            </div>
+            <h2>Memuat data...</h2>
+            <p>Harap tunggu sebentar.</p>
+          </div>
         </div>
       </div>
     );
@@ -227,13 +278,17 @@ function Approval() {
   if (error) {
     return (
       <div className="approval-page">
-        <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-          <div style={{ fontSize: '48px', marginBottom: '20px' }}>⚠️</div>
-          <h2>Terjadi Kesalahan</h2>
-          <p style={{ color: '#ef4444', marginBottom: '20px' }}>{error}</p>
-          <button onClick={fetchPendingApprovals} style={{ padding: '12px 24px', background: '#4E8EA2', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>
-            Coba Lagi
-          </button>
+        <div className="approval-card">
+          <div className="approval-state">
+            <div className="approval-state-icon error">
+              <AlertTriangle size={32} />
+            </div>
+            <h2>Terjadi Kesalahan</h2>
+            <p>{error}</p>
+            <button type="button" className="approval-retry-btn" onClick={fetchPendingApprovals}>
+              Coba Lagi
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -241,211 +296,342 @@ function Approval() {
 
   return (
     <div className="approval-page">
-      <div className="approval-header">
-        <div>
-          <h1>Persetujuan Seminar</h1>
-          <p>Kelola persetujuan seminar mahasiswa bimbingan Anda</p>
-        </div>
-        <div className="approval-stats">
-          <div className="stat-badge pending">
-            <span className="stat-number">{pendingApprovals.length}</span>
-            <span className="stat-label">Menunggu</span>
+      <div className="approval-card">
+        <div className="approval-hero">
+          <div className="approval-hero-text">
+            <div className="approval-hero-title">
+              <div className="approval-hero-icon">
+                <ClipboardCheck size={24} />
+              </div>
+              <div>
+                <p className="approval-hero-subtitle">Kelola persetujuan seminar mahasiswa bimbingan Anda</p>
+                <h1>Persetujuan Seminar</h1>
+              </div>
+            </div>
+          </div>
+          <div className="approval-hero-badge">
+            <span className="approval-hero-badge-count">{pendingApprovals.length}</span>
+            <span className="approval-hero-badge-label">Menunggu</span>
           </div>
         </div>
-      </div>
 
-      {pendingApprovals.length === 0 ? (
-        <div style={{ background: 'white', padding: '60px 20px', borderRadius: '16px', textAlign: 'center' }}>
-          <div style={{ fontSize: '80px', marginBottom: '20px', opacity: 0.5 }}>✅</div>
-          <h2 style={{ color: '#64748b', marginBottom: '12px' }}>Tidak Ada Persetujuan Menunggu</h2>
-          <p style={{ color: '#94a3b8' }}>Semua pengajuan seminar sudah Anda proses</p>
-        </div>
-      ) : (
-        <div className="approval-layout">
-          {/* List Approvals */}
-          <div className="approvals-container">
-            <div className="approvals-filter">
-              <button className="filter-btn active">Semua ({pendingApprovals.length})</button>
-              <button className="filter-btn">Pembimbing 1</button>
-              <button className="filter-btn">Pembimbing 2</button>
-              <button className="filter-btn">Penguji</button>
+        {pendingApprovals.length === 0 ? (
+          <div className="approval-empty">
+            <div className="approval-empty-icon">
+              <CheckCircle2 size={36} />
+            </div>
+            <h2>Tidak Ada Persetujuan Menunggu</h2>
+            <p>Semua pengajuan seminar sudah Anda proses dengan baik.</p>
+          </div>
+        ) : (
+          <>
+            <div className="approvals-section">
+              <div className="approval-filter">
+                {filterOptions.map((option) => {
+                  const count =
+                    option.id === 'all'
+                      ? pendingApprovals.length
+                      : approvalCounts[option.id] || 0;
+
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      className={`approval-filter-btn ${activeFilter === option.id ? 'active' : ''}`}
+                      onClick={() => setActiveFilter(option.id)}
+                    >
+                      <span>{option.label}</span>
+                      <span className="approval-filter-count">{count}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {filteredApprovals.length === 0 ? (
+                <div className="approval-empty-list">
+                  <div className="approval-empty-icon">
+                    <Inbox size={28} />
+                  </div>
+                  <h3>Tidak ada pengajuan pada filter ini</h3>
+                  <p>Coba pilih filter lain untuk melihat pengajuan lainnya.</p>
+                </div>
+              ) : (
+                <div className="approvals-grid">
+                  {filteredApprovals.map((approval) => {
+                    const mahasiswaName = approval.mahasiswa ?? approval.mahasiswa_name ?? 'Mahasiswa';
+                    const mahasiswaNpm = approval.npm ?? approval.mahasiswa_npm ?? '-';
+                    const peranDisplay = formatTitleCase(approval.peran);
+                    const seminarType = formatTitleCase(approval.tipe || approval.jenis_seminar);
+                    const tanggalPengajuan = formatDateDisplay(
+                      approval.tanggal_pengajuan ?? approval.created_at
+                    );
+
+                    return (
+                      <button
+                        type="button"
+                        key={approval.id}
+                        className={`approval-item ${selectedApproval?.id === approval.id ? 'selected' : ''}`}
+                        onClick={() => handleApprovalClick(approval)}
+                      >
+                        <div className="approval-item-header">
+                          <div className="student-badge">
+                            <div className="student-avatar">
+                              {mahasiswaName.charAt(0)}
+                            </div>
+                            <div className="student-info">
+                              <h4>{mahasiswaName}</h4>
+                              <span className="npm">{mahasiswaNpm}</span>
+                            </div>
+                          </div>
+                          <span
+                            className="tipe-badge"
+                            style={{ backgroundColor: getTipeColor(approval.tipe || approval.jenis_seminar) }}
+                          >
+                            {seminarType}
+                          </span>
+                        </div>
+
+                        <h3 className="approval-title">{approval.judul}</h3>
+
+                        <div className="approval-meta">
+                          <span className="meta-item">
+                            <span className="meta-icon" aria-hidden="true">
+                              <UserRound size={14} />
+                            </span>
+                            {peranDisplay}
+                          </span>
+                          <span className="meta-item">
+                            <span className="meta-icon" aria-hidden="true">
+                              <CalendarDays size={14} />
+                            </span>
+                            {tanggalPengajuan}
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
-            <div className="approvals-grid">
-              {pendingApprovals.map((approval) => {
-                const mahasiswaName = approval.mahasiswa ?? approval.mahasiswa_name ?? 'Mahasiswa';
-                const mahasiswaNpm = approval.npm ?? approval.mahasiswa_npm ?? '-';
-                const tanggalPengajuan = approval.tanggal_pengajuan ?? approval.created_at ?? '-';
+            <div className="detail-panel detail-panel--stacked">
+              {selectedApproval ? (
+                <div className="detail-content">
+                  <div className="detail-header">
+                    <div className="detail-header-title">
+                      <ClipboardList size={20} />
+                      <div>
+                        <p>Detail Pengajuan</p>
+                        <h2>{selectedMahasiswaName}</h2>
+                      </div>
+                    </div>
+                    <span
+                      className="tipe-badge-large"
+                      style={{ backgroundColor: getTipeColor(selectedApproval.tipe || selectedApproval.jenis_seminar) }}
+                    >
+                      {selectedSeminarBadge}
+                    </span>
+                  </div>
 
-                return (
-                  <div 
-                    key={approval.id} 
-                    className={`approval-item ${selectedApproval?.id === approval.id ? 'selected' : ''}`}
-                    onClick={() => handleApprovalClick(approval)}
-                  >
-                    <div className="approval-item-header">
-                      <div className="student-badge">
-                        <div className="student-avatar">
-                          {mahasiswaName.charAt(0)}
+                  <div className="detail-section">
+                    <h3>
+                      <span className="section-icon" aria-hidden="true">
+                        <UserRound size={16} />
+                      </span>
+                      Informasi Mahasiswa
+                    </h3>
+                    <div className="info-grid">
+                      <div className="info-item">
+                        <span className="info-label">Nama Lengkap</span>
+                        <span className="info-value">{selectedMahasiswaName}</span>
+                      </div>
+                      <div className="info-item">
+                        <span className="info-label">NPM</span>
+                        <span className="info-value">{selectedMahasiswaNpm}</span>
+                      </div>
+                      <div className="info-item">
+                        <span className="info-label">Peran Anda</span>
+                        <span className="info-value">{selectedPeranDisplay}</span>
+                      </div>
+                      <div className="info-item">
+                        <span className="info-label">Tanggal Pengajuan</span>
+                        <span className="info-value">{selectedTanggalPengajuan}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="detail-section">
+                    <h3>
+                      <span className="section-icon" aria-hidden="true">
+                        <FileText size={16} />
+                      </span>
+                      Judul Seminar
+                    </h3>
+                    <p className="judul-text">{selectedApproval.judul}</p>
+                  </div>
+
+                  {selectedApproval.abstrak && (
+                    <div className="detail-section">
+                      <h3>
+                        <span className="section-icon" aria-hidden="true">
+                          <AlignLeft size={16} />
+                        </span>
+                        Abstrak
+                      </h3>
+                      <p className="abstrak-text">{selectedApproval.abstrak}</p>
+                    </div>
+                  )}
+
+                  {selectedApproval.file_berkas && (
+                    <div className="detail-section">
+                      <h3>
+                        <span className="section-icon" aria-hidden="true">
+                          <FileText size={16} />
+                        </span>
+                        Dokumen Pendukung
+                      </h3>
+                      <div className="pdf-preview-container">
+                        <div className="pdf-info">
+                          <div className="pdf-icon">
+                            <FileText size={28} />
+                          </div>
+                          <div className="pdf-details">
+                            <p className="pdf-filename">
+                              {selectedApproval.file_berkas.split('/').pop()}
+                            </p>
+                            <p className="pdf-label">Dokumen Seminar (PDF)</p>
+                          </div>
                         </div>
-                        <div className="student-info">
-                          <h4>{mahasiswaName}</h4>
-                          <span className="npm">{mahasiswaNpm}</span>
+                        <div className="pdf-actions">
+                          <a
+                            href={`http://localhost:8000/storage/${selectedApproval.file_berkas}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="pdf-btn pdf-btn--view"
+                          >
+                            <ExternalLink size={16} />
+                            Lihat
+                          </a>
+                          <a
+                            href={`http://localhost:8000/storage/${selectedApproval.file_berkas}`}
+                            download
+                            className="pdf-btn pdf-btn--download"
+                          >
+                            <Download size={16} />
+                            Unduh
+                          </a>
                         </div>
                       </div>
-                      <span className="tipe-badge" style={{ backgroundColor: getTipeColor(approval.tipe) }}>
-                        {approval.tipe}
-                      </span>
+                    </div>
+                  )}
+
+                  <div className="detail-section date-picker-section">
+                    <div className="section-header-action">
+                      <h3>
+                        <span className="section-icon" aria-hidden="true">
+                          <CalendarClock size={16} />
+                        </span>
+                        Ketersediaan Waktu Anda
+                      </h3>
+                      <button
+                        className="btn-toggle-dates"
+                        onClick={() => setShowDatePicker(!showDatePicker)}
+                      >
+                        {showDatePicker ? 'Sembunyikan Kalender' : 'Pilih Tanggal Tersedia'}
+                      </button>
                     </div>
 
-                    <h3 className="approval-title">{approval.judul}</h3>
-                    
-                    <div className="approval-meta">
-                      <span className="meta-item">
-                        <span className="meta-icon">👤</span>
-                        Peran: {approval.peran}
-                      </span>
-                      <span className="meta-item">
-                        <span className="meta-icon">📅</span>
-                        {tanggalPengajuan}
-                      </span>
-                    </div>
+                    {showDatePicker && (
+                      <div className="date-picker-container">
+                        <p className="date-picker-info">
+                          Pilih tanggal-tanggal Anda tersedia untuk ujian seminar ini. Admin akan mencocokkan dengan
+                          ketersediaan dosen lain.
+                        </p>
 
-                    {selectedApproval?.id === approval.id && (
-                      <div className="selected-indicator">✓ Dipilih</div>
-                    )}
-                  </div>
-                )
-              })}
-          </div>
-        </div>
+                        <div className="selected-dates-summary">
+                          <strong>Tanggal Terpilih ({selectedDates.length}):</strong>
+                          {selectedDates.length > 0 ? (
+                            <div className="selected-dates-list">
+                              {selectedDates.map((date) => (
+                                <span key={date} className="selected-date-chip">
+                                  {dateOptions.find((d) => d.value === date)?.label}
+                                  <button onClick={() => handleDateSelect(date)} aria-label="Hapus tanggal">
+                                    ×
+                                  </button>
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="no-dates">Belum ada tanggal dipilih</span>
+                          )}
+                        </div>
 
-        {/* Detail Panel */}
-        <div className="detail-panel">
-          {selectedApproval ? (
-            <div className="detail-content">
-              <div className="detail-header">
-                <h2>Detail Pengajuan</h2>
-                <span className="tipe-badge-large" style={{ backgroundColor: getTipeColor(selectedApproval.tipe) }}>
-                  Seminar {selectedApproval.tipe}
-                </span>
-              </div>
-
-              <div className="detail-section">
-                <h3>Informasi Mahasiswa</h3>
-                <div className="info-grid">
-                  <div className="info-item">
-                    <span className="info-label">Nama</span>
-                    <span className="info-value">{selectedMahasiswaName}</span>
-                  </div>
-                  <div className="info-item">
-                    <span className="info-label">NPM</span>
-                    <span className="info-value">{selectedMahasiswaNpm}</span>
-                  </div>
-                  <div className="info-item">
-                    <span className="info-label">Peran Anda</span>
-                    <span className="info-value">{selectedApproval.peran}</span>
-                  </div>
-                  <div className="info-item">
-                    <span className="info-label">Tanggal Pengajuan</span>
-                    <span className="info-value">{selectedTanggalPengajuan}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="detail-section">
-                <h3>Judul Seminar</h3>
-                <p className="judul-text">{selectedApproval.judul}</p>
-              </div>
-
-              <div className="detail-section">
-                <h3>Abstrak</h3>
-                <p className="abstrak-text">{selectedApproval.abstrak}</p>
-              </div>
-
-              {/* Date Picker Section */}
-              <div className="detail-section date-picker-section">
-                <div className="section-header-action">
-                  <h3>Ketersediaan Anda</h3>
-                  <button 
-                    className="btn-toggle-dates"
-                    onClick={() => setShowDatePicker(!showDatePicker)}
-                  >
-                    {showDatePicker ? '▲ Sembunyikan' : '▼ Pilih Tanggal'}
-                  </button>
-                </div>
-                
-                {showDatePicker && (
-                  <div className="date-picker-container">
-                    <p className="date-picker-info">
-                      📅 Pilih tanggal-tanggal Anda tersedia untuk ujian seminar ini.
-                      Admin akan mencocokkan dengan ketersediaan dosen lain.
-                    </p>
-                    
-                    <div className="selected-dates-summary">
-                      <strong>Tanggal Terpilih ({selectedDates.length}):</strong>
-                      {selectedDates.length > 0 ? (
-                        <div className="selected-dates-list">
-                          {selectedDates.map(date => (
-                            <span key={date} className="selected-date-chip">
-                              {dateOptions.find(d => d.value === date)?.label}
-                              <button onClick={() => handleDateSelect(date)}>×</button>
-                            </span>
+                        <div className="dates-grid">
+                          {dateOptions.map((date) => (
+                            <button
+                              key={date.value}
+                              className={`date-option ${selectedDates.includes(date.value) ? 'selected' : ''}`}
+                              onClick={() => handleDateSelect(date.value)}
+                            >
+                              <span className="date-day">{date.dayName}</span>
+                              <span className="date-label">{date.label}</span>
+                            </button>
                           ))}
                         </div>
-                      ) : (
-                        <span className="no-dates">Belum ada tanggal dipilih</span>
-                      )}
-                    </div>
-
-                    <div className="dates-grid">
-                      {dateOptions.map((date) => (
-                        <button
-                          key={date.value}
-                          className={`date-option ${selectedDates.includes(date.value) ? 'selected' : ''}`}
-                          onClick={() => handleDateSelect(date.value)}
-                        >
-                          <span className="date-day">{date.dayName}</span>
-                          <span className="date-label">{date.label}</span>
-                        </button>
-                      ))}
-                    </div>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
 
-              {/* Catatan */}
-              <div className="detail-section">
-                <h3>Catatan (Opsional)</h3>
-                <textarea
-                  className="catatan-input"
-                  placeholder="Tambahkan catatan atau saran untuk mahasiswa..."
-                  value={catatan}
-                  onChange={(e) => setCatatan(e.target.value)}
-                  rows={4}
-                />
-              </div>
+                  <div className="detail-section">
+                    <h3>
+                      <span className="section-icon" aria-hidden="true">
+                        <MessageSquare size={16} />
+                      </span>
+                      Catatan (Opsional)
+                    </h3>
+                    <textarea
+                      className="catatan-input"
+                      placeholder="Tambahkan catatan, saran, atau masukan untuk mahasiswa (opsional)..."
+                      value={catatan}
+                      onChange={(e) => setCatatan(e.target.value)}
+                      rows={4}
+                    />
+                  </div>
 
-              {/* Action Buttons */}
-              <div className="action-buttons">
-                <button className="btn-reject" onClick={handleReject}>
-                  <span>❌</span> Tolak
-                </button>
-                <button className="btn-approve" onClick={handleApprove}>
-                  <span>✓</span> Setujui & Kirim Tanggal
-                </button>
-              </div>
+                  <div className="approval-actions">
+                    <button
+                      type="button"
+                      className="approval-btn approval-btn--reject"
+                      onClick={handleReject}
+                      disabled={submitting}
+                    >
+                      <XCircle size={18} />
+                      {submitting ? 'Memproses...' : 'Tolak Pengajuan'}
+                    </button>
+                    <button
+                      type="button"
+                      className="approval-btn approval-btn--approve"
+                      onClick={handleApprove}
+                      disabled={submitting}
+                    >
+                      <CheckCircle2 size={18} />
+                      {submitting ? 'Memproses...' : 'Setujui & Kirim Tanggal'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="no-selection">
+                  <div className="no-selection-icon">
+                    <ClipboardList size={32} />
+                  </div>
+                  <h3>Pilih Pengajuan</h3>
+                  <p>Klik salah satu pengajuan di atas untuk melihat detail dan memberikan persetujuan.</p>
+                </div>
+              )}
             </div>
-          ) : (
-            <div className="no-selection">
-              <div className="no-selection-icon">📋</div>
-              <h3>Pilih Pengajuan</h3>
-              <p>Klik pada salah satu pengajuan di sebelah kiri untuk melihat detail dan memberikan persetujuan</p>
-            </div>
-          )}
-        </div>
-        </div>
-      )}
+          </>
+        )}
+      </div>
     </div>
   );
 }

@@ -71,6 +71,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/seminars/{id}', [MahasiswaSeminarController::class, 'show']);
         Route::post('/seminars', [MahasiswaSeminarController::class, 'store']);
         Route::get('/seminars/{id}/status', [MahasiswaSeminarController::class, 'getStatus']);
+        Route::post('/seminars/{id}/cancel', [MahasiswaSeminarController::class, 'cancel']);
         Route::get('/dosens', [MahasiswaSeminarController::class, 'getDosenList']);
         
         // Attendance
@@ -103,6 +104,7 @@ Route::middleware('auth:sanctum')->group(function () {
         
         // Seminars
         Route::get('/seminars', [ApprovalController::class, 'mySeminars']);
+        Route::post('/seminars/{id}/cancel', [ApprovalController::class, 'cancelSeminar']);
         
         // Attendance
         Route::post('/attendance/status', [ApprovalController::class, 'updateAttendanceStatus']);

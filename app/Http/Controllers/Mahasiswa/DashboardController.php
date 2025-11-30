@@ -31,6 +31,7 @@ class DashboardController extends Controller
         // Get recent seminars
         $recentSeminars = Seminar::with(['pembimbing1', 'pembimbing2', 'penguji', 'approvals'])
             ->where('mahasiswa_id', $user->id)
+            ->whereNull('cancelled_at')
             ->orderBy('created_at', 'desc')
             ->limit(5)
             ->get()
@@ -48,6 +49,24 @@ class DashboardController extends Controller
                 ];
             });
 
+        // Get cancelled seminars
+        $cancelledSeminars = Seminar::with(['pembimbing1', 'pembimbing2', 'penguji'])
+            ->where('mahasiswa_id', $user->id)
+            ->whereNotNull('cancelled_at')
+            ->orderBy('cancelled_at', 'desc')
+            ->limit(5)
+            ->get()
+            ->map(function ($seminar) {
+                return [
+                    'id' => $seminar->id,
+                    'judul' => $seminar->judul,
+                    'jenis_seminar' => $seminar->getJenisSeminarDisplay(),
+                    'cancel_reason' => $seminar->cancel_reason,
+                    'cancelled_at' => $seminar->cancelled_at->format('d M Y H:i'),
+                    'days_ago' => $seminar->cancelled_at->diffInDays(now()),
+                ];
+            });
+
         return response()->json([
             'message' => 'Dashboard data retrieved successfully',
             'data' => [
@@ -59,6 +78,7 @@ class DashboardController extends Controller
                 'counts' => $seminarCounts,
                 'attended_seminars_count' => $attendedSeminarsCount,
                 'recent_seminars' => $recentSeminars,
+                'cancelled_seminars' => $cancelledSeminars,
             ]
         ]);
     }

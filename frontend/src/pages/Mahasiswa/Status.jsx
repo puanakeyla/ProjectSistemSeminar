@@ -3,10 +3,14 @@ import axios from 'axios';
 import './Status.css';
 import { CheckCircle, XCircle, Clock, Calendar, User, Gavel } from 'lucide-react'
 
+const API_URL = 'http://127.0.0.1:8000/api';
+const CANCELLABLE_STATUSES = ['draft', 'pending_verification', 'revising', 'approved', 'scheduled'];
+
 function Status() {
   const [statusList, setStatusList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [cancellingId, setCancellingId] = useState(null);
 
   useEffect(() => {
     fetchSeminars();
@@ -15,7 +19,7 @@ function Status() {
   const fetchSeminars = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://127.0.0.1:8000/api/mahasiswa/seminars', {
+      const response = await axios.get(`${API_URL}/mahasiswa/seminars`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Accept': 'application/json'
@@ -37,6 +41,8 @@ function Status() {
       case 'scheduled':
       case 'finished':
         return 'approved';
+      case 'cancelled':
+        return 'cancelled';
       case 'revising':
         return 'revision';
       case 'draft':
@@ -53,7 +59,8 @@ function Status() {
       'approved': 'Disetujui',
       'revising': 'Perlu Revisi',
       'scheduled': 'Terjadwal',
-      'finished': 'Selesai'
+      'finished': 'Selesai',
+      'cancelled': 'Dibatalkan'
     };
     return statusMap[status] || status;
   };
@@ -66,6 +73,41 @@ function Status() {
     const pending = approvals.filter(a => a.status === 'pending').length;
 
     return `${approved} Approved, ${rejected} Rejected, ${pending} Pending`;
+  };
+
+  const canCancel = (status, isCancelled) => {
+    if (isCancelled) return false;
+    return CANCELLABLE_STATUSES.includes(status);
+  };
+
+  const handleCancel = async (seminarId) => {
+    const confirmCancel = window.confirm('Batalkan pengajuan ini? Dosen & admin akan diberi tahu.');
+    if (!confirmCancel) {
+      return;
+    }
+
+    const reason = window.prompt('Alasan pembatalan (opsional):', '') || undefined;
+
+    try {
+      setCancellingId(seminarId);
+      const token = localStorage.getItem('token');
+      await axios.post(`${API_URL}/mahasiswa/seminars/${seminarId}/cancel`, {
+        reason: reason?.trim() || undefined,
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json'
+        }
+      });
+
+      await fetchSeminars();
+    } catch (err) {
+      console.error('Gagal membatalkan pengajuan:', err);
+      const message = err.response?.data?.message || 'Gagal membatalkan pengajuan';
+      alert(message);
+    } finally {
+      setCancellingId(null);
+    }
   };
 
   if (loading) {
@@ -143,6 +185,7 @@ function Status() {
                           <span className={`approval-status ${approval.status}`}>
                             {approval.status === 'approved' ? (<><CheckCircle className="w-4 h-4 inline mr-1"/> Disetujui</>) :
                              approval.status === 'rejected' ? (<><XCircle className="w-4 h-4 inline mr-1"/> Ditolak</>) :
+                             approval.status === 'cancelled' ? (<><XCircle className="w-4 h-4 inline mr-1"/> Dibatalkan</>) :
                              (<><Clock className="w-4 h-4 inline mr-1"/> Menunggu</>)}
                           </span>
                         </div>
@@ -158,6 +201,7 @@ function Status() {
                     <span className={`info-value admin-status ${item.admin_status}`}>
                       {item.admin_status === 'approved' ? (<><CheckCircle className="w-4 h-4 inline mr-1"/> Disetujui</>) :
                        item.admin_status === 'rejected' ? (<><XCircle className="w-4 h-4 inline mr-1"/> Ditolak</>) :
+                       item.admin_status === 'cancelled' ? (<><XCircle className="w-4 h-4 inline mr-1"/> Dibatalkan Mahasiswa</>) :
                        (<><Clock className="w-4 h-4 inline mr-1"/> Menunggu</>)}
                     </span>
                   </div>
@@ -168,6 +212,20 @@ function Status() {
                   <div className="info-row">
                     <span className="info-label">Catatan Admin:</span>
                     <span className="info-value">{item.admin_catatan}</span>
+                  </div>
+                )}
+
+                {item.is_cancelled && (
+                  <div className="info-row cancelled-info">
+                    <span className="info-label">Pembatalan:</span>
+                    <span className="info-value">
+                      Dibuat pada {item.cancelled_at
+                        ? new Date(item.cancelled_at).toLocaleString('id-ID', {
+                            day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                          })
+                        : 'waktu tidak tersedia'}
+                      {item.cancel_reason ? ` · ${item.cancel_reason}` : ''}
+                    </span>
                   </div>
                 )}
 
@@ -182,6 +240,18 @@ function Status() {
                       <p><strong>Ruang:</strong> {item.schedule.ruang}</p>
                       <p><strong>Durasi:</strong> {item.schedule.durasi_menit} menit</p>
                     </div>
+                  </div>
+                )}
+
+                {canCancel(item.status, item.is_cancelled) && (
+                  <div className="action-row">
+                    <button
+                      className="btn-cancel"
+                      onClick={() => handleCancel(item.id)}
+                      disabled={cancellingId === item.id}
+                    >
+                      {cancellingId === item.id ? 'Membatalkan...' : 'Batalkan Pengajuan'}
+                    </button>
                   </div>
                 )}
               </div>

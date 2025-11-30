@@ -43,6 +43,53 @@ class SeminarController extends Controller
         ]);
     }
 
+    /** Cancel an existing seminar submission */
+    public function cancel(Request $request, int $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'reason' => 'nullable|string|max:255',
+        ]);
+
+        $seminar = Seminar::with(['schedule', 'approvals'])
+            ->where('mahasiswa_id', $request->user()->id)
+            ->findOrFail($id);
+
+        if ($seminar->isCancelled()) {
+            return response()->json([
+                'message' => 'Pengajuan sudah dibatalkan sebelumnya.',
+                'data' => $this->mapSeminar($seminar),
+            ], 409);
+        }
+
+        if ($seminar->status === 'finished') {
+            return response()->json([
+                'message' => 'Seminar yang sudah selesai tidak dapat dibatalkan.'
+            ], 422);
+        }
+
+        $seminar->update([
+            'status' => 'cancelled',
+            'cancelled_at' => now(),
+            'cancel_reason' => $validated['reason'] ?? null,
+        ]);
+
+        if ($seminar->schedule && $seminar->schedule->status !== 'completed') {
+            $seminar->schedule->update(['status' => 'cancelled']);
+        }
+
+        foreach ($seminar->approvals->where('status', 'pending') as $approval) {
+            $approval->update([
+                'status' => 'cancelled',
+                'catatan' => trim(($approval->catatan ? $approval->catatan . ' | ' : '') . 'Dibatalkan oleh mahasiswa'),
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'Pengajuan seminar berhasil dibatalkan.',
+            'data' => $this->mapSeminar($seminar->fresh(['schedule', 'approvals.dosen'])),
+        ]);
+    }
+
     /** Store new seminar with dosen selection and file upload */
     public function store(Request $request): JsonResponse
     {
@@ -142,9 +189,13 @@ class SeminarController extends Controller
             'admin_status' => match ($s->status) {
                 'approved', 'scheduled', 'finished' => 'approved',
                 'revising' => 'rejected',
+                'cancelled' => 'cancelled',
                 default => 'pending',
             },
             'created_at' => $s->created_at?->toIso8601String(),
+            'cancelled_at' => $s->cancelled_at?->toIso8601String(),
+            'cancel_reason' => $s->cancel_reason,
+            'is_cancelled' => $s->isCancelled(),
         ];
 
         if ($s->relationLoaded('approvals')) {

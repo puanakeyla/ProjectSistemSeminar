@@ -42,6 +42,19 @@ function App() {
     }
   }, []);
 
+  useEffect(() => {
+    const handleExternalNavigation = (event) => {
+      const targetPage = event.detail?.page;
+      if (!targetPage) return;
+
+      setCurrentPage(targetPage);
+      setSidebarOpen(true);
+    };
+
+    window.addEventListener('semar:navigate', handleExternalNavigation);
+    return () => window.removeEventListener('semar:navigate', handleExternalNavigation);
+  }, []);
+
   const handleLogin = (user) => {
     setIsLoggedIn(true)
     setUserRole(user.role)

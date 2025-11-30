@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { dosenAPI } from '../../services/api';
 import './Jadwal.css';
-import { Calendar, Clock, MapPin, RefreshCw, AlertCircle, User } from 'lucide-react';
+import { Calendar, Clock, MapPin, RefreshCw, AlertCircle, User, CalendarDays, Loader2, XCircle } from 'lucide-react';
 
 const FILTERS = [
   { id: 'upcoming', label: 'Mendatang' },
@@ -32,6 +32,9 @@ function DosenJadwal() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
+  const [cancelModal, setCancelModal] = useState({ show: false, seminar: null });
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
     loadSchedules();
@@ -56,6 +59,41 @@ function DosenJadwal() {
   const handleRefresh = () => {
     setRefreshing(true);
     loadSchedules();
+  };
+
+  const handleCancelClick = (seminar) => {
+    setCancelModal({ show: true, seminar });
+    setCancelReason('');
+  };
+
+  const handleCancelConfirm = async () => {
+    if (!cancelReason.trim()) {
+      alert('Harap masukkan alasan pembatalan');
+      return;
+    }
+
+    try {
+      setCancelling(true);
+      await dosenAPI.cancelSeminar(cancelModal.seminar.id, {
+        cancel_reason: cancelReason
+      });
+      
+      alert('Seminar berhasil dibatalkan. Mahasiswa akan menerima notifikasi.');
+      setCancelModal({ show: false, seminar: null });
+      setCancelReason('');
+      loadSchedules(); // Refresh data
+    } catch (err) {
+      console.error('Failed to cancel seminar:', err);
+      const message = err.response?.data?.message || 'Gagal membatalkan seminar';
+      alert(message);
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  const handleCancelClose = () => {
+    setCancelModal({ show: false, seminar: null });
+    setCancelReason('');
   };
 
   const filteredSchedules = useMemo(() => {
@@ -88,111 +126,216 @@ function DosenJadwal() {
 
   if (loading) {
     return (
-      <div className="dosen-schedule-page">
-        <div className="empty-state">
-          <div className="empty-icon">⏳</div>
-          <h2>Memuat jadwal dosen...</h2>
+      <div className="jadwal-page">
+        <div className="jadwal-card">
+          <div className="jadwal-state">
+            <div className="jadwal-state-icon">
+              <Loader2 size={32} className="icon-spin" />
+            </div>
+            <h2>Memuat jadwal dosen...</h2>
+            <p>Harap tunggu sebentar.</p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="dosen-schedule-page">
-      <div className="schedule-header">
-        <div>
-          <h1>Jadwal Seminar Anda</h1>
-          <p>Daftar seminar tempat Anda terdaftar sebagai pembimbing atau penguji</p>
-        </div>
-        <button className="refresh-btn" onClick={handleRefresh} disabled={refreshing}>
-          <RefreshCw className={`w-4 h-4 ${refreshing ? 'spinning' : ''}`} />
-          {refreshing ? 'Menyegarkan...' : 'Segarkan'}
-        </button>
-      </div>
-
-      <div className="filter-row">
-        {FILTERS.map((option) => (
-          <button
-            key={option.id}
-            className={`filter-chip ${filter === option.id ? 'active' : ''}`}
-            onClick={() => setFilter(option.id)}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
-
-      {error && (
-        <div className="alert error">
-          <AlertCircle className="w-4 h-4" />
-          <span>{error}</span>
-        </div>
-      )}
-
-      {filteredSchedules.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-icon">📭</div>
-          <h2>
-            {filter === 'upcoming'
-              ? 'Belum ada jadwal mendatang'
-              : filter === 'today'
-              ? 'Tidak ada jadwal hari ini'
-              : 'Tidak ada data untuk filter ini'}
-          </h2>
-          <p>
-            {filter === 'all'
-              ? 'Belum ada penjadwalan untuk seminar Anda.'
-              : 'Coba pilih filter lain atau segarkan data.'}
-          </p>
-        </div>
-      ) : (
-        <div className="schedule-grid">
-          {filteredSchedules.map((seminar) => {
-            const schedule = seminar.schedule;
-            return (
-              <div key={seminar.id} className="schedule-card">
-                <div className="card-top">
-                  <div>
-                    <p className="seminar-type">{seminar.jenis_seminar}</p>
-                    <h3>{seminar.judul}</h3>
-                  </div>
-                  <span className={`status-pill status-${seminar.status_color}`}>
-                    {seminar.status_display}
-                  </span>
-                </div>
-
-                <div className="student-info">
-                  <User className="w-4 h-4" />
-                  <div>
-                    <p className="student-name">{seminar.mahasiswa_name}</p>
-                    <p className="student-npm">{seminar.mahasiswa_npm}</p>
-                  </div>
-                </div>
-
-                <div className="schedule-details">
-                  <div className="detail-item">
-                    <Calendar className="w-4 h-4" />
-                    <span>{formatDateLabel(schedule)}</span>
-                  </div>
-                  <div className="detail-item">
-                    <Clock className="w-4 h-4" />
-                    <span>{schedule?.tanggal_jam?.split('·')?.pop()?.trim() || schedule?.tanggal_jam || '-'}</span>
-                  </div>
-                  <div className="detail-item">
-                    <MapPin className="w-4 h-4" />
-                    <span>{schedule?.ruangan || 'Belum ditentukan'}</span>
-                  </div>
-                </div>
-
-                <div className="card-footer">
-                  <span className="role-tag">Peran Anda: {seminar.user_role}</span>
-                  {!schedule && (
-                    <span className="pending-label">Menunggu jadwal dari admin</span>
-                  )}
-                </div>
+    <div className="jadwal-page">
+      <div className="jadwal-card">
+        <div className="jadwal-hero">
+          <div className="jadwal-hero-text">
+            <div className="jadwal-hero-title">
+              <div className="jadwal-hero-icon">
+                <CalendarDays size={24} />
               </div>
-            );
-          })}
+              <div>
+                <p className="jadwal-hero-subtitle">Daftar seminar tempat Anda terdaftar sebagai pembimbing atau penguji</p>
+                <h1>Jadwal Seminar Anda</h1>
+              </div>
+            </div>
+          </div>
+          <button className="jadwal-refresh-btn" onClick={handleRefresh} disabled={refreshing}>
+            <RefreshCw size={16} className={refreshing ? 'spinning' : ''} />
+            {refreshing ? 'Menyegarkan...' : 'Segarkan'}
+          </button>
+        </div>
+
+        <div className="jadwal-section">
+          <div className="jadwal-filter">
+            {FILTERS.map((option) => (
+              <button
+                key={option.id}
+                className={`jadwal-filter-btn ${filter === option.id ? 'active' : ''}`}
+                onClick={() => setFilter(option.id)}
+              >
+                <span>{option.label}</span>
+              </button>
+            ))}
+          </div>
+
+          {error && (
+            <div className="jadwal-alert error">
+              <AlertCircle size={16} />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {filteredSchedules.length === 0 ? (
+            <div className="jadwal-empty">
+              <div className="jadwal-empty-icon">
+                <Calendar size={32} />
+              </div>
+              <h3>
+                {filter === 'upcoming'
+                  ? 'Belum ada jadwal mendatang'
+                  : filter === 'today'
+                  ? 'Tidak ada jadwal hari ini'
+                  : 'Tidak ada data untuk filter ini'}
+              </h3>
+              <p>
+                {filter === 'all'
+                  ? 'Belum ada penjadwalan untuk seminar Anda.'
+                  : 'Coba pilih filter lain atau segarkan data.'}
+              </p>
+            </div>
+          ) : (
+            <div className="jadwal-grid">
+            {filteredSchedules.map((seminar) => {
+              const schedule = seminar.schedule;
+              return (
+                <div key={seminar.id} className="jadwal-item">
+                  <div className="jadwal-item-header">
+                    <div className="seminar-info">
+                      <span className="seminar-type-badge">{seminar.jenis_seminar}</span>
+                      <h3 className="jadwal-title">{seminar.judul}</h3>
+                    </div>
+                    <span className={`status-badge status-${seminar.status_color}`}>
+                      {seminar.status_display}
+                    </span>
+                  </div>
+
+                  <div className="student-row">
+                    <div className="student-avatar">
+                      {seminar.mahasiswa_name.charAt(0)}
+                    </div>
+                    <div className="student-details">
+                      <p className="student-name">{seminar.mahasiswa_name}</p>
+                      <p className="student-npm">{seminar.mahasiswa_npm}</p>
+                    </div>
+                  </div>
+
+                  <div className="jadwal-details">
+                    <div className="jadwal-detail-item">
+                      <span className="detail-icon">
+                        <Calendar size={14} />
+                      </span>
+                      <span>{formatDateLabel(schedule)}</span>
+                    </div>
+                    <div className="jadwal-detail-item">
+                      <span className="detail-icon">
+                        <Clock size={14} />
+                      </span>
+                      <span>{schedule?.tanggal_jam?.split('·')?.pop()?.trim() || schedule?.tanggal_jam || '-'}</span>
+                    </div>
+                    <div className="jadwal-detail-item">
+                      <span className="detail-icon">
+                        <MapPin size={14} />
+                      </span>
+                      <span>{schedule?.ruangan || 'Belum ditentukan'}</span>
+                    </div>
+                  </div>
+
+                  <div className="jadwal-footer">
+                    <span className="role-label">Peran Anda: <strong>{seminar.user_role}</strong></span>
+                    {!schedule ? (
+                      <span className="pending-text">Menunggu jadwal dari admin</span>
+                    ) : (
+                      schedule.is_upcoming && (
+                        <button 
+                          className="cancel-seminar-btn"
+                          onClick={() => handleCancelClick(seminar)}
+                          title="Batalkan Seminar"
+                        >
+                          <XCircle size={16} />
+                          Batalkan
+                        </button>
+                      )
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Cancel Modal */}
+      {cancelModal.show && (
+        <div className="modal-overlay" onClick={handleCancelClose}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-icon-warning">
+                <XCircle size={32} />
+              </div>
+              <h2>Batalkan Seminar</h2>
+              <p className="modal-warning-text">
+                Perhatian: Membatalkan seminar akan membatalkan seluruh jadwal dan mahasiswa akan menerima notifikasi.
+              </p>
+            </div>
+
+            <div className="modal-body">
+              <div className="seminar-info-box">
+                <p className="info-label">Mahasiswa</p>
+                <p className="info-value">{cancelModal.seminar?.mahasiswa_name}</p>
+                <p className="info-label">Judul Seminar</p>
+                <p className="info-value">{cancelModal.seminar?.judul}</p>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="cancel-reason">
+                  Alasan Pembatalan <span className="required">*</span>
+                </label>
+                <textarea
+                  id="cancel-reason"
+                  className="form-textarea"
+                  rows="4"
+                  placeholder="Jelaskan alasan pembatalan seminar..."
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  disabled={cancelling}
+                />
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button
+                className="btn-secondary"
+                onClick={handleCancelClose}
+                disabled={cancelling}
+              >
+                Batal
+              </button>
+              <button
+                className="btn-danger"
+                onClick={handleCancelConfirm}
+                disabled={cancelling || !cancelReason.trim()}
+              >
+                {cancelling ? (
+                  <>
+                    <Loader2 size={16} className="icon-spin" />
+                    Membatalkan...
+                  </>
+                ) : (
+                  <>
+                    <XCircle size={16} />
+                    Batalkan Seminar
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
