@@ -16,17 +16,24 @@ class AttendanceController extends Controller
      */
     public function getSchedules(Request $request): JsonResponse
     {
+        $user = $request->user();
+        
+        // Get all scheduled seminars (including own seminars and seminars for attendance)
         $schedules = SeminarSchedule::with(['seminar.mahasiswa', 'seminar.pembimbing1', 'seminar.pembimbing2', 'seminar.penguji'])
-            ->whereHas('seminar', function ($query) {
-                $query->where('status', 'approved');
-            })
             ->where('waktu_mulai', '>=', now()->subDay()) // Include today and future
             ->orderBy('waktu_mulai')
             ->get()
-            ->map(function ($schedule) use ($request) {
-                $isRegistered = SeminarAttendance::where('mahasiswa_id', $request->user()->id)
+            ->filter(function ($schedule) use ($user) {
+                // Include if: approved seminar OR own seminar (regardless of status)
+                return $schedule->seminar->status === 'approved' || 
+                       $schedule->seminar->mahasiswa_id === $user->id;
+            })
+            ->map(function ($schedule) use ($user) {
+                $isRegistered = SeminarAttendance::where('mahasiswa_id', $user->id)
                     ->where('seminar_schedule_id', $schedule->id)
                     ->exists();
+                
+                $isOwnSeminar = $schedule->seminar->mahasiswa_id == $user->id;
 
                 return [
                     'id' => $schedule->id,
@@ -35,18 +42,21 @@ class AttendanceController extends Controller
                     'mahasiswa_npm' => $schedule->seminar->mahasiswa->npm,
                     'judul' => $schedule->seminar->judul,
                     'jenis_seminar' => $schedule->seminar->getJenisSeminarDisplay(),
-                    'ruangan' => $schedule->ruangan,
+                    'ruangan' => $schedule->ruang,
                     'tanggal_jam' => $schedule->waktu_mulai->format('Y-m-d H:i:s'),
                     'tanggal_display' => $schedule->getFormattedDate(),
                     'waktu_display' => $schedule->getFormattedTime(),
                     'is_upcoming' => $schedule->isUpcoming(),
                     'is_today' => $schedule->isToday(),
                     'is_registered' => $isRegistered,
-                    'pembimbing1' => $schedule->seminar->pembimbing1->name,
-                    'pembimbing2' => $schedule->seminar->pembimbing2->name,
-                    'penguji' => $schedule->seminar->penguji->name,
+                    'is_own_seminar' => $isOwnSeminar,
+                    'seminar_status' => $schedule->seminar->getStatusDisplay(),
+                    'pembimbing1' => $schedule->seminar->pembimbing1->name ?? 'N/A',
+                    'pembimbing2' => $schedule->seminar->pembimbing2->name ?? 'N/A',
+                    'penguji' => $schedule->seminar->penguji->name ?? 'N/A',
                 ];
-            });
+            })
+            ->values(); // Reset array keys
 
         return response()->json([
             'message' => 'Seminar schedules retrieved successfully',
@@ -91,7 +101,7 @@ class AttendanceController extends Controller
                 'id' => $attendance->id,
                 'seminar_title' => $schedule->seminar->judul,
                 'tanggal_jam' => $schedule->getFormattedDateTime(),
-                'ruangan' => $schedule->ruangan,
+                'ruangan' => $schedule->ruang,
                 'waktu_absen' => $attendance->waktu_absen->format('d M Y H:i'),
             ]
         ]);
@@ -113,7 +123,7 @@ class AttendanceController extends Controller
                     'jenis_seminar' => $attendance->schedule->seminar->getJenisSeminarDisplay(),
                     'mahasiswa_presenter' => $attendance->schedule->seminar->mahasiswa->name,
                     'npm_presenter' => $attendance->schedule->seminar->mahasiswa->npm,
-                    'ruangan' => $attendance->schedule->ruangan,
+                    'ruangan' => $attendance->schedule->ruang,
                     'tanggal_seminar' => $attendance->schedule->getFormattedDate(),
                     'waktu_seminar' => $attendance->schedule->getFormattedTime(),
                     'waktu_absen' => $attendance->waktu_absen->format('d M Y H:i'),
@@ -190,7 +200,7 @@ class AttendanceController extends Controller
             'message' => 'Absensi berhasil dicatat',
             'data' => [
                 'seminar_title' => $schedule->seminar->judul,
-                'ruangan' => $schedule->ruangan,
+                'ruangan' => $schedule->ruang,
                 'waktu_absen' => $attendance->waktu_absen->format('d M Y H:i'),
                 'metode_absen' => $attendance->metode_absen,
             ]

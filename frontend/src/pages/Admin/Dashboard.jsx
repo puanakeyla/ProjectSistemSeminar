@@ -8,7 +8,8 @@ import {
   ClipboardList,
   AlertTriangle,
   RefreshCcw,
-  ShieldCheck
+  ShieldCheck,
+  XCircle
 } from 'lucide-react'
 
 import { adminAPI } from '../../services/api'
@@ -28,6 +29,7 @@ function Dashboard() {
   })
   const [recentSeminars, setRecentSeminars] = useState([])
   const [todaySeminars, setTodaySeminars] = useState([])
+  const [cancelledSeminars, setCancelledSeminars] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -52,6 +54,7 @@ function Dashboard() {
       })
       setRecentSeminars(Array.isArray(data?.recent_seminars) ? data.recent_seminars : [])
       setTodaySeminars(Array.isArray(data?.today_seminars) ? data.today_seminars : [])
+      setCancelledSeminars(Array.isArray(data?.cancelled_seminars) ? data.cancelled_seminars : [])
     } catch (err) {
       console.error('Error fetching dashboard data:', err)
       setError(err.response?.data?.message || 'Gagal memuat data dashboard')

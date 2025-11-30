@@ -89,7 +89,7 @@ class AttendanceController extends Controller
                 'schedule' => [
                     'id' => $schedule->id,
                     'judul' => $schedule->seminar->judul,
-                    'ruangan' => $schedule->ruangan,
+                    'ruangan' => $schedule->ruang,
                     'tanggal_jam' => $schedule->getFormattedDateTime(),
                     'mahasiswa_presenter' => $schedule->seminar->mahasiswa->name,
                 ],
@@ -275,7 +275,7 @@ class AttendanceController extends Controller
             'seminar_schedule_id' => $attendance->seminar_schedule_id,
             'seminar_title' => $attendance->schedule->seminar->judul,
             'presenter_name' => $attendance->schedule->seminar->mahasiswa->name,
-            'ruangan' => $attendance->schedule->ruangan,
+            'ruangan' => $attendance->schedule->ruang,
             'tanggal_seminar' => $attendance->schedule->getFormattedDateTime(),
             'waktu_absen' => $attendance->waktu_absen->format('Y-m-d H:i:s'),
             'waktu_absen_display' => $attendance->waktu_absen->format('d M Y H:i'),

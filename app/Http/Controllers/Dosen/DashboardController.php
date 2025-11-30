@@ -189,7 +189,7 @@ class DashboardController extends Controller
             'jenis_seminar' => $seminar->getJenisSeminarDisplay(),
             'mahasiswa_name' => $seminar->mahasiswa->name,
             'mahasiswa_npm' => $seminar->mahasiswa->npm,
-            'ruangan' => $schedule->ruangan,
+            'ruangan' => $schedule->ruang,
             'tanggal_jam' => $schedule->waktu_mulai->format('Y-m-d H:i:s'),
             'tanggal_display' => $schedule->getFormattedDate(),
             'waktu_display' => $schedule->getFormattedTime(),

@@ -128,7 +128,11 @@ function Jadwal() {
                 </div>
 
                 <div className="jadwal-card-footer">
-                    {jadwal.is_registered ? (
+                  {jadwal.is_own_seminar ? (
+                    <span className="badge-own-seminar" style={{ background: '#3b82f6', color: 'white', padding: '8px 16px', borderRadius: '8px', fontWeight: '600' }}>
+                      <Calendar className="w-4 h-4 inline-block mr-1" />Seminar Anda
+                    </span>
+                  ) : jadwal.is_registered ? (
                     <span className="badge-registered"><CheckCircle className="w-4 h-4 inline-block mr-1" />Sudah Mendaftar</span>
                   ) : (
                     <button className="btn-register" onClick={() => handleRegister(jadwal.id)}>

@@ -84,9 +84,8 @@ function App() {
     if (role === 'dosen') {
       return [
         { id: 'dashboard', label: 'Dashboard', icon: <BarChart3 className="w-5 h-5" /> },
-        { id: 'approval', label: 'Approval', icon: <ClipboardList className="w-5 h-5" /> },
-        { id: 'jadwal', label: 'Jadwal', icon: <Calendar className="w-5 h-5" /> },
-        { id: 'mahasiswa', label: 'Mahasiswa', icon: <FileText className="w-5 h-5" /> }
+        { id: 'approval', label: 'Persetujuan Pengajuan', icon: <ClipboardList className="w-5 h-5" /> },
+        { id: 'jadwal', label: 'Jadwal', icon: <Calendar className="w-5 h-5" /> }
       ]
     }
 

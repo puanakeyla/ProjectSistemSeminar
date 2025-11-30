@@ -62,6 +62,11 @@ class SeminarSchedule extends Model
         return $this->waktu_mulai < now();
     }
 
+    public function isToday()
+    {
+        return $this->waktu_mulai->isToday();
+    }
+
     public function getFormattedDateTime()
     {
         return $this->waktu_mulai->format('d F Y H:i');

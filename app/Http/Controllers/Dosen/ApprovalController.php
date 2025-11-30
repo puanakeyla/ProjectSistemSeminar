@@ -241,7 +241,7 @@ class ApprovalController extends Controller
             'data' => [
                 'seminar_title' => $seminar->judul,
                 'tanggal_jam' => $schedule->getFormattedDateTime(),
-                'ruangan' => $schedule->ruangan,
+                'ruangan' => $schedule->ruang,
                 'role' => $attendance->getRoleDisplay(),
                 'status' => $validated['status'],
                 'status_display' => $attendance->getStatusDisplay(),
@@ -389,7 +389,7 @@ class ApprovalController extends Controller
             'user_role' => $userRole,
             'created_at' => $seminar->created_at->format('d M Y'),
             'schedule' => $seminar->schedule ? [
-                'ruangan' => $seminar->schedule->ruangan,
+                'ruangan' => $seminar->schedule->ruang,
                 'tanggal_jam' => $seminar->schedule->waktu_mulai->format('d M Y H:i'),
                 'waktu_mulai_iso' => $seminar->schedule->waktu_mulai->toIso8601String(),
                 'is_upcoming' => $seminar->schedule->isUpcoming(),

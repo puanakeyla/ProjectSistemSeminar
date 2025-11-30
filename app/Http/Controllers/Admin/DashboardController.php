@@ -70,9 +70,28 @@ class DashboardController extends Controller
                     'id' => $schedule->id,
                     'mahasiswa_name' => $schedule->seminar->mahasiswa->name,
                     'judul' => $schedule->seminar->judul,
-                    'ruangan' => $schedule->ruangan,
+                    'ruangan' => $schedule->ruang,
                     'waktu' => $schedule->getFormattedTime(),
                     'jenis_seminar' => $schedule->seminar->getJenisSeminarDisplay(),
+                ];
+            });
+
+        // Recently cancelled seminars
+        $cancelledSeminars = Seminar::with(['mahasiswa', 'pembimbing1', 'pembimbing2', 'penguji'])
+            ->whereNotNull('cancelled_at')
+            ->orderBy('cancelled_at', 'desc')
+            ->limit(5)
+            ->get()
+            ->map(function ($seminar) {
+                return [
+                    'id' => $seminar->id,
+                    'mahasiswa_name' => $seminar->mahasiswa->name,
+                    'mahasiswa_npm' => $seminar->mahasiswa->npm,
+                    'judul' => $seminar->judul,
+                    'jenis_seminar' => $seminar->getJenisSeminarDisplay(),
+                    'cancel_reason' => $seminar->cancel_reason,
+                    'cancelled_at' => $seminar->cancelled_at->format('d M Y H:i'),
+                    'days_ago' => $seminar->cancelled_at->diffInDays(now()),
                 ];
             });
 
@@ -84,6 +103,7 @@ class DashboardController extends Controller
                 'attendance_statistics' => $attendanceStats,
                 'recent_seminars' => $recentSeminars,
                 'today_seminars' => $todaySeminars,
+                'cancelled_seminars' => $cancelledSeminars,
             ]
         ]);
     }
