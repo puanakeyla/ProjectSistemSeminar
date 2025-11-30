@@ -1,15 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, CheckCircle, Clock, XCircle, GraduationCap, ClipboardList, Calendar, QrCode, Upload, FileCheck } from 'lucide-react';
+import { FileText, CheckCircle, Clock, XCircle, GraduationCap, ClipboardList, Calendar, QrCode, Upload, FileCheck, Zap } from 'lucide-react';
 // icons changed to emojis
 import axios from 'axios';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { StatCard } from '../../components/dashboard/StatCard';
+import { SectionCard } from '../../components/dashboard/SectionCard';
 import { Skeleton } from '../../components/ui/skeleton';
-import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card';
-import { Button } from '../../components/ui/button';
 import { Alert, AlertDescription } from '../../components/ui/alert';
-import { ThemeToggle } from '../../components/ui/theme-toggle';
 
 const API_URL = 'http://localhost:8000/api';
 
@@ -91,6 +89,20 @@ function Dashboard() {
     { icon: Upload, label: 'Upload Revisi', path: '/mahasiswa/revisi', color: '#f59e0b' }
   ];
 
+  const getStatusStyle = (status, fallbackColor) => {
+    const key = (status || '').toLowerCase();
+    const styles = {
+      'menunggu verifikasi': { background: '#fff3cd', color: '#856404' },
+      'menunggu': { background: '#fff3cd', color: '#856404' },
+      'pending': { background: '#fff3cd', color: '#856404' },
+      'disetujui': { background: '#d4edda', color: '#155724' },
+      'approved': { background: '#d4edda', color: '#155724' },
+      'ditolak': { background: '#f8d7da', color: '#721c24' },
+      'revisi': { background: '#fff3cd', color: '#856404' }
+    };
+    return styles[key] || { background: fallbackColor || '#E5E7EB', color: '#111827' };
+  };
+
   return (
     <div className="dashboard-wrapper">
       <div className="max-w-7xl mx-auto space-y-8">
@@ -101,7 +113,10 @@ function Dashboard() {
           className="bg-white dark:bg-dark-800 rounded-2xl p-6 md:p-8 shadow-soft border border-gray-200 dark:border-dark-700"
         >
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-glow">
+            <div
+              className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-glow"
+              style={{ background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)' }}
+            >
               <GraduationCap className="w-8 h-8 text-white" />
             </div>
             <div>
@@ -133,14 +148,11 @@ function Dashboard() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.3 }}
         >
-          <Card className="p-6 md:p-8">
-            <div className="flex items-center gap-3 mb-6 pb-4 border-b-2 border-gray-200 dark:border-dark-700">
-              <Calendar className="w-6 h-6 text-primary-500" />
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                Latest Seminars
-              </h2>
-            </div>
-
+          <SectionCard
+            title="Latest Seminars"
+            description="Update terbaru pengajuan seminar Anda"
+            icon={Calendar}
+          >
             {recentActivities.length === 0 ? (
               <div className="text-center py-16">
                 <div className="w-20 h-20 bg-gray-100 dark:bg-dark-700 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -158,7 +170,7 @@ function Dashboard() {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.3, delay: 0.4 + index * 0.05 }}
-                    className="group p-4 bg-gray-50 dark:bg-dark-700 rounded-xl border-l-4 border-primary-500 hover:bg-white dark:hover:bg-dark-600 hover:shadow-soft transition-all duration-200"
+                    className="group p-4 bg-gray-50 dark:bg-dark-700 rounded-xl border border-transparent hover:border-primary-200 dark:hover:border-primary-500/40 hover:bg-white dark:hover:bg-dark-600 hover:shadow-soft transition-all duration-200"
                   >
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
                       <div className="flex items-center gap-3 flex-1">
@@ -173,12 +185,8 @@ function Dashboard() {
                       </div>
                       <div className="flex flex-col items-end gap-2">
                         <span
-                          className="px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded-full border"
-                          style={{
-                            background: activity.status_color,
-                            color: '#fff',
-                            borderColor: activity.status_color
-                          }}
+                          className="px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded-full"
+                          style={getStatusStyle(activity.status, activity.status_color)}
                         >
                           {activity.status}
                         </span>
@@ -191,7 +199,7 @@ function Dashboard() {
                 ))}
               </div>
             )}
-          </Card>
+          </SectionCard>
         </motion.div>
 
         <motion.div
@@ -199,43 +207,46 @@ function Dashboard() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.4 }}
         >
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-            Quick Actions
-          </h2>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {quickActions.map((action, index) => {
-              const ActionIcon = action.icon && (action.icon.default ? action.icon.default : action.icon)
-              return (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.2, delay: 0.5 + index * 0.05 }}
-                >
-                  <div
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => window.location.href = action.path}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { window.location.href = action.path } }}
-                    className="action-card w-full h-auto p-6 flex-col gap-4 hover:scale-105 hover:shadow-glow transition-all duration-200"
+          <SectionCard
+            title="Quick Actions"
+            description="Akses cepat fitur penting"
+            icon={Zap}
+          >
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {quickActions.map((action, index) => {
+                const ActionIcon = action.icon && (action.icon.default ? action.icon.default : action.icon)
+                return (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.2, delay: 0.5 + index * 0.05 }}
                   >
                     <div
-                      className="action-icon-bg w-12 h-12 rounded-xl flex items-center justify-center"
-                      style={{
-                        backgroundColor: `${action.color}22`,
-                        color: action.color
-                      }}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => window.location.href = action.path}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { window.location.href = action.path } }}
+                      className="action-card w-full h-auto p-6 flex-col gap-4 hover:scale-105 hover:shadow-glow transition-all duration-200"
                     >
-                      {ActionIcon && <ActionIcon className="w-6 h-6" />}
+                      <div
+                        className="action-icon-bg w-12 h-12 rounded-xl flex items-center justify-center"
+                        style={{
+                          backgroundColor: `${action.color}22`,
+                          color: action.color
+                        }}
+                      >
+                        {ActionIcon && <ActionIcon className="w-6 h-6" />}
+                      </div>
+                      <span className="text-sm font-semibold text-center">
+                        {action.label}
+                      </span>
                     </div>
-                    <span className="text-sm font-semibold text-center">
-                      {action.label}
-                    </span>
-                  </div>
-                </motion.div>
-              )
-            })}
-          </div>
+                  </motion.div>
+                )
+              })}
+            </div>
+          </SectionCard>
         </motion.div>
       </div>
     </div>

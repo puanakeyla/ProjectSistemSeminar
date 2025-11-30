@@ -16,12 +16,19 @@ function Verification() {
     fetchSeminars();
   }, []);
 
+  const normalizeSeminarPayload = (payload) => {
+    if (Array.isArray(payload)) return payload;
+    if (Array.isArray(payload?.data)) return payload.data;
+    if (Array.isArray(payload?.seminars)) return payload.seminars;
+    return [];
+  };
+
   const fetchSeminars = async () => {
     try {
       setLoading(true);
       setError(null);
       const data = await adminAPI.getSeminarsForVerification('pending_verification');
-      setSeminars(data);
+      setSeminars(normalizeSeminarPayload(data));
     } catch (err) {
       console.error('Error fetching seminars:', err);
       setError(err.response?.data?.message || 'Gagal memuat daftar seminar');
