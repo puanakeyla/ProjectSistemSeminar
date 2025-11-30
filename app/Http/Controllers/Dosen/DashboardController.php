@@ -48,7 +48,7 @@ class DashboardController extends Controller
                 });
             })
             ->today()
-            ->orderBy('tanggal_jam')
+            ->orderBy('waktu_mulai')
             ->get()
             ->map(function ($schedule) use ($user) {
                 return $this->formatSeminarScheduleData($schedule, $user);
@@ -136,7 +136,7 @@ class DashboardController extends Controller
                 ->where('status', 'approved');
             })
             ->upcoming()
-            ->orderBy('tanggal_jam')
+            ->orderBy('waktu_mulai')
             ->get()
             ->map(function ($schedule) use ($user) {
                 return $this->formatSeminarScheduleData($schedule, $user, true);
@@ -164,7 +164,7 @@ class DashboardController extends Controller
             'mahasiswa_name' => $seminar->mahasiswa->name,
             'mahasiswa_npm' => $seminar->mahasiswa->npm,
             'ruangan' => $schedule->ruangan,
-            'tanggal_jam' => $schedule->tanggal_jam->format('Y-m-d H:i:s'),
+            'tanggal_jam' => $schedule->waktu_mulai->format('Y-m-d H:i:s'),
             'tanggal_display' => $schedule->getFormattedDate(),
             'waktu_display' => $schedule->getFormattedTime(),
             'user_role' => $userRole,

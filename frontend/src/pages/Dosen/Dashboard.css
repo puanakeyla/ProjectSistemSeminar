@@ -12,10 +12,10 @@
   align-items: center;
   margin-bottom: 32px;
   padding: 24px;
-  background: linear-gradient(135deg, #0A1929 0%, #0A4174 100%);
+  background: linear-gradient(135deg, #182742 0%, #223355 100%);
   border-radius: 16px;
   box-shadow: 0 8px 24px rgba(10, 25, 41, 0.15);
-  color: white;
+  color: #182742;
 }
 
 .dashboard-header h1 {
@@ -24,13 +24,23 @@
   margin: 0 0 8px 0;
   letter-spacing: -0.02em;
   font-family: 'Inter', sans-serif;
+  color: #182742;
 }
 
 .dashboard-header p {
   font-size: 14px;
   margin: 0;
-  color: rgba(255, 255, 255, 0.8);
+  color: #223355cc;
   font-weight: 500;
+/* Greeting Icon Style */
+.greeting-icon {
+  background: #223355 !important;
+  border-radius: 12px;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 }
 
 .header-date {
@@ -48,9 +58,9 @@
 }
 
 .date-text {
-  font-size: 13px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.95);
+  font-size: 16px;
+  font-weight: 500;
+  color: #223355;
 }
 
 /* Stats Grid */

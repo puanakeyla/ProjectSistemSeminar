@@ -18,28 +18,21 @@ export function StatCard({
     return <StatCardSkeleton />
   }
 
-  // Normalize icon import: try .default then the value itself
-  const IconCandidate = Icon && (Icon.default ? Icon.default : Icon)
+  // Use Icon directly as passed from props
+  const IconCandidate = Icon;
 
   // Normalize CountUp import to support named, default, or namespace shapes
   // Try the named export first, then default, then the module itself.
-  const CountUpCandidate =
-    (CountUpLib && CountUpLib.CountUp) ||
-    (CountUpLib && CountUpLib.default) ||
-    CountUpLib
+  const IconComponent = typeof IconCandidate === 'function' ? IconCandidate : null
 
-  // Helper to validate a React component (function component or class)
-  const isValidReactComponent = (c) => {
-    if (!c) return false
-    const t = typeof c
-    if (t === 'function') return true
-    // class components are functions with prototype.render
-    if (t === 'object' && c.prototype && typeof c.prototype.render === 'function') return true
-    return false
-  }
+  // Ensure we only render a valid React component for CountUp
+  const CountUpCandidate = [
+    CountUpLib?.CountUp,
+    CountUpLib?.default,
+    typeof CountUpLib === 'function' ? CountUpLib : null,
+  ].find((candidate) => typeof candidate === 'function')
 
-  const IconComponent = isValidReactComponent(IconCandidate) ? IconCandidate : null
-  const CountUpComponent = isValidReactComponent(CountUpCandidate) ? CountUpCandidate : null
+  const CountUpComponent = CountUpCandidate || null
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -91,7 +84,7 @@ export function StatCard({
           </div>
         </div>
 
-        {IconComponent ? (
+        {IconComponent && (
           <div
             className="flex items-center justify-center w-12 h-12 rounded-xl"
             style={{
@@ -101,16 +94,6 @@ export function StatCard({
           >
             <IconComponent className="w-6 h-6" />
           </div>
-        ) : (
-          // If icon is a plain string (emoji), render it as text
-          typeof IconCandidate === 'string' && (
-            <div
-              className="flex items-center justify-center w-12 h-12 rounded-xl text-2xl"
-              style={{ backgroundColor: `${color}15`, color: color }}
-            >
-              {IconCandidate}
-            </div>
-          )
         )}
       </div>
 

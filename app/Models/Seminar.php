@@ -147,4 +147,48 @@ class Seminar extends Model
             default => 'gray'
         };
     }
+
+    /**
+     * Get approval status metadata for a specific dosen (or the first approval if not specified).
+     */
+    public function getApprovalStatus(?int $dosenId = null): array
+    {
+        $approvals = $this->relationLoaded('approvals') ? $this->approvals : $this->approvals()->get();
+
+        $approval = $dosenId
+            ? $approvals->firstWhere('dosen_id', $dosenId)
+            : $approvals->first();
+
+        if (!$approval) {
+            return [
+                'status' => 'pending',
+                'status_display' => 'Menunggu Persetujuan',
+                'status_color' => 'yellow',
+                'dosen_id' => $dosenId,
+                'peran' => null,
+                'updated_at' => null,
+            ];
+        }
+
+        return [
+            'status' => $approval->status,
+            'status_display' => $approval->getStatusDisplay(),
+            'status_color' => $approval->getStatusColor(),
+            'dosen_id' => $approval->dosen_id,
+            'peran' => $approval->peran,
+            'updated_at' => $approval->updated_at?->toIso8601String(),
+        ];
+    }
+
+    /** Determine whether all assigned dosen have approved the seminar. */
+    public function isApprovedByAllDosen(): bool
+    {
+        $approvals = $this->relationLoaded('approvals') ? $this->approvals : $this->approvals()->get();
+
+        if ($approvals->isEmpty()) {
+            return false;
+        }
+
+        return $approvals->every(fn ($approval) => $approval->status === 'approved');
+    }
 }

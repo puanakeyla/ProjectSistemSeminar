@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { dosenAPI } from '../../services/api';
 import './Dashboard.css';
+import { Calendar, GraduationCap } from 'lucide-react';
+import { Clock, CheckCircle, Users, BarChart } from 'lucide-react';
 
 function Dashboard() {
   const [statistics, setStatistics] = useState(null);
@@ -40,10 +42,10 @@ function Dashboard() {
   }
 
   const stats = [
-    { label: 'Menunggu Persetujuan', value: statistics?.pending || '0', icon: '⏳', color: '#F59E0B' },
-    { label: 'Seminar Disetujui', value: statistics?.approved || '0', icon: '✅', color: '#10B981' },
-    { label: 'Total Persetujuan', value: statistics?.total_approvals || '0', icon: '👥', color: '#3B82F6' },
-    { label: 'Tingkat Persetujuan', value: `${statistics?.approval_rate || '0'}%`, icon: '📊', color: '#8B5CF6' }
+    { label: 'Menunggu Persetujuan', value: statistics?.pending || '0', icon: Clock, color: '#F59E0B' },
+    { label: 'Seminar Disetujui', value: statistics?.approved || '0', icon: CheckCircle, color: '#10B981' },
+    { label: 'Total Persetujuan', value: statistics?.total_approvals || '0', icon: Users, color: '#3B82F6' },
+    { label: 'Tingkat Persetujuan', value: `${statistics?.approval_rate || '0'}%`, icon: BarChart, color: '#8B5CF6' }
   ];
 
   const upcomingSchedules = [
@@ -75,30 +77,38 @@ function Dashboard() {
   return (
     <div className="dashboard-dosen">
       {/* Header */}
-      <div className="dashboard-header">
-        <div>
-          <h1>Dashboard Dosen</h1>
-          <p>Selamat datang di Portal Dosen Pembimbing</p>
+      <div className="dashboard-header flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="greeting-icon bg-primary-100 rounded-xl p-2">
+            <GraduationCap className="w-7 h-7 text-primary-500" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold">Dashboard Dosen</h1>
+            <p className="text-base text-gray-600">Selamat datang di Portal Dosen Pembimbing</p>
+          </div>
         </div>
-        <div className="header-date">
-          <span className="date-icon">📅</span>
+        <div className="header-date flex items-center gap-2">
+          <Calendar className="w-6 h-6 text-primary-500" />
           <span className="date-text">{new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
         </div>
       </div>
 
       {/* Stats Grid */}
       <div className="stats-grid">
-        {stats.map((stat, index) => (
-          <div key={index} className="stat-card" style={{ borderLeftColor: stat.color }}>
-            <div className="stat-icon" style={{ backgroundColor: `${stat.color}20`, color: stat.color }}>
-              {stat.icon}
+        {stats.map((stat, index) => {
+          const Icon = stat.icon;
+          return (
+            <div key={index} className="stat-card" style={{ borderLeftColor: stat.color }}>
+              <div className="stat-icon" style={{ backgroundColor: `${stat.color}20`, color: stat.color }}>
+                {Icon ? <Icon className="w-5 h-5" /> : null}
+              </div>
+              <div className="stat-content">
+                <h3>{stat.value}</h3>
+                <p>{stat.label}</p>
+              </div>
             </div>
-            <div className="stat-content">
-              <h3>{stat.value}</h3>
-              <p>{stat.label}</p>
-            </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
 
       {/* Main Content Grid */}
@@ -106,8 +116,8 @@ function Dashboard() {
         {/* Pending Approvals */}
         <div className="content-section">
           <div className="section-header">
-            <h2>
-              <span className="header-icon">⏳</span>
+            <h2 className="flex items-center gap-2">
+              <span className="header-icon"><Clock className="w-5 h-5 text-yellow-500" /></span>
               Menunggu Persetujuan
             </h2>
             <span className="badge-count">{pendingApprovals.length}</span>
@@ -115,7 +125,9 @@ function Dashboard() {
           <div className="approvals-list">
             {pendingApprovals.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '40px 20px', color: '#94a3b8' }}>
-                <div style={{ fontSize: '48px', marginBottom: '12px' }}>✅</div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
+                  <CheckCircle className="w-10 h-10 text-green-500" />
+                </div>
                 <p>Tidak ada persetujuan menunggu</p>
               </div>
             ) : (

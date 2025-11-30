@@ -209,6 +209,9 @@ function Approval() {
   };
 
   const dateOptions = generateDateOptions();
+  const selectedMahasiswaName = selectedApproval?.mahasiswa ?? selectedApproval?.mahasiswa_name ?? 'Mahasiswa';
+  const selectedMahasiswaNpm = selectedApproval?.npm ?? selectedApproval?.mahasiswa_npm ?? '-';
+  const selectedTanggalPengajuan = selectedApproval?.tanggal_pengajuan ?? selectedApproval?.created_at ?? '-';
 
   if (loading) {
     return (
@@ -269,45 +272,51 @@ function Approval() {
             </div>
 
             <div className="approvals-grid">
-              {pendingApprovals.map((approval) => (
-              <div 
-                key={approval.id} 
-                className={`approval-item ${selectedApproval?.id === approval.id ? 'selected' : ''}`}
-                onClick={() => handleApprovalClick(approval)}
-              >
-                <div className="approval-item-header">
-                  <div className="student-badge">
-                    <div className="student-avatar">
-                      {approval.mahasiswa.charAt(0)}
+              {pendingApprovals.map((approval) => {
+                const mahasiswaName = approval.mahasiswa ?? approval.mahasiswa_name ?? 'Mahasiswa';
+                const mahasiswaNpm = approval.npm ?? approval.mahasiswa_npm ?? '-';
+                const tanggalPengajuan = approval.tanggal_pengajuan ?? approval.created_at ?? '-';
+
+                return (
+                  <div 
+                    key={approval.id} 
+                    className={`approval-item ${selectedApproval?.id === approval.id ? 'selected' : ''}`}
+                    onClick={() => handleApprovalClick(approval)}
+                  >
+                    <div className="approval-item-header">
+                      <div className="student-badge">
+                        <div className="student-avatar">
+                          {mahasiswaName.charAt(0)}
+                        </div>
+                        <div className="student-info">
+                          <h4>{mahasiswaName}</h4>
+                          <span className="npm">{mahasiswaNpm}</span>
+                        </div>
+                      </div>
+                      <span className="tipe-badge" style={{ backgroundColor: getTipeColor(approval.tipe) }}>
+                        {approval.tipe}
+                      </span>
                     </div>
-                    <div className="student-info">
-                      <h4>{approval.mahasiswa}</h4>
-                      <span className="npm">{approval.npm}</span>
+
+                    <h3 className="approval-title">{approval.judul}</h3>
+                    
+                    <div className="approval-meta">
+                      <span className="meta-item">
+                        <span className="meta-icon">👤</span>
+                        Peran: {approval.peran}
+                      </span>
+                      <span className="meta-item">
+                        <span className="meta-icon">📅</span>
+                        {tanggalPengajuan}
+                      </span>
                     </div>
+
+                    {selectedApproval?.id === approval.id && (
+                      <div className="selected-indicator">✓ Dipilih</div>
+                    )}
                   </div>
-                  <span className="tipe-badge" style={{ backgroundColor: getTipeColor(approval.tipe) }}>
-                    {approval.tipe}
-                  </span>
-                </div>
-
-                <h3 className="approval-title">{approval.judul}</h3>
-                
-                <div className="approval-meta">
-                  <span className="meta-item">
-                    <span className="meta-icon">👤</span>
-                    Peran: {approval.peran}
-                  </span>
-                  <span className="meta-item">
-                    <span className="meta-icon">📅</span>
-                    {approval.tanggal_pengajuan}
-                  </span>
-                </div>
-
-                {selectedApproval?.id === approval.id && (
-                  <div className="selected-indicator">✓ Dipilih</div>
-                )}
-              </div>
-            ))}
+                )
+              })}
           </div>
         </div>
 
@@ -327,11 +336,11 @@ function Approval() {
                 <div className="info-grid">
                   <div className="info-item">
                     <span className="info-label">Nama</span>
-                    <span className="info-value">{selectedApproval.mahasiswa}</span>
+                    <span className="info-value">{selectedMahasiswaName}</span>
                   </div>
                   <div className="info-item">
                     <span className="info-label">NPM</span>
-                    <span className="info-value">{selectedApproval.npm}</span>
+                    <span className="info-value">{selectedMahasiswaNpm}</span>
                   </div>
                   <div className="info-item">
                     <span className="info-label">Peran Anda</span>
@@ -339,7 +348,7 @@ function Approval() {
                   </div>
                   <div className="info-item">
                     <span className="info-label">Tanggal Pengajuan</span>
-                    <span className="info-value">{selectedApproval.tanggal_pengajuan}</span>
+                    <span className="info-value">{selectedTanggalPengajuan}</span>
                   </div>
                 </div>
               </div>

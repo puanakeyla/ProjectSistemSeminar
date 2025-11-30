@@ -63,7 +63,7 @@ class DashboardController extends Controller
         // Today's seminars
         $todaySeminars = SeminarSchedule::with(['seminar.mahasiswa'])
             ->today()
-            ->orderBy('tanggal_jam')
+            ->orderBy('waktu_mulai')
             ->get()
             ->map(function ($schedule) {
                 return [

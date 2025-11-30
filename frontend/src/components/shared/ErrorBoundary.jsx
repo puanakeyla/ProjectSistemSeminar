@@ -30,22 +30,23 @@ export class ErrorBoundary extends React.Component {
       return (
         <div className="min-h-screen flex items-center justify-center p-4">
           <div className="max-w-md w-full bg-white dark:bg-dark-800 rounded-2xl shadow-depth p-8 text-center">
-              <div className="w-16 h-16 mx-auto mb-4 bg-danger/10 rounded-full flex items-center justify-center">
-                <AlertTriangle className="w-8 h-8 text-danger" />
-              </div>
+            <div className="w-16 h-16 mx-auto mb-4 bg-danger/10 rounded-full flex items-center justify-center">
+              <AlertTriangle className="w-8 h-8 text-danger" />
+            </div>
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
               Oops! Something went wrong
             </h2>
             <p className="text-gray-600 dark:text-gray-400 mb-6">
               We're sorry, but something unexpected happened. Please try refreshing the page.
             </p>
-            {process.env.NODE_ENV === 'development' && this.state.error && (
+            {process.env.NODE_ENV === 'development' && (
               <details className="text-left mb-6 p-4 bg-gray-50 dark:bg-dark-700 rounded-lg text-sm">
                 <summary className="cursor-pointer font-semibold text-gray-700 dark:text-gray-300 mb-2">
                   Error details
                 </summary>
                 <pre className="text-xs text-danger overflow-auto">
-                  {this.state.error.toString()}
+                  {this.state.error ? this.state.error.toString() : ''}
+                  {this.state.errorInfo && this.state.errorInfo.componentStack ? '\n' + this.state.errorInfo.componentStack : ''}
                 </pre>
               </details>
             )}

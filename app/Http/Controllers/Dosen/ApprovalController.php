@@ -380,8 +380,11 @@ class ApprovalController extends Controller
             'created_at' => $seminar->created_at->format('d M Y'),
             'schedule' => $seminar->schedule ? [
                 'ruangan' => $seminar->schedule->ruangan,
-                'tanggal_jam' => $seminar->schedule->tanggal_jam->format('d M Y H:i'),
+                'tanggal_jam' => $seminar->schedule->waktu_mulai->format('d M Y H:i'),
+                'waktu_mulai_iso' => $seminar->schedule->waktu_mulai->toIso8601String(),
                 'is_upcoming' => $seminar->schedule->isUpcoming(),
+                'is_today' => $seminar->schedule->isToday(),
+                'is_past' => $seminar->schedule->isPast(),
             ] : null,
             'approval_status' => $seminar->getApprovalStatus($user->id),
         ];

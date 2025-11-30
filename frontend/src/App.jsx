@@ -11,6 +11,7 @@ import ScanQR from './pages/Mahasiswa/ScanQR'
 // Dosen Components
 import DashboardDosen from './pages/Dosen/Dashboard'
 import Approval from './pages/Dosen/Approval'
+import JadwalDosen from './pages/Dosen/Jadwal'
 // Admin Components
 import DashboardAdmin from './pages/Admin/Dashboard'
 import Verification from './pages/Admin/Verification'
@@ -121,16 +122,17 @@ function App() {
           <main className={`content-area ${currentPage === 'revisi' ? 'blue-page' : ''}`}>
             {/* Mahasiswa pages */}
             {currentPage === 'dashboard' && role === 'mahasiswa' && <Dashboard />}
-            {currentPage === 'pengajuan' && <Pengajuan />}
-            {currentPage === 'status' && <Status />}
-            {currentPage === 'jadwal' && <Jadwal />}
-            {currentPage === 'daftarhadir' && <DaftarHadir />}
-            {currentPage === 'scanqr' && <ScanQR />}
-            {currentPage === 'revisi' && <Revisi />}
+            {currentPage === 'pengajuan' && role === 'mahasiswa' && <Pengajuan />}
+            {currentPage === 'status' && role === 'mahasiswa' && <Status />}
+            {currentPage === 'jadwal' && role === 'mahasiswa' && <Jadwal />}
+            {currentPage === 'daftarhadir' && role === 'mahasiswa' && <DaftarHadir />}
+            {currentPage === 'scanqr' && role === 'mahasiswa' && <ScanQR />}
+            {currentPage === 'revisi' && role === 'mahasiswa' && <Revisi />}
 
             {/* Dosen pages */}
             {currentPage === 'dashboard' && role === 'dosen' && <DashboardDosen />}
-            {currentPage === 'approval' && <Approval />}
+            {currentPage === 'approval' && role === 'dosen' && <Approval />}
+            {currentPage === 'jadwal' && role === 'dosen' && <JadwalDosen />}
 
             {/* Admin pages */}
             {role === 'admin' && currentPage === 'dashboard' && <DashboardAdmin />}

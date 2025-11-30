@@ -20,8 +20,8 @@ class AttendanceController extends Controller
             ->whereHas('seminar', function ($query) {
                 $query->where('status', 'approved');
             })
-            ->where('tanggal_jam', '>=', now()->subDay()) // Include today and future
-            ->orderBy('tanggal_jam')
+            ->where('waktu_mulai', '>=', now()->subDay()) // Include today and future
+            ->orderBy('waktu_mulai')
             ->get()
             ->map(function ($schedule) use ($request) {
                 $isRegistered = SeminarAttendance::where('mahasiswa_id', $request->user()->id)
@@ -36,7 +36,7 @@ class AttendanceController extends Controller
                     'judul' => $schedule->seminar->judul,
                     'jenis_seminar' => $schedule->seminar->getJenisSeminarDisplay(),
                     'ruangan' => $schedule->ruangan,
-                    'tanggal_jam' => $schedule->tanggal_jam->format('Y-m-d H:i:s'),
+                    'tanggal_jam' => $schedule->waktu_mulai->format('Y-m-d H:i:s'),
                     'tanggal_display' => $schedule->getFormattedDate(),
                     'waktu_display' => $schedule->getFormattedTime(),
                     'is_upcoming' => $schedule->isUpcoming(),
@@ -168,7 +168,7 @@ class AttendanceController extends Controller
         }
 
         // Check if seminar is happening now (within 2 hours before and after)
-        $seminarTime = $schedule->tanggal_jam;
+        $seminarTime = $schedule->waktu_mulai;
         $currentTime = now();
         $timeDifference = $currentTime->diffInHours($seminarTime);
 

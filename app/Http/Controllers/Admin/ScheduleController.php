@@ -184,7 +184,7 @@ class ScheduleController extends Controller
             'mahasiswa_name' => $seminar->mahasiswa->name,
             'mahasiswa_npm' => $seminar->mahasiswa->npm,
             'ruangan' => $schedule->ruangan,
-            'tanggal_jam' => $schedule->tanggal_jam->format('Y-m-d H:i:s'),
+            'tanggal_jam' => $schedule->waktu_mulai->format('Y-m-d H:i:s'),
             'tanggal_display' => $schedule->getFormattedDate(),
             'waktu_display' => $schedule->getFormattedTime(),
             'status' => $schedule->status,
