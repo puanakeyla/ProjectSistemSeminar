@@ -105,6 +105,8 @@ Route::middleware('auth:sanctum')->group(function () {
         // Seminars
         Route::get('/seminars', [ApprovalController::class, 'mySeminars']);
         Route::post('/seminars/{id}/cancel', [ApprovalController::class, 'cancelSeminar']);
+        Route::get('/seminars/{id}/file/view', [ApprovalController::class, 'viewFile']);
+        Route::get('/seminars/{id}/file/download', [ApprovalController::class, 'downloadFile']);
         
         // Attendance
         Route::post('/attendance/status', [ApprovalController::class, 'updateAttendanceStatus']);

@@ -200,6 +200,61 @@ function Approval() {
     }
   };
 
+  const handleViewPdf = async (seminarId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:8000/api/dosen/seminars/${seminarId}/file/view`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Gagal memuat file');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      
+      // Clean up the URL after a delay
+      setTimeout(() => window.URL.revokeObjectURL(url), 100);
+    } catch (error) {
+      console.error('Error viewing PDF:', error);
+      alert('Gagal membuka PDF. Silakan coba lagi.');
+    }
+  };
+
+  const handleDownloadPdf = async (seminarId, mahasiswaNama) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:8000/api/dosen/seminars/${seminarId}/file/download`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Gagal mengunduh file');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `seminar_${mahasiswaNama}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      alert('Gagal mengunduh PDF. Silakan coba lagi.');
+    }
+  };
+
   // Generate next 30 days for date picker
   const generateDateOptions = () => {
     const dates = [];
@@ -503,23 +558,20 @@ function Approval() {
                           </div>
                         </div>
                         <div className="pdf-actions">
-                          <a
-                            href={`http://localhost:8000/storage/${selectedApproval.file_berkas}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                          <button
+                            onClick={() => handleViewPdf(selectedApproval.seminar_id)}
                             className="pdf-btn pdf-btn--view"
                           >
                             <ExternalLink size={16} />
                             Lihat
-                          </a>
-                          <a
-                            href={`http://localhost:8000/storage/${selectedApproval.file_berkas}`}
-                            download
+                          </button>
+                          <button
+                            onClick={() => handleDownloadPdf(selectedApproval.seminar_id, selectedMahasiswaName)}
                             className="pdf-btn pdf-btn--download"
                           >
                             <Download size={16} />
                             Unduh
-                          </a>
+                          </button>
                         </div>
                       </div>
                     </div>

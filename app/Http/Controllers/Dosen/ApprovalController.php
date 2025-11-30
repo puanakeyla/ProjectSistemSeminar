@@ -487,4 +487,47 @@ class ApprovalController extends Controller
             ]
         ]);
     }
+
+    /**
+     * View PDF file
+     */
+    public function viewFile(Request $request, $seminarId): mixed
+    {
+        $seminar = Seminar::findOrFail($seminarId);
+        
+        if (!$seminar->file_berkas) {
+            abort(404, 'File tidak ditemukan');
+        }
+
+        $path = storage_path('app/' . $seminar->file_berkas);
+        
+        if (!file_exists($path)) {
+            abort(404, 'File tidak ditemukan di server');
+        }
+
+        return response()->file($path, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="' . basename($path) . '"'
+        ]);
+    }
+
+    /**
+     * Download PDF file
+     */
+    public function downloadFile(Request $request, $seminarId): mixed
+    {
+        $seminar = Seminar::findOrFail($seminarId);
+        
+        if (!$seminar->file_berkas) {
+            abort(404, 'File tidak ditemukan');
+        }
+
+        $path = storage_path('app/' . $seminar->file_berkas);
+        
+        if (!file_exists($path)) {
+            abort(404, 'File tidak ditemukan di server');
+        }
+
+        return response()->download($path, basename($path));
+    }
 }

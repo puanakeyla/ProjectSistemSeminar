@@ -176,6 +176,74 @@ function Dashboard() {
           ))}
         </div>
 
+        {cancelledSeminars.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.2 }}
+            className="bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/30 rounded-2xl p-6 border-2 border-red-200 dark:border-red-800 shadow-lg"
+          >
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-red-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">
+                <XCircle className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-bold text-red-900 dark:text-red-100 mb-1">
+                  Seminar Dibatalkan
+                </h3>
+                <p className="text-sm text-red-700 dark:text-red-300 mb-4">
+                  {cancelledSeminars.length} seminar dibatalkan oleh dosen pembimbing/penguji
+                </p>
+                <div className="space-y-3">
+                  {cancelledSeminars.map((seminar, index) => (
+                    <motion.div
+                      key={seminar.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.3, delay: 0.1 * index }}
+                      className="bg-white dark:bg-dark-800 rounded-xl p-4 border border-red-200 dark:border-red-800"
+                    >
+                      <div className="flex items-start justify-between gap-3 mb-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="inline-flex px-2.5 py-0.5 text-xs font-bold rounded-full bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300">
+                              {seminar.jenis_seminar}
+                            </span>
+                          </div>
+                          <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                            {seminar.mahasiswa_name} ({seminar.mahasiswa_npm})
+                          </p>
+                          <p className="text-sm text-gray-600 dark:text-gray-300 mt-1 line-clamp-2">
+                            {seminar.judul}
+                          </p>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-xs text-red-600 dark:text-red-400 font-medium">
+                            {seminar.days_ago === 0 ? 'Hari ini' : `${seminar.days_ago} hari lalu`}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                            {seminar.cancelled_at}
+                          </p>
+                        </div>
+                      </div>
+                      {seminar.cancel_reason && (
+                        <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
+                          <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                            Alasan Pembatalan:
+                          </p>
+                          <p className="text-xs text-gray-600 dark:text-gray-400 italic">
+                            "{seminar.cancel_reason}"
+                          </p>
+                        </div>
+                      )}
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           <SectionCard
             title="Kesehatan Operasional"
