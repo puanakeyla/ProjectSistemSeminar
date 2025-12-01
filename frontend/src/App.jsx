@@ -22,6 +22,7 @@ import RevisionPage from './pages/Admin/Revision'
 import './App.css'
 import { BarChart3, FileText, ClipboardList, Calendar, CheckCircle, QrCode, FileCheck } from 'lucide-react'
 import Sidebar from './components/Sidebar'
+import NotificationBell from './components/NotificationBell/NotificationBell'
 
 function App() {
   const [currentPage, setCurrentPage] = useState('login')

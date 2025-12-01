@@ -199,10 +199,11 @@ function Status() {
                   <div className="info-row">
                     <span className="info-label">Status Admin:</span>
                     <span className={`info-value admin-status ${item.admin_status}`}>
-                      {item.admin_status === 'approved' ? (<><CheckCircle className="w-4 h-4 inline mr-1"/> Disetujui</>) :
-                       item.admin_status === 'rejected' ? (<><XCircle className="w-4 h-4 inline mr-1"/> Ditolak</>) :
-                       item.admin_status === 'cancelled' ? (<><XCircle className="w-4 h-4 inline mr-1"/> Dibatalkan Mahasiswa</>) :
-                       (<><Clock className="w-4 h-4 inline mr-1"/> Menunggu</>)}
+                      {item.admin_status === 'scheduling' ? (<><Calendar className="w-4 h-4 inline mr-1"/> {item.admin_status_display || 'Proses Penentuan Jadwal'}</>) :
+                       item.admin_status === 'approved' ? (<><CheckCircle className="w-4 h-4 inline mr-1"/> {item.admin_status_display || 'Disetujui'}</>) :
+                       item.admin_status === 'rejected' ? (<><XCircle className="w-4 h-4 inline mr-1"/> {item.admin_status_display || 'Ditolak'}</>) :
+                       item.admin_status === 'cancelled' ? (<><XCircle className="w-4 h-4 inline mr-1"/> {item.admin_status_display || 'Dibatalkan'}</>) :
+                       (<><Clock className="w-4 h-4 inline mr-1"/> {item.admin_status_display || 'Menunggu'}</>)}
                     </span>
                   </div>
                 )}
@@ -217,14 +218,20 @@ function Status() {
 
                 {item.is_cancelled && (
                   <div className="info-row cancelled-info">
-                    <span className="info-label">Pembatalan:</span>
+                    <span className="info-label">Alasan Pembatalan:</span>
                     <span className="info-value">
-                      Dibuat pada {item.cancelled_at
-                        ? new Date(item.cancelled_at).toLocaleString('id-ID', {
-                            day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
-                          })
-                        : 'waktu tidak tersedia'}
-                      {item.cancel_reason ? ` · ${item.cancel_reason}` : ''}
+                      {item.cancel_reason || 'Tidak ada alasan'}
+                    </span>
+                  </div>
+                )}
+
+                {item.is_cancelled && item.cancelled_at && (
+                  <div className="info-row">
+                    <span className="info-label">Waktu Pembatalan:</span>
+                    <span className="info-value">
+                      {new Date(item.cancelled_at).toLocaleString('id-ID', {
+                        day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                      })}
                     </span>
                   </div>
                 )}

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Dosen;
 use App\Http\Controllers\Controller;
 use App\Models\Seminar;
 use App\Models\SeminarApproval;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\Rule;
@@ -306,17 +307,68 @@ class ApprovalController extends Controller
             return;
         }
 
-        // If all approvals are approved, seminar is approved
+        // If all approvals are approved, check for date compatibility
         $totalApprovals = $approvals->count();
         if ($totalApprovals > 0 && $approvals->where('status', 'approved')->count() === $totalApprovals) {
-            $seminar->update([
-                'status' => 'approved',
-                'verified_at' => now()
-            ]);
+            // Check if there are matching dates among all dosen
+            $matchingDates = $this->findMatchingDates($approvals);
+            
+            if (empty($matchingDates)) {
+                // No matching dates - auto-cancel the seminar
+                $seminar->update([
+                    'status' => 'cancelled',
+                    'cancelled_at' => now(),
+                    'cancel_reason' => 'Tidak ada kecocokan jadwal dari semua dosen pembimbing dan penguji. Silakan ajukan ulang seminar dengan menghubungi dosen terkait terlebih dahulu.'
+                ]);
+                
+                // Delete any existing schedule
+                if ($seminar->schedule) {
+                    $seminar->schedule->delete();
+                }
+
+                // Send notifications to all parties
+                NotificationService::notifyScheduleConflict($seminar->fresh(['mahasiswa', 'pembimbing1', 'pembimbing2', 'penguji']));
+            } else {
+                // Has matching dates - set to approved for admin to schedule
+                $seminar->update([
+                    'status' => 'approved',
+                    'verified_at' => now()
+                ]);
+            }
             return;
         }
 
         // Otherwise, status remains 'pending_verification'
+    }
+
+    /**
+     * Find matching dates from all approvals
+     */
+    private function findMatchingDates($approvals): array
+    {
+        if ($approvals->isEmpty()) {
+            return [];
+        }
+
+        // Get available dates from each approval
+        $allAvailableDates = $approvals->map(function ($approval) {
+            return $approval->available_dates ?? [];
+        })->filter(function ($dates) {
+            return !empty($dates);
+        });
+
+        if ($allAvailableDates->isEmpty() || $allAvailableDates->count() !== $approvals->count()) {
+            return [];
+        }
+
+        // Find intersection of all dates
+        $matchingDates = $allAvailableDates->first();
+        
+        foreach ($allAvailableDates->skip(1) as $dates) {
+            $matchingDates = array_intersect($matchingDates, $dates);
+        }
+
+        return array_values($matchingDates);
     }
 
     /**
@@ -353,6 +405,38 @@ class ApprovalController extends Controller
             'updated_at' => $approval->updated_at->format('d M Y H:i'),
             'days_pending' => $approval->created_at->diffInDays(now()),
         ];
+
+        // Get other dosen's approved dates
+        $otherApprovedDates = $seminar->approvals()
+            ->where('id', '!=', $approval->id)
+            ->where('status', 'approved')
+            ->whereNotNull('available_dates')
+            ->get()
+            ->map(function ($otherApproval) {
+                return [
+                    'dosen_name' => $otherApproval->dosen->name,
+                    'peran' => $otherApproval->peran,
+                    'dates' => $otherApproval->available_dates ?? [],
+                ];
+            })->filter(function ($item) {
+                return !empty($item['dates']);
+            })->values();
+
+        $data['other_approved_dates'] = $otherApprovedDates;
+
+        // Calculate common dates if there are other approved dates
+        if ($otherApprovedDates->isNotEmpty()) {
+            $allDates = $otherApprovedDates->pluck('dates')->toArray();
+            $commonDates = count($allDates) > 0 ? $allDates[0] : [];
+            
+            foreach (array_slice($allDates, 1) as $dates) {
+                $commonDates = array_intersect($commonDates, $dates);
+            }
+            
+            $data['suggested_dates'] = array_values($commonDates);
+        } else {
+            $data['suggested_dates'] = [];
+        }
 
         if ($detailed) {
             $data['catatan'] = $approval->catatan;
@@ -499,7 +583,7 @@ class ApprovalController extends Controller
             abort(404, 'File tidak ditemukan');
         }
 
-        $path = storage_path('app/' . $seminar->file_berkas);
+        $path = storage_path('app/public/' . $seminar->file_berkas);
         
         if (!file_exists($path)) {
             abort(404, 'File tidak ditemukan di server');
@@ -522,7 +606,7 @@ class ApprovalController extends Controller
             abort(404, 'File tidak ditemukan');
         }
 
-        $path = storage_path('app/' . $seminar->file_berkas);
+        $path = storage_path('app/public/' . $seminar->file_berkas);
         
         if (!file_exists($path)) {
             abort(404, 'File tidak ditemukan di server');

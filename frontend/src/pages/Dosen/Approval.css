@@ -621,6 +621,108 @@
   margin-bottom: 16px;
 }
 
+/* Other Dosen Dates Display */
+.other-dosen-dates {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  border: 1px solid #e2e8f0;
+}
+
+.other-dosen-dates h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 12px 0;
+}
+
+.dosen-dates-item {
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed #e2e8f0;
+}
+
+.dosen-dates-item:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.dosen-dates-item strong {
+  color: #334155;
+  font-size: 13px;
+}
+
+.dosen-dates-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.date-chip {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #e0e7ff;
+  color: #3730a3;
+  font-size: 11px;
+  font-weight: 500;
+  border: 1px solid #c7d2fe;
+}
+
+.date-chip.common {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  border-color: #059669;
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+}
+
+.suggested-dates-box {
+  margin-top: 16px;
+  padding: 14px;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.08));
+  border-radius: 12px;
+  border: 2px solid #10b981;
+}
+
+.suggested-dates-box strong {
+  display: block;
+  color: #065f46;
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+.suggested-dates-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.suggested-date-chip {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.suggestion-hint {
+  margin: 0;
+  font-size: 12px;
+  color: #065f46;
+  font-style: italic;
+}
+
 .detail-panel--stacked {
   width: 100%;
 }

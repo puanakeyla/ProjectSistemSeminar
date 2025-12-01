@@ -28,6 +28,9 @@ use App\Http\Controllers\Mahasiswa\DashboardController as MahasiswaDashboardCont
 use App\Http\Controllers\Mahasiswa\RevisionController as MahasiswaRevisionController;
 use App\Http\Controllers\Mahasiswa\SeminarController as MahasiswaSeminarController;
 
+// Notification
+use App\Http\Controllers\NotificationController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -49,6 +52,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout-all', [LogoutController::class, 'logoutAllDevices']);
     Route::get('/sessions', [LogoutController::class, 'sessions']);
     Route::delete('/sessions/{tokenId}', [LogoutController::class, 'revokeToken']);
+
+    // Notifications (for all authenticated users)
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
+    Route::delete('/notifications/{id}', [NotificationController::class, 'destroy']);
 
     // Test route
     Route::get('/test', function (Request $request) {

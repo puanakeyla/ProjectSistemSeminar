@@ -11,6 +11,7 @@ import {
   AlignLeft,
   CalendarClock,
   MessageSquare,
+  CheckCircle,
   CheckCircle2,
   XCircle,
   Download,
@@ -592,6 +593,45 @@ function Approval() {
                         {showDatePicker ? 'Sembunyikan Kalender' : 'Pilih Tanggal Tersedia'}
                       </button>
                     </div>
+
+                    {/* Show other dosen's approved dates */}
+                    {selectedApproval?.other_approved_dates && selectedApproval.other_approved_dates.length > 0 && (
+                      <div className="other-dosen-dates">
+                        <h4>
+                          <CheckCircle size={14} style={{ color: '#27ae60' }} />
+                          Tanggal yang Dipilih Dosen Lain:
+                        </h4>
+                        {selectedApproval.other_approved_dates.map((dosenData, idx) => (
+                          <div key={idx} className="dosen-dates-item">
+                            <strong>{dosenData.dosen_name}</strong> ({formatTitleCase(dosenData.peran)}):
+                            <div className="dosen-dates-chips">
+                              {dosenData.dates.map((date) => (
+                                <span 
+                                  key={date} 
+                                  className={`date-chip ${selectedApproval.suggested_dates?.includes(date) ? 'common' : ''}`}
+                                >
+                                  {dateOptions.find((d) => d.value === date)?.label || date}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                        
+                        {selectedApproval.suggested_dates && selectedApproval.suggested_dates.length > 0 && (
+                          <div className="suggested-dates-box">
+                            <strong>✓ Tanggal yang Cocok dengan Semua Dosen:</strong>
+                            <div className="suggested-dates-chips">
+                              {selectedApproval.suggested_dates.map((date) => (
+                                <span key={date} className="suggested-date-chip">
+                                  {dateOptions.find((d) => d.value === date)?.label || date}
+                                </span>
+                              ))}
+                            </div>
+                            <p className="suggestion-hint">💡 Pilih salah satu tanggal di atas untuk mempercepat proses penjadwalan</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {showDatePicker && (
                       <div className="date-picker-container">

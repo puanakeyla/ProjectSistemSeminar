@@ -38,12 +38,20 @@
   padding: 20px 18px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.02);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .brand {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex: 1;
+}
+
+.notification-bell-wrapper {
+  margin-left: auto;
 }
 
 .brand-icon {

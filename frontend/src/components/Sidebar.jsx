@@ -1,5 +1,6 @@
 import React from 'react'
 import { GraduationCap, LogOut } from 'lucide-react'
+import NotificationBell from './NotificationBell/NotificationBell'
 
 const Sidebar = ({ currentPage, setCurrentPage, sidebarOpen, setSidebarOpen, user, menuItems, onLogout }) => {
   return (
@@ -11,6 +12,9 @@ const Sidebar = ({ currentPage, setCurrentPage, sidebarOpen, setSidebarOpen, use
             <h3>SEMAR</h3>
             <p>Seminar Management and Registration</p>
           </div>
+        </div>
+        <div className="notification-bell-wrapper">
+          <NotificationBell />
         </div>
       </div>
 

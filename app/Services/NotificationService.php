@@ -1,0 +1,232 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\Notification;
+use App\Models\Seminar;
+use App\Models\User;
+
+class NotificationService
+{
+    /**
+     * Send notification about schedule conflict (no matching dates)
+     */
+    public static function notifyScheduleConflict(Seminar $seminar): void
+    {
+        $title = 'Tidak Ada Kecocokan Jadwal';
+        $message = "Seminar \"{$seminar->judul}\" dibatalkan karena tidak ada tanggal yang cocok dari semua dosen pembimbing dan penguji.";
+
+        // Notify mahasiswa
+        self::createNotification(
+            $seminar->mahasiswa_id,
+            $seminar->id,
+            'schedule_conflict',
+            $title,
+            $message . ' Silakan hubungi dosen terkait untuk koordinasi jadwal sebelum mengajukan ulang.',
+            [
+                'seminar_id' => $seminar->id,
+                'judul' => $seminar->judul,
+                'tipe' => $seminar->tipe,
+            ]
+        );
+
+        // Notify pembimbing 1
+        if ($seminar->pembimbing1_id) {
+            self::createNotification(
+                $seminar->pembimbing1_id,
+                $seminar->id,
+                'schedule_conflict',
+                $title,
+                $message . " Mahasiswa: {$seminar->mahasiswa->name} ({$seminar->mahasiswa->npm}).",
+                [
+                    'seminar_id' => $seminar->id,
+                    'mahasiswa_name' => $seminar->mahasiswa->name,
+                    'mahasiswa_npm' => $seminar->mahasiswa->npm,
+                    'role' => 'Pembimbing 1',
+                ]
+            );
+        }
+
+        // Notify pembimbing 2
+        if ($seminar->pembimbing2_id) {
+            self::createNotification(
+                $seminar->pembimbing2_id,
+                $seminar->id,
+                'schedule_conflict',
+                $title,
+                $message . " Mahasiswa: {$seminar->mahasiswa->name} ({$seminar->mahasiswa->npm}).",
+                [
+                    'seminar_id' => $seminar->id,
+                    'mahasiswa_name' => $seminar->mahasiswa->name,
+                    'mahasiswa_npm' => $seminar->mahasiswa->npm,
+                    'role' => 'Pembimbing 2',
+                ]
+            );
+        }
+
+        // Notify penguji
+        if ($seminar->penguji_id) {
+            self::createNotification(
+                $seminar->penguji_id,
+                $seminar->id,
+                'schedule_conflict',
+                $title,
+                $message . " Mahasiswa: {$seminar->mahasiswa->name} ({$seminar->mahasiswa->npm}).",
+                [
+                    'seminar_id' => $seminar->id,
+                    'mahasiswa_name' => $seminar->mahasiswa->name,
+                    'mahasiswa_npm' => $seminar->mahasiswa->npm,
+                    'role' => 'Penguji',
+                ]
+            );
+        }
+
+        // Notify all admins
+        $admins = User::where('role', 'admin')->get();
+        foreach ($admins as $admin) {
+            self::createNotification(
+                $admin->id,
+                $seminar->id,
+                'schedule_conflict',
+                $title,
+                $message . " Mahasiswa: {$seminar->mahasiswa->name} ({$seminar->mahasiswa->npm}). Perlu koordinasi ulang jadwal.",
+                [
+                    'seminar_id' => $seminar->id,
+                    'mahasiswa_name' => $seminar->mahasiswa->name,
+                    'mahasiswa_npm' => $seminar->mahasiswa->npm,
+                ]
+            );
+        }
+    }
+
+    /**
+     * Send notification about seminar rejection
+     */
+    public static function notifySeminarRejected(Seminar $seminar, $rejectedBy, $rejectionReason): void
+    {
+        $title = 'Pengajuan Seminar Ditolak';
+        $dosenName = $rejectedBy->name;
+        
+        // Get dosen role
+        $role = '';
+        if ($seminar->pembimbing1_id == $rejectedBy->id) {
+            $role = 'Pembimbing 1';
+        } elseif ($seminar->pembimbing2_id == $rejectedBy->id) {
+            $role = 'Pembimbing 2';
+        } elseif ($seminar->penguji_id == $rejectedBy->id) {
+            $role = 'Penguji';
+        }
+
+        $message = "Seminar \"{$seminar->judul}\" telah ditolak oleh {$dosenName} ({$role}) dan otomatis dibatalkan.";
+
+        // Notify mahasiswa
+        self::createNotification(
+            $seminar->mahasiswa_id,
+            $seminar->id,
+            'seminar_rejected',
+            $title,
+            $message . ($rejectionReason ? " Alasan: {$rejectionReason}" : ' Silakan hubungi dosen pembimbing untuk melakukan revisi dan ajukan kembali.'),
+            [
+                'seminar_id' => $seminar->id,
+                'judul' => $seminar->judul,
+                'tipe' => $seminar->tipe,
+                'rejected_by' => $dosenName,
+                'rejection_reason' => $rejectionReason,
+            ]
+        );
+
+        // Notify pembimbing 1
+        if ($seminar->pembimbing1_id && $seminar->pembimbing1_id != $rejectedBy->id) {
+            self::createNotification(
+                $seminar->pembimbing1_id,
+                $seminar->id,
+                'seminar_rejected',
+                $title,
+                $message . " Mahasiswa: {$seminar->mahasiswa->name} ({$seminar->mahasiswa->npm}).",
+                [
+                    'seminar_id' => $seminar->id,
+                    'mahasiswa_name' => $seminar->mahasiswa->name,
+                    'mahasiswa_npm' => $seminar->mahasiswa->npm,
+                    'rejected_by' => $dosenName,
+                    'rejection_reason' => $rejectionReason,
+                ]
+            );
+        }
+
+        // Notify pembimbing 2
+        if ($seminar->pembimbing2_id && $seminar->pembimbing2_id != $rejectedBy->id) {
+            self::createNotification(
+                $seminar->pembimbing2_id,
+                $seminar->id,
+                'seminar_rejected',
+                $title,
+                $message . " Mahasiswa: {$seminar->mahasiswa->name} ({$seminar->mahasiswa->npm}).",
+                [
+                    'seminar_id' => $seminar->id,
+                    'mahasiswa_name' => $seminar->mahasiswa->name,
+                    'mahasiswa_npm' => $seminar->mahasiswa->npm,
+                    'rejected_by' => $dosenName,
+                    'rejection_reason' => $rejectionReason,
+                ]
+            );
+        }
+
+        // Notify penguji
+        if ($seminar->penguji_id && $seminar->penguji_id != $rejectedBy->id) {
+            self::createNotification(
+                $seminar->penguji_id,
+                $seminar->id,
+                'seminar_rejected',
+                $title,
+                $message . " Mahasiswa: {$seminar->mahasiswa->name} ({$seminar->mahasiswa->npm}).",
+                [
+                    'seminar_id' => $seminar->id,
+                    'mahasiswa_name' => $seminar->mahasiswa->name,
+                    'mahasiswa_npm' => $seminar->mahasiswa->npm,
+                    'rejected_by' => $dosenName,
+                    'rejection_reason' => $rejectionReason,
+                ]
+            );
+        }
+
+        // Notify all admins
+        $admins = User::where('role', 'admin')->get();
+        foreach ($admins as $admin) {
+            self::createNotification(
+                $admin->id,
+                $seminar->id,
+                'seminar_rejected',
+                $title,
+                $message . " Mahasiswa: {$seminar->mahasiswa->name} ({$seminar->mahasiswa->npm}).",
+                [
+                    'seminar_id' => $seminar->id,
+                    'mahasiswa_name' => $seminar->mahasiswa->name,
+                    'mahasiswa_npm' => $seminar->mahasiswa->npm,
+                    'rejected_by' => $dosenName,
+                    'rejection_reason' => $rejectionReason,
+                ]
+            );
+        }
+    }
+
+    /**
+     * Create a notification
+     */
+    private static function createNotification(
+        int $userId,
+        ?int $seminarId,
+        string $type,
+        string $title,
+        string $message,
+        ?array $data = null
+    ): Notification {
+        return Notification::create([
+            'user_id' => $userId,
+            'seminar_id' => $seminarId,
+            'type' => $type,
+            'title' => $title,
+            'message' => $message,
+            'data' => $data,
+        ]);
+    }
+}
