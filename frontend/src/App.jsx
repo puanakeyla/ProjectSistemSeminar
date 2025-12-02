@@ -143,7 +143,7 @@ function App() {
             {currentPage === 'revisi' && role === 'mahasiswa' && <Revisi />}
 
             {/* Dosen pages */}
-            {currentPage === 'dashboard' && role === 'dosen' && <DashboardDosen />}
+            {currentPage === 'dashboard' && role === 'dosen' && <DashboardDosen setCurrentPage={setCurrentPage} />}
             {currentPage === 'approval' && role === 'dosen' && <Approval />}
             {currentPage === 'jadwal' && role === 'dosen' && <JadwalDosen />}
 

@@ -621,6 +621,77 @@
   margin-bottom: 16px;
 }
 
+/* Other Dosen Rejections Display */
+.other-dosen-rejections {
+  background: linear-gradient(135deg, rgba(231, 76, 60, 0.08), rgba(192, 57, 43, 0.05));
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  border: 2px solid #e74c3c;
+}
+
+.other-dosen-rejections h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #c0392b;
+  margin: 0 0 12px 0;
+}
+
+.rejection-item {
+  background: white;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 10px;
+  border-left: 4px solid #e74c3c;
+}
+
+.rejection-item:last-of-type {
+  margin-bottom: 12px;
+}
+
+.rejection-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.rejection-header strong {
+  color: #2c3e50;
+  font-size: 13px;
+}
+
+.rejection-time {
+  font-size: 11px;
+  color: #7f8c8d;
+  font-style: italic;
+}
+
+.rejection-reason {
+  font-size: 13px;
+  color: #34495e;
+  line-height: 1.5;
+}
+
+.reason-label {
+  font-weight: 600;
+  color: #e74c3c;
+}
+
+.rejection-note {
+  margin: 12px 0 0 0;
+  padding: 10px;
+  background: rgba(231, 76, 60, 0.1);
+  border-radius: 6px;
+  font-size: 12px;
+  color: #c0392b;
+  font-weight: 600;
+  text-align: center;
+}
+
 /* Other Dosen Dates Display */
 .other-dosen-dates {
   background: #f8fafc;

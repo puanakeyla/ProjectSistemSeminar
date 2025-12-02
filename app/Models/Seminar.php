@@ -132,7 +132,7 @@ class Seminar extends Model
             'draft' => 'Draft',
             'pending_verification' => 'Menunggu Verifikasi',
             'approved' => 'Disetujui',
-            'scheduled' => 'Terjadwal',
+            'scheduled' => 'Disetujui',
             'finished' => 'Selesai',
             'revising' => 'Revisi',
             'cancelled' => 'Dibatalkan',

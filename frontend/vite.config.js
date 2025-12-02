@@ -13,5 +13,19 @@ export default defineConfig({
         secure: false,
       }
     }
+  },
+  build: {
+    // Busting cache dengan menambahkan hash di nama file
+    rollupOptions: {
+      output: {
+        entryFileNames: `assets/[name].[hash].js`,
+        chunkFileNames: `assets/[name].[hash].js`,
+        assetFileNames: `assets/[name].[hash].[ext]`
+      }
+    }
+  },
+  css: {
+    // Force reload CSS changes
+    devSourcemap: true
   }
 })

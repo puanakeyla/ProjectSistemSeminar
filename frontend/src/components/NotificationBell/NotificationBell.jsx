@@ -91,6 +91,10 @@ function NotificationBell() {
     switch (type) {
       case 'schedule_conflict':
         return <XCircle size={20} className="notif-icon-conflict" />;
+      case 'seminar_rejected':
+        return <XCircle size={20} className="notif-icon-rejected" />;
+      case 'seminar_cancelled_by_mahasiswa':
+        return <XCircle size={20} className="notif-icon-cancelled" />;
       case 'seminar_approved':
         return <Check size={20} className="notif-icon-success" />;
       case 'seminar_scheduled':
@@ -185,4 +189,5 @@ function NotificationBell() {
   );
 }
 
+export { NotificationBell };
 export default NotificationBell;

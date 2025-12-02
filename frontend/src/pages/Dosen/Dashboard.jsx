@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Clock, CheckCircle, Users, BarChart2, Calendar, ClipboardList, GraduationCap, XCircle, AlertTriangle } from 'lucide-react'
+import { Clock, CheckCircle, Users, BarChart2, Calendar, ClipboardList, GraduationCap, XCircle, AlertTriangle, UserRound, CalendarDays } from 'lucide-react'
 
 import { dosenAPI } from '../../services/api'
 import { StatCard } from '../../components/dashboard/StatCard'
 import { SectionCard } from '../../components/dashboard/SectionCard'
 import { Skeleton } from '../../components/ui/skeleton'
 
-function Dashboard() {
+function Dashboard({ setCurrentPage }) {
   const [dashboardData, setDashboardData] = useState(null)
   const [pendingApprovals, setPendingApprovals] = useState([])
   const [cancelledSeminars, setCancelledSeminars] = useState([])
@@ -91,14 +91,16 @@ function Dashboard() {
                 Selamat datang di Portal Dosen Pembimbing
               </p>
             </div>
-            <div className="ml-auto flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-              <Calendar className="w-5 h-5 text-primary-500" />
-              {new Date().toLocaleDateString('id-ID', {
-                weekday: 'long',
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric'
-              })}
+            <div className="ml-auto flex items-center gap-4">
+              <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                <Calendar className="w-5 h-5 text-primary-500" />
+                {new Date().toLocaleDateString('id-ID', {
+                  weekday: 'long',
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric'
+                })}
+              </div>
             </div>
           </div>
         </motion.div>
@@ -238,16 +240,22 @@ function Dashboard() {
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
                         <div className="flex flex-wrap gap-3 text-xs text-gray-500 dark:text-gray-400">
                           <span className="inline-flex items-center gap-1 font-semibold text-gray-700 dark:text-gray-200">
-                            👤 {approval.peran}
+                            <UserRound className="w-3.5 h-3.5" />
+                            {approval.peran}
                           </span>
                           <span className="inline-flex items-center gap-1">
-                            📅 {formatDate(approval.created_at)}
+                            <CalendarDays className="w-3.5 h-3.5" />
+                            {formatDate(approval.created_at)}
                           </span>
                         </div>
                         <button
                           type="button"
                           className="inline-flex items-center justify-center px-4 py-2 text-sm font-semibold rounded-xl bg-primary-600 text-white hover:bg-primary-700 transition"
-                          onClick={() => (window.location.href = '/dosen/approvals')}
+                          onClick={() => {
+                            localStorage.setItem('selected_approval_id', approval.id)
+                            localStorage.setItem('selected_seminar_id', approval.seminar_id)
+                            setCurrentPage('approval')
+                          }}
                         >
                           Tinjau
                         </button>

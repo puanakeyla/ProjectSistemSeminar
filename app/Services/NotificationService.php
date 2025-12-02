@@ -210,6 +210,88 @@ class NotificationService
     }
 
     /**
+     * Send notification when mahasiswa cancels seminar
+     */
+    public static function notifySeminarCancelledByMahasiswa(Seminar $seminar, ?string $reason = null): void
+    {
+        $title = 'Seminar Dibatalkan oleh Mahasiswa';
+        $message = "Seminar \"{$seminar->judul}\" telah dibatalkan oleh mahasiswa {$seminar->mahasiswa->name}.";
+        
+        if ($reason) {
+            $message .= " Alasan: {$reason}";
+        }
+
+        // Notify pembimbing 1
+        if ($seminar->pembimbing1_id) {
+            self::createNotification(
+                $seminar->pembimbing1_id,
+                $seminar->id,
+                'seminar_cancelled_by_mahasiswa',
+                $title,
+                $message . " Mahasiswa: {$seminar->mahasiswa->name} ({$seminar->mahasiswa->npm}).",
+                [
+                    'seminar_id' => $seminar->id,
+                    'mahasiswa_name' => $seminar->mahasiswa->name,
+                    'mahasiswa_npm' => $seminar->mahasiswa->npm,
+                    'cancel_reason' => $reason,
+                ]
+            );
+        }
+
+        // Notify pembimbing 2
+        if ($seminar->pembimbing2_id) {
+            self::createNotification(
+                $seminar->pembimbing2_id,
+                $seminar->id,
+                'seminar_cancelled_by_mahasiswa',
+                $title,
+                $message . " Mahasiswa: {$seminar->mahasiswa->name} ({$seminar->mahasiswa->npm}).",
+                [
+                    'seminar_id' => $seminar->id,
+                    'mahasiswa_name' => $seminar->mahasiswa->name,
+                    'mahasiswa_npm' => $seminar->mahasiswa->npm,
+                    'cancel_reason' => $reason,
+                ]
+            );
+        }
+
+        // Notify penguji
+        if ($seminar->penguji_id) {
+            self::createNotification(
+                $seminar->penguji_id,
+                $seminar->id,
+                'seminar_cancelled_by_mahasiswa',
+                $title,
+                $message . " Mahasiswa: {$seminar->mahasiswa->name} ({$seminar->mahasiswa->npm}).",
+                [
+                    'seminar_id' => $seminar->id,
+                    'mahasiswa_name' => $seminar->mahasiswa->name,
+                    'mahasiswa_npm' => $seminar->mahasiswa->npm,
+                    'cancel_reason' => $reason,
+                ]
+            );
+        }
+
+        // Notify all admins
+        $admins = User::where('role', 'admin')->get();
+        foreach ($admins as $admin) {
+            self::createNotification(
+                $admin->id,
+                $seminar->id,
+                'seminar_cancelled_by_mahasiswa',
+                $title,
+                $message . " Mahasiswa: {$seminar->mahasiswa->name} ({$seminar->mahasiswa->npm}).",
+                [
+                    'seminar_id' => $seminar->id,
+                    'mahasiswa_name' => $seminar->mahasiswa->name,
+                    'mahasiswa_npm' => $seminar->mahasiswa->npm,
+                    'cancel_reason' => $reason,
+                ]
+            );
+        }
+    }
+
+    /**
      * Create a notification
      */
     private static function createNotification(

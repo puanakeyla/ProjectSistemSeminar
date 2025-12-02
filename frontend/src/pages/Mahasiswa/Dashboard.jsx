@@ -122,20 +122,22 @@ function Dashboard() {
           transition={{ duration: 0.4 }}
           className="bg-white dark:bg-dark-800 rounded-2xl p-6 md:p-8 shadow-soft border border-gray-200 dark:border-dark-700"
         >
-          <div className="flex items-center gap-4">
-            <div
-              className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-glow"
-              style={{ background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)' }}
-            >
-              <GraduationCap className="w-8 h-8 text-white" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
-                Dasbor Mahasiswa
-              </h1>
-              <p className="text-base text-gray-600 dark:text-gray-400">
-                Selamat datang, <span className="font-semibold text-primary-600 dark:text-primary-400">{userName}</span>
-              </p>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div
+                className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-glow"
+                style={{ background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)' }}
+              >
+                <GraduationCap className="w-8 h-8 text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
+                  Dasbor Mahasiswa
+                </h1>
+                <p className="text-base text-gray-600 dark:text-gray-400">
+                  Selamat datang, <span className="font-semibold text-primary-600 dark:text-primary-400">{userName}</span>
+                </p>
+              </div>
             </div>
           </div>
         </motion.div>

@@ -75,9 +75,18 @@ function Status() {
     return `${approved} Approved, ${rejected} Rejected, ${pending} Pending`;
   };
 
-  const canCancel = (status, isCancelled) => {
-    if (isCancelled) return false;
-    return CANCELLABLE_STATUSES.includes(status);
+  const canCancel = (item) => {
+    // Tidak bisa batalkan jika sudah cancelled atau finished
+    if (item.status === 'cancelled' || item.status === 'finished') return false;
+    
+    // Tidak bisa batalkan jika is_cancelled true
+    if (item.is_cancelled) return false;
+    
+    // Tidak bisa batalkan jika cancelled_at ada
+    if (item.cancelled_at) return false;
+    
+    // Bisa batalkan jika statusnya termasuk dalam CANCELLABLE_STATUSES
+    return CANCELLABLE_STATUSES.includes(item.status);
   };
 
   const handleCancel = async (seminarId) => {
@@ -250,7 +259,7 @@ function Status() {
                   </div>
                 )}
 
-                {canCancel(item.status, item.is_cancelled) && (
+                {canCancel(item) && (
                   <div className="action-row">
                     <button
                       className="btn-cancel"

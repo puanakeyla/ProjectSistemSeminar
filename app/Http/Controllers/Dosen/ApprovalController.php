@@ -301,9 +301,31 @@ class ApprovalController extends Controller
     {
         $approvals = $seminar->approvals;
 
-        // If any approval is rejected, seminar requires revision
-        if ($approvals->where('status', 'rejected')->count() > 0) {
-            $seminar->update(['status' => 'revising']);
+        // If any approval is rejected, auto-cancel the seminar and notify all parties
+        $rejectedApproval = $approvals->where('status', 'rejected')->first();
+        if ($rejectedApproval) {
+            // Get the rejection reason
+            $rejectionReason = $rejectedApproval->catatan ?? 'Tidak ada alasan spesifik';
+            
+            // Cancel the seminar
+            $seminar->update([
+                'status' => 'cancelled',
+                'cancelled_at' => now(),
+                'cancel_reason' => "Ditolak oleh {$rejectedApproval->dosen->name}. Alasan: {$rejectionReason}"
+            ]);
+            
+            // Delete any existing schedule
+            if ($seminar->schedule) {
+                $seminar->schedule->delete();
+            }
+
+            // Send notifications to all parties
+            NotificationService::notifySeminarRejected(
+                $seminar->fresh(['mahasiswa', 'pembimbing1', 'pembimbing2', 'penguji']),
+                $rejectedApproval->dosen,
+                $rejectionReason
+            );
+            
             return;
         }
 
@@ -423,6 +445,22 @@ class ApprovalController extends Controller
             })->values();
 
         $data['other_approved_dates'] = $otherApprovedDates;
+
+        // Get other dosen's rejections (if any)
+        $otherRejections = $seminar->approvals()
+            ->where('id', '!=', $approval->id)
+            ->where('status', 'rejected')
+            ->get()
+            ->map(function ($otherApproval) {
+                return [
+                    'dosen_name' => $otherApproval->dosen->name,
+                    'peran' => $otherApproval->peran,
+                    'rejection_reason' => $otherApproval->catatan ?? 'Tidak ada alasan spesifik',
+                    'rejected_at' => $otherApproval->updated_at->format('d M Y H:i'),
+                ];
+            })->values();
+
+        $data['other_rejections'] = $otherRejections;
 
         // Calculate common dates if there are other approved dates
         if ($otherApprovedDates->isNotEmpty()) {

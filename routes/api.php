@@ -149,11 +149,11 @@ Route::middleware('auth:sanctum')->group(function () {
         
         // QR Codes
         Route::get('/qr-codes', [AdminQRController::class, 'index']);
-        Route::post('/qr-codes/{scheduleId}/generate', [AdminQRController::class, 'generateQR']);
-        Route::get('/qr-codes/{scheduleId}', [AdminQRController::class, 'getQR']);
-        Route::delete('/qr-codes/{scheduleId}', [AdminQRController::class, 'destroy']);
         Route::post('/qr-codes/bulk-generate', [AdminQRController::class, 'bulkGenerate']);
         Route::post('/qr-codes/validate', [AdminQRController::class, 'validateQR']);
+        Route::post('/qr-codes/generate/{scheduleId}', [AdminQRController::class, 'generateQR']); // Ubah pattern
+        Route::delete('/qr-codes/{scheduleId}', [AdminQRController::class, 'destroy']);
+        Route::get('/qr-codes/{scheduleId}', [AdminQRController::class, 'getQR']);
         
         // Attendance
         Route::get('/attendances', [AdminAttendanceController::class, 'index']);

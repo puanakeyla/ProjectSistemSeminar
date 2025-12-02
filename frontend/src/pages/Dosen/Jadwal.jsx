@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { dosenAPI } from '../../services/api';
-import './Jadwal.css';
-import { Calendar, Clock, MapPin, RefreshCw, AlertCircle, User, CalendarDays, Loader2, XCircle } from 'lucide-react';
+import './Jadwal.css?v=2'; // Force reload CSS
+import { Calendar, Clock, MapPin, RefreshCw, AlertCircle, User, CalendarDays, Loader2, XCircle, GraduationCap, FileText } from 'lucide-react';
 
 const FILTERS = [
   { id: 'upcoming', label: 'Mendatang' },
@@ -287,10 +287,20 @@ function DosenJadwal() {
 
             <div className="modal-body">
               <div className="seminar-info-box">
-                <p className="info-label">Mahasiswa</p>
-                <p className="info-value">{cancelModal.seminar?.mahasiswa_name}</p>
-                <p className="info-label">Judul Seminar</p>
-                <p className="info-value">{cancelModal.seminar?.judul}</p>
+                <div>
+                  <p className="info-label">
+                    <GraduationCap size={14} />
+                    Mahasiswa
+                  </p>
+                  <p className="info-value">{cancelModal.seminar?.mahasiswa_name}</p>
+                </div>
+                <div>
+                  <p className="info-label">
+                    <FileText size={14} />
+                    Judul Seminar
+                  </p>
+                  <p className="info-value">{cancelModal.seminar?.judul}</p>
+                </div>
               </div>
 
               <div className="form-group">

@@ -75,6 +75,21 @@ function Approval() {
     fetchPendingApprovals();
   }, []);
 
+  // Auto-select approval from Dashboard navigation
+  useEffect(() => {
+    if (pendingApprovals.length > 0) {
+      const selectedApprovalId = localStorage.getItem('selected_approval_id');
+      if (selectedApprovalId) {
+        const approval = pendingApprovals.find(a => a.id === parseInt(selectedApprovalId));
+        if (approval) {
+          setSelectedApproval(approval);
+          localStorage.removeItem('selected_approval_id');
+          localStorage.removeItem('selected_seminar_id');
+        }
+      }
+    }
+  }, [pendingApprovals]);
+
   // Reset detail panel if current selection no longer available in active filter
   useEffect(() => {
     if (selectedApproval && !filteredApprovals.some((item) => item.id === selectedApproval.id)) {
@@ -593,6 +608,28 @@ function Approval() {
                         {showDatePicker ? 'Sembunyikan Kalender' : 'Pilih Tanggal Tersedia'}
                       </button>
                     </div>
+
+                    {/* Show other dosen's rejections (if any) */}
+                    {selectedApproval?.other_rejections && selectedApproval.other_rejections.length > 0 && (
+                      <div className="other-dosen-rejections">
+                        <h4>
+                          <XCircle size={14} style={{ color: '#e74c3c' }} />
+                          Penolakan dari Dosen Lain:
+                        </h4>
+                        {selectedApproval.other_rejections.map((rejection, idx) => (
+                          <div key={idx} className="rejection-item">
+                            <div className="rejection-header">
+                              <strong>{rejection.dosen_name}</strong> ({formatTitleCase(rejection.peran)})
+                              <span className="rejection-time">{rejection.rejected_at}</span>
+                            </div>
+                            <div className="rejection-reason">
+                              <span className="reason-label">Alasan:</span> {rejection.rejection_reason}
+                            </div>
+                          </div>
+                        ))}
+                        <p className="rejection-note">⚠️ Pengajuan ini telah ditolak dan akan dibatalkan otomatis.</p>
+                      </div>
+                    )}
 
                     {/* Show other dosen's approved dates */}
                     {selectedApproval?.other_approved_dates && selectedApproval.other_approved_dates.length > 0 && (

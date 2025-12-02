@@ -178,7 +178,7 @@ export const adminAPI = {
 
   // QR Code
   generateQR: async (scheduleId) => {
-    const response = await api.post(`/admin/qr-codes/generate/${scheduleId}`);
+    const response = await api.post(`/admin/qr-codes/generate/${scheduleId}`); // Route: POST /qr-codes/generate/{id}
     return response.data;
   },
 

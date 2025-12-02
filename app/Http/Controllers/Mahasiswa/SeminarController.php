@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Seminar;
 use App\Models\SeminarApproval;
 use App\Models\User;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
@@ -70,7 +71,7 @@ class SeminarController extends Controller
         $seminar->update([
             'status' => 'cancelled',
             'cancelled_at' => now(),
-            'cancel_reason' => $validated['reason'] ?? null,
+            'cancel_reason' => $validated['reason'] ?? 'Dibatalkan oleh mahasiswa',
         ]);
 
         if ($seminar->schedule && $seminar->schedule->status !== 'completed') {
@@ -83,6 +84,12 @@ class SeminarController extends Controller
                 'catatan' => trim(($approval->catatan ? $approval->catatan . ' | ' : '') . 'Dibatalkan oleh mahasiswa'),
             ]);
         }
+
+        // Send notifications to all dosen and admin
+        NotificationService::notifySeminarCancelledByMahasiswa(
+            $seminar->fresh(['mahasiswa', 'pembimbing1', 'pembimbing2', 'penguji']),
+            $validated['reason'] ?? null
+        );
 
         return response()->json([
             'message' => 'Pengajuan seminar berhasil dibatalkan.',

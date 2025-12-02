@@ -36,11 +36,12 @@
 }
 
 .notification-dropdown {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  width: 380px;
-  max-height: 500px;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 450px;
+  max-height: 600px;
   background: white;
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
@@ -56,7 +57,7 @@
   align-items: center;
   padding: 16px 20px;
   border-bottom: 1px solid #e0e0e0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0b1f3f 0%, #346caa 100%);
   color: white;
 }
 
@@ -83,7 +84,7 @@
 
 .notification-list {
   overflow-y: auto;
-  max-height: 420px;
+  max-height: 520px;
 }
 
 .notification-loading,
@@ -137,6 +138,14 @@
 
 .notif-icon-conflict {
   color: #e74c3c;
+}
+
+.notif-icon-rejected {
+  color: #c0392b;
+}
+
+.notif-icon-cancelled {
+  color: #e67e22;
 }
 
 .notif-icon-success {
