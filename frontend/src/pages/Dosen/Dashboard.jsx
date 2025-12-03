@@ -11,6 +11,7 @@ function Dashboard({ setCurrentPage }) {
   const [dashboardData, setDashboardData] = useState(null)
   const [pendingApprovals, setPendingApprovals] = useState([])
   const [cancelledSeminars, setCancelledSeminars] = useState([])
+  const [showAllCancelled, setShowAllCancelled] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -80,8 +81,11 @@ function Dashboard({ setCurrentPage }) {
           className="bg-white dark:bg-dark-800 rounded-2xl p-6 md:p-8 shadow-soft border border-gray-200 dark:border-dark-700"
         >
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-glow">
-              <GraduationCap className="w-8 h-8 text-white" />
+            <div
+              className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-glow"
+              style={{ background: 'linear-gradient(135deg, rgb(37, 99, 235) 0%, rgb(37, 99, 235) 100%)' }}
+            >
+              <GraduationCap className="w-8 h-8" stroke="rgb(37, 99, 235)" strokeWidth={2.5} />
             </div>
             <div>
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
@@ -137,7 +141,7 @@ function Dashboard({ setCurrentPage }) {
                   {cancelledSeminars.length} seminar baru-baru ini dibatalkan oleh mahasiswa
                 </p>
                 <div className="space-y-3">
-                  {cancelledSeminars.map((seminar, index) => (
+                  {(showAllCancelled ? cancelledSeminars : cancelledSeminars.slice(0, 3)).map((seminar, index) => (
                     <motion.div
                       key={seminar.id}
                       initial={{ opacity: 0, x: -20 }}
@@ -184,6 +188,14 @@ function Dashboard({ setCurrentPage }) {
                     </motion.div>
                   ))}
                 </div>
+                {cancelledSeminars.length > 3 && (
+                  <button
+                    onClick={() => setShowAllCancelled(!showAllCancelled)}
+                    className="mt-4 w-full px-4 py-2 text-sm font-semibold text-red-700 dark:text-red-300 bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 rounded-lg transition-colors duration-200"
+                  >
+                    {showAllCancelled ? 'Tampilkan Lebih Sedikit' : `Selengkapnya (${cancelledSeminars.length - 3} lainnya)`}
+                  </button>
+                )}
               </div>
             </div>
           </motion.div>

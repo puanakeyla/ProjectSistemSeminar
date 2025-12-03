@@ -30,6 +30,8 @@ function Dashboard() {
   const [recentSeminars, setRecentSeminars] = useState([])
   const [todaySeminars, setTodaySeminars] = useState([])
   const [cancelledSeminars, setCancelledSeminars] = useState([])
+  const [showAllCancelled, setShowAllCancelled] = useState(false)
+  const [pendingVerificationList, setPendingVerificationList] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -41,20 +43,38 @@ function Dashboard() {
     try {
       setLoading(true)
       setError(null)
-      const response = await adminAPI.getDashboard()
-      const data = response.data || response
+      const [dashboardResponse, allSeminarsResponse] = await Promise.all([
+        adminAPI.getDashboard(),
+        adminAPI.getSeminarsForVerification('all')
+      ])
+      
+      const data = dashboardResponse.data || dashboardResponse
 
+      // Calculate verification rate: (approved + scheduled) / total * 100
+      const total = data?.seminar_statistics?.total || 0
+      const approved = data?.seminar_statistics?.approved || 0
+      const scheduled = data?.seminar_statistics?.scheduled || 0
+      const verificationRate = total > 0 ? ((approved + scheduled) / total) * 100 : 0
+      
+      // Calculate schedule rate: scheduled / (approved + scheduled) * 100
+      const scheduleRate = (approved + scheduled) > 0 ? (scheduled / (approved + scheduled)) * 100 : 0
+      
       setStats({
-        totalSeminars: data?.seminar_statistics?.total || 0,
+        totalSeminars: total,
         pendingVerification: data?.seminar_statistics?.pending_verification || 0,
         scheduledToday: data?.today_seminars?.length || 0,
         totalAttendance: data?.attendance_statistics?.total_attendances || 0,
-        verificationRate: data?.seminar_statistics?.verification_rate || 0,
-        scheduleRate: data?.schedule_statistics?.success_rate || 0
+        verificationRate: verificationRate,
+        scheduleRate: scheduleRate
       })
       setRecentSeminars(Array.isArray(data?.recent_seminars) ? data.recent_seminars : [])
       setTodaySeminars(Array.isArray(data?.today_seminars) ? data.today_seminars : [])
       setCancelledSeminars(Array.isArray(data?.cancelled_seminars) ? data.cancelled_seminars : [])
+      
+      // Get all seminars with pending_verification status (show approval progress for all)
+      const allSeminars = allSeminarsResponse.data || []
+      const pendingSeminars = allSeminars.filter(s => s.status === 'pending_verification')
+      setPendingVerificationList(pendingSeminars.slice(0, 5)) // Show only first 5
     } catch (err) {
       console.error('Error fetching dashboard data:', err)
       setError(err.response?.data?.message || 'Gagal memuat data dashboard')
@@ -120,7 +140,7 @@ function Dashboard() {
     )
   }
 
-  const latestSeminars = Array.isArray(recentSeminars) ? recentSeminars : []
+  const latestSeminars = Array.isArray(pendingVerificationList) ? pendingVerificationList : []
 
   return (
     <div className="dashboard-wrapper">
@@ -133,8 +153,11 @@ function Dashboard() {
         >
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-glow">
-                <ShieldCheck className="w-8 h-8 text-white" />
+              <div
+                className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-glow"
+                style={{ background: 'linear-gradient(135deg, rgb(37, 99, 235) 0%, rgb(37, 99, 235) 100%)' }}
+              >
+                <ShieldCheck className="w-8 h-8" stroke="rgb(37, 99, 235)" strokeWidth={2.5} />
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
@@ -195,7 +218,7 @@ function Dashboard() {
                   {cancelledSeminars.length} seminar dibatalkan oleh dosen pembimbing/penguji
                 </p>
                 <div className="space-y-3">
-                  {cancelledSeminars.map((seminar, index) => (
+                  {(showAllCancelled ? cancelledSeminars : cancelledSeminars.slice(0, 3)).map((seminar, index) => (
                     <motion.div
                       key={seminar.id}
                       initial={{ opacity: 0, x: -20 }}
@@ -239,6 +262,14 @@ function Dashboard() {
                     </motion.div>
                   ))}
                 </div>
+                {cancelledSeminars.length > 3 && (
+                  <button
+                    onClick={() => setShowAllCancelled(!showAllCancelled)}
+                    className="mt-4 w-full px-4 py-2 text-sm font-semibold text-red-700 dark:text-red-300 bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 rounded-lg transition-colors duration-200"
+                  >
+                    {showAllCancelled ? 'Tampilkan Lebih Sedikit' : `Selengkapnya (${cancelledSeminars.length - 3} lainnya)`}
+                  </button>
+                )}
               </div>
             </div>
           </motion.div>
@@ -327,52 +358,66 @@ function Dashboard() {
                 </p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-100 text-sm dark:divide-dark-700">
-                  <thead className="bg-gray-50 text-xs uppercase text-gray-500 dark:bg-dark-800 dark:text-gray-400">
-                    <tr>
-                      <th className="px-4 py-3 text-left font-semibold">Mahasiswa</th>
-                      <th className="px-4 py-3 text-left font-semibold">Judul</th>
-                      <th className="px-4 py-3 text-left font-semibold">Tipe</th>
-                      <th className="px-4 py-3 text-left font-semibold">Approval</th>
-                      <th className="px-4 py-3 text-right font-semibold">Diajukan</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100 dark:divide-dark-700">
-                    {latestSeminars.map((seminar) => (
-                      <tr key={seminar.id} className="bg-white/60 dark:bg-dark-800">
-                        <td className="px-4 py-4">
-                          <div className="flex flex-col">
-                            <span className="font-semibold text-gray-900 dark:text-white">
-                              {seminar.mahasiswa_name || 'Mahasiswa'}
-                            </span>
-                            <span className="text-xs text-gray-500 dark:text-gray-400">
-                              {seminar.mahasiswa_npm || '-'}
-                            </span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {latestSeminars.map((seminar) => {
+                  const approvedCount = seminar.approvals?.filter(a => a.status === 'approved').length || 0
+                  const mahasiswaName = seminar.mahasiswa?.name || seminar.mahasiswa_name || 'Mahasiswa'
+                  const mahasiswaNpm = seminar.mahasiswa?.npm || seminar.mahasiswa_npm || '-'
+                  const seminarType = seminar.jenis_seminar_display || seminar.tipe || 'Seminar'
+                  
+                  const getTipeColor = (tipe) => {
+                    const colors = {
+                      'proposal': '#3b82f6',
+                      'seminar_proposal': '#3b82f6',
+                      'hasil': '#10b981',
+                      'seminar_hasil': '#10b981',
+                      'komprehensif': '#8b5cf6'
+                    }
+                    return colors[tipe?.toLowerCase()] || '#6b7280'
+                  }
+                  
+                  return (
+                    <div
+                      key={seminar.id}
+                      className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-lg hover:border-blue-400 transition-all duration-200 cursor-pointer"
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center font-semibold">
+                            {mahasiswaName.charAt(0)}
                           </div>
-                        </td>
-                        <td className="px-4 py-4 max-w-xs">
-                          <p className="text-gray-700 dark:text-gray-200 line-clamp-2">
-                            {seminar.judul}
-                          </p>
-                        </td>
-                        <td className="px-4 py-4">
-                          <span className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-3 py-1 text-xs font-semibold text-primary-600 dark:bg-primary-950 dark:text-primary-300">
-                            {seminar.tipe === 'proposal' ? '📋 Proposal' : '📘 Hasil'}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4">
-                          <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${seminar.approval_count === 3 ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
-                            {seminar.approval_count || 0}/3 Disetujui
-                          </span>
-                        </td>
-                        <td className="px-4 py-4 text-right text-gray-500 dark:text-gray-400">
+                          <div>
+                            <h4 className="font-semibold text-gray-900">{mahasiswaName}</h4>
+                            <span className="text-xs text-gray-500">{mahasiswaNpm}</span>
+                          </div>
+                        </div>
+                        <span
+                          className="px-3 py-1 rounded-full text-xs font-semibold text-white"
+                          style={{ backgroundColor: getTipeColor(seminar.jenis_seminar || seminar.tipe) }}
+                        >
+                          {seminarType}
+                        </span>
+                      </div>
+                      
+                      <h3 className="text-sm font-medium text-gray-900 mb-3 line-clamp-2">
+                        {seminar.judul}
+                      </h3>
+                      
+                      <div className="flex items-center justify-between text-xs text-gray-500">
+                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full font-semibold ${
+                          approvedCount === 3 ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
+                        }`}>
+                          <CheckCircle2 className="w-3 h-3" />
+                          {approvedCount}/3 Disetujui
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <CalendarDays className="w-3 h-3" />
                           {formatDate(seminar.created_at)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             )}
           </SectionCard>

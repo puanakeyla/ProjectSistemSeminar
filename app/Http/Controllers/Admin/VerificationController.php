@@ -51,7 +51,7 @@ class VerificationController extends Controller
             ])
             ->findOrFail($id);
 
-        $approvalDetails = $seminar->approvals->map(function ($approval) {
+        $approvalDetails = $seminar->approvals->map(function ($approval) use ($seminar) {
             return [
                 'dosen_id' => $approval->dosen_id,
                 'dosen_name' => $approval->dosen->name,
@@ -196,6 +196,24 @@ class VerificationController extends Controller
             ],
             'created_at' => $seminar->created_at->format('d M Y H:i'),
             'is_approved_by_all_dosen' => $seminar->isApprovedByAllDosen(),
+            'approvals' => $seminar->approvals->map(function ($approval) {
+                return [
+                    'id' => $approval->id,
+                    'dosen_id' => $approval->dosen_id,
+                    'dosen' => [
+                        'id' => $approval->dosen->id,
+                        'name' => $approval->dosen->name,
+                        'nidn' => $approval->dosen->nidn,
+                    ],
+                    'peran' => $approval->peran,
+                    'status' => $approval->status,
+                    'available_dates' => $approval->available_dates,
+                    'catatan' => $approval->catatan,
+                    'alasan' => $approval->alasan,
+                    'approved_at' => $approval->approved_at ? $approval->approved_at->format('d M Y H:i') : null,
+                    'updated_at' => $approval->updated_at->format('d M Y H:i'),
+                ];
+            }),
         ];
 
         if ($detailed) {
