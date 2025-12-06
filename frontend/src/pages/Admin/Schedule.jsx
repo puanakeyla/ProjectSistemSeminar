@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import './Schedule.css';
 import { adminAPI } from '../../services/api';
-import { Calendar, CheckCircle, XCircle } from 'lucide-react';
+import { Calendar, CheckCircle, XCircle, Loader2, RefreshCcw } from 'lucide-react';
 import { FileText } from 'lucide-react';
 
 function Schedule() {
@@ -172,9 +172,9 @@ function Schedule() {
 
   const getStatusBadge = (status) => {
     const badges = {
-      scheduled: { icon: <Calendar className="w-5 h-5" />, label: 'Scheduled', class: 'scheduled' },
-      completed: { icon: <CheckCircle className="w-5 h-5" />, label: 'Completed', class: 'completed' },
-      cancelled: { icon: <XCircle className="w-5 h-5" />, label: 'Cancelled', class: 'cancelled' }
+      scheduled: { icon: <Calendar className="w-5 h-5" />, label: 'Terjadwal', class: 'scheduled' },
+      completed: { icon: <CheckCircle className="w-5 h-5" />, label: 'Selesai', class: 'completed' },
+      cancelled: { icon: <XCircle className="w-5 h-5" />, label: 'Dibatalkan', class: 'cancelled' }
     };
     return badges[status] || badges.scheduled;
   };
@@ -182,9 +182,12 @@ function Schedule() {
   if (loading) {
     return (
       <div className="admin-schedule">
-        <div className="loading-container">
-          <div className="spinner"></div>
-          <p>Memuat data penjadwalan...</p>
+        <div className="loading-state">
+          <div className="loading-icon">
+            <Loader2 size={32} className="icon-spin" />
+          </div>
+          <h2>Memuat data...</h2>
+          <p>Harap tunggu sebentar.</p>
         </div>
       </div>
     );
@@ -198,8 +201,8 @@ function Schedule() {
           <h1>Penjadwalan Seminar</h1>
           <p>Kelola jadwal seminar berdasarkan ketersediaan dosen</p>
         </div>
-        <button className="refresh-btn" onClick={fetchData}>
-          <span>🔄</span> Refresh
+        <button className="schedule-refresh-btn" onClick={fetchData}>
+          <RefreshCcw className="w-4 h-4" /> Segarkan
         </button>
       </div>
 
@@ -212,8 +215,8 @@ function Schedule() {
 
         {availableSeminars.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-icon"><FileText className="w-8 h-8" /></div>
-            <h3>Tidak Ada Seminar</h3>
+            <div className="empty-icon"><FileText size={32} /></div>
+            <h2>Belum Ada Seminar Mendatang</h2>
             <p>Semua seminar yang sudah diverifikasi telah dijadwalkan</p>
           </div>
         ) : (
@@ -280,8 +283,8 @@ function Schedule() {
 
         {schedules.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-icon"><Calendar className="w-8 h-8" /></div>
-            <h3>Belum Ada Jadwal</h3>
+            <div className="empty-icon"><Calendar size={32} /></div>
+            <h2>Belum Ada Jadwal</h2>
             <p>Jadwal yang dibuat akan muncul di sini</p>
           </div>
         ) : (

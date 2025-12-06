@@ -16,47 +16,63 @@ class DashboardController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $user = $request->user();
+        $userId = $request->user()->id;
 
-        // Count approvals by status
+        // Optimized: Single query for approval counts
+        $approvalData = SeminarApproval::where('dosen_id', $userId)
+            ->selectRaw('COUNT(*) as total')
+            ->selectRaw('SUM(CASE WHEN status = "pending" THEN 1 ELSE 0 END) as menunggu')
+            ->selectRaw('SUM(CASE WHEN status = "approved" THEN 1 ELSE 0 END) as setuju')
+            ->selectRaw('SUM(CASE WHEN status = "rejected" THEN 1 ELSE 0 END) as ditolak')
+            ->first();
+
         $approvalCounts = [
-            'total' => SeminarApproval::where('dosen_id', $user->id)->count(),
-            'menunggu' => SeminarApproval::where('dosen_id', $user->id)->menunggu()->count(),
-            'setuju' => SeminarApproval::where('dosen_id', $user->id)->setuju()->count(),
-            'ditolak' => SeminarApproval::where('dosen_id', $user->id)->ditolak()->count(),
+            'total' => $approvalData->total ?? 0,
+            'menunggu' => $approvalData->menunggu ?? 0,
+            'setuju' => $approvalData->setuju ?? 0,
+            'ditolak' => $approvalData->ditolak ?? 0,
         ];
 
-        // Count seminars where dosen is involved
+        // Optimized: Single query for seminar counts
+        $seminarData = Seminar::where(function ($query) use ($userId) {
+                $query->where('pembimbing1_id', $userId)
+                    ->orWhere('pembimbing2_id', $userId)
+                    ->orWhere('penguji_id', $userId);
+            })
+            ->selectRaw('COUNT(*) as total')
+            ->selectRaw('SUM(CASE WHEN pembimbing1_id = ? THEN 1 ELSE 0 END) as pembimbing1', [$userId])
+            ->selectRaw('SUM(CASE WHEN pembimbing2_id = ? THEN 1 ELSE 0 END) as pembimbing2', [$userId])
+            ->selectRaw('SUM(CASE WHEN penguji_id = ? THEN 1 ELSE 0 END) as penguji', [$userId])
+            ->first();
+
         $seminarCounts = [
-            'pembimbing1' => Seminar::where('pembimbing1_id', $user->id)->count(),
-            'pembimbing2' => Seminar::where('pembimbing2_id', $user->id)->count(),
-            'penguji' => Seminar::where('penguji_id', $user->id)->count(),
-            'total' => Seminar::where(function ($query) use ($user) {
-                $query->where('pembimbing1_id', $user->id)
-                    ->orWhere('pembimbing2_id', $user->id)
-                    ->orWhere('penguji_id', $user->id);
-            })->count(),
+            'pembimbing1' => $seminarData->pembimbing1 ?? 0,
+            'pembimbing2' => $seminarData->pembimbing2 ?? 0,
+            'penguji' => $seminarData->penguji ?? 0,
+            'total' => $seminarData->total ?? 0,
         ];
 
-        // Get today's seminars
-        $todaySeminars = SeminarSchedule::with(['seminar.mahasiswa'])
-            ->whereHas('seminar', function ($query) use ($user) {
-                $query->where(function ($q) use ($user) {
-                    $q->where('pembimbing1_id', $user->id)
-                        ->orWhere('pembimbing2_id', $user->id)
-                        ->orWhere('penguji_id', $user->id);
+        // Get today's seminars - optimized
+        $todaySeminars = SeminarSchedule::with(['seminar:id,mahasiswa_id,judul,jenis_seminar,pembimbing1_id,pembimbing2_id,penguji_id', 'seminar.mahasiswa:id,name,npm'])
+            ->select('id', 'seminar_id', 'ruang', 'waktu_mulai', 'waktu_selesai')
+            ->whereHas('seminar', function ($query) use ($userId) {
+                $query->where(function ($q) use ($userId) {
+                    $q->where('pembimbing1_id', $userId)
+                        ->orWhere('pembimbing2_id', $userId)
+                        ->orWhere('penguji_id', $userId);
                 });
             })
             ->today()
             ->orderBy('waktu_mulai')
             ->get()
-            ->map(function ($schedule) use ($user) {
-                return $this->formatSeminarScheduleData($schedule, $user);
+            ->map(function ($schedule) use ($userId) {
+                return $this->formatSeminarScheduleData($schedule, (object)['id' => $userId]);
             });
 
-        // Get pending approvals
-        $pendingApprovals = SeminarApproval::with(['seminar.mahasiswa'])
-            ->where('dosen_id', $user->id)
+        // Get pending approvals - optimized
+        $pendingApprovals = SeminarApproval::with(['seminar:id,mahasiswa_id,judul,jenis_seminar', 'seminar.mahasiswa:id,name,npm'])
+            ->select('id', 'seminar_id', 'dosen_id', 'created_at')
+            ->where('dosen_id', $userId)
             ->menunggu()
             ->orderBy('created_at', 'desc')
             ->limit(5)
@@ -74,18 +90,46 @@ class DashboardController extends Controller
                 ];
             });
 
-        // Get recently cancelled seminars
-        $cancelledSeminars = Seminar::with(['mahasiswa'])
+        // Get recently scheduled seminars - optimized
+        $scheduledSeminars = Seminar::with(['mahasiswa:id,name,npm', 'schedule:id,seminar_id,waktu_mulai,ruang'])
+            ->select('id', 'mahasiswa_id', 'judul', 'jenis_seminar', 'status', 'updated_at', 'pembimbing1_id', 'pembimbing2_id', 'penguji_id')
+            ->where('status', 'scheduled')
+            ->whereHas('schedule')
+            ->where(function ($query) use ($userId) {
+                $query->where('pembimbing1_id', $userId)
+                    ->orWhere('pembimbing2_id', $userId)
+                    ->orWhere('penguji_id', $userId);
+            })
+            ->orderBy('updated_at', 'desc')
+            ->limit(5)
+            ->get()
+            ->map(function ($seminar) {
+                return [
+                    'id' => $seminar->id,
+                    'mahasiswa_name' => $seminar->mahasiswa->name,
+                    'mahasiswa_npm' => $seminar->mahasiswa->npm,
+                    'judul' => $seminar->judul,
+                    'jenis_seminar' => $seminar->getJenisSeminarDisplay(),
+                    'waktu_mulai' => $seminar->schedule->waktu_mulai->format('d M Y H:i'),
+                    'ruang' => $seminar->schedule->ruang,
+                    'scheduled_at' => $seminar->updated_at->format('d M Y H:i'),
+                    'days_ago' => $seminar->updated_at->diffInDays(now()),
+                ];
+            });
+
+        // Get recently cancelled seminars - optimized
+        $cancelledSeminars = Seminar::with(['mahasiswa:id,name,npm', 'cancelledBy:id,name,role'])
+            ->select('id', 'mahasiswa_id', 'judul', 'jenis_seminar', 'cancel_reason', 'cancelled_at', 'cancelled_by', 'pembimbing1_id', 'pembimbing2_id', 'penguji_id')
             ->whereNotNull('cancelled_at')
-            ->where(function ($query) use ($user) {
-                $query->where('pembimbing1_id', $user->id)
-                    ->orWhere('pembimbing2_id', $user->id)
-                    ->orWhere('penguji_id', $user->id);
+            ->where(function ($query) use ($userId) {
+                $query->where('pembimbing1_id', $userId)
+                    ->orWhere('pembimbing2_id', $userId)
+                    ->orWhere('penguji_id', $userId);
             })
             ->orderBy('cancelled_at', 'desc')
             ->limit(5)
             ->get()
-            ->map(function ($seminar) use ($user) {
+            ->map(function ($seminar) use ($userId) {
                 return [
                     'id' => $seminar->id,
                     'mahasiswa_name' => $seminar->mahasiswa->name,
@@ -95,9 +139,12 @@ class DashboardController extends Controller
                     'cancel_reason' => $seminar->cancel_reason,
                     'cancelled_at' => $seminar->cancelled_at->format('d M Y H:i'),
                     'days_ago' => $seminar->cancelled_at->diffInDays(now()),
-                    'user_role' => $this->getUserRoleInSeminar($seminar, $user),
+                    'cancelled_by_name' => $seminar->cancelledBy?->name,
+                    'cancelled_by_role' => $seminar->cancelledBy?->role,
                 ];
             });
+
+        $user = $request->user();
 
         return response()->json([
             'message' => 'Dashboard data retrieved successfully',
@@ -111,6 +158,7 @@ class DashboardController extends Controller
                 'seminar_counts' => $seminarCounts,
                 'today_seminars' => $todaySeminars,
                 'pending_approvals' => $pendingApprovals,
+                'scheduled_seminars' => $scheduledSeminars,
                 'cancelled_seminars' => $cancelledSeminars,
             ]
         ]);

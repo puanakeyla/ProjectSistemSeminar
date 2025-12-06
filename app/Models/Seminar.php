@@ -24,6 +24,7 @@ class Seminar extends Model
         'verified_at',
         'cancelled_at',
         'cancel_reason',
+        'cancelled_by',
     ];
 
     protected $casts = [
@@ -77,6 +78,11 @@ class Seminar extends Model
     public function penguji()
     {
         return $this->belongsTo(User::class, 'penguji_id');
+    }
+
+    public function cancelledBy()
+    {
+        return $this->belongsTo(User::class, 'cancelled_by');
     }
 
     public function approvals()
@@ -201,5 +207,89 @@ class Seminar extends Model
         }
 
         return $approvals->every(fn ($approval) => $approval->status === 'approved');
+    }
+
+    /**
+     * Check if all 3 dosen have approved their revisions
+     * Used for final seminar approval after presentation
+     * NEW LOGIC: Cek per dosen, apakah semua items yang dia buat sudah approved
+     */
+    public function areAllRevisionsApprovedByDosen(): bool
+    {
+        $dosenIds = [
+            $this->pembimbing1_id,
+            $this->pembimbing2_id,
+            $this->penguji_id
+        ];
+
+        // Get the active revision for this seminar
+        $revision = $this->revisions()->latest()->first();
+        if (!$revision) {
+            return false;
+        }
+
+        // Check each dosen: all their items must be approved
+        foreach ($dosenIds as $dosenId) {
+            $totalItems = $revision->items()->where('created_by', $dosenId)->count();
+            
+            // If dosen hasn't created any items, skip (they approved implicitly)
+            if ($totalItems === 0) {
+                continue;
+            }
+
+            $approvedItems = $revision->items()
+                ->where('created_by', $dosenId)
+                ->where('status', 'approved')
+                ->count();
+
+            // If this dosen has unapproved items, return false
+            if ($approvedItems < $totalItems) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Get revision approval status per dosen
+     */
+    public function getRevisionApprovalStatus(): array
+    {
+        $dosenIds = [
+            'pembimbing1' => $this->pembimbing1_id,
+            'pembimbing2' => $this->pembimbing2_id,
+            'penguji' => $this->penguji_id,
+        ];
+
+        $revision = $this->revisions()->latest()->first();
+        $status = [];
+
+        foreach ($dosenIds as $role => $dosenId) {
+            if (!$revision) {
+                $status[$role] = [
+                    'has_items' => false,
+                    'all_approved' => false,
+                    'total_items' => 0,
+                    'approved_items' => 0,
+                ];
+                continue;
+            }
+
+            $totalItems = $revision->items()->where('created_by', $dosenId)->count();
+            $approvedItems = $revision->items()
+                ->where('created_by', $dosenId)
+                ->where('status', 'approved')
+                ->count();
+
+            $status[$role] = [
+                'has_items' => $totalItems > 0,
+                'all_approved' => $totalItems > 0 && $approvedItems === $totalItems,
+                'total_items' => $totalItems,
+                'approved_items' => $approvedItems,
+            ];
+        }
+
+        return $status;
     }
 }

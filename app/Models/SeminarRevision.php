@@ -11,16 +11,19 @@ class SeminarRevision extends Model
 
     protected $fillable = [
         'seminar_id',
+        'created_by_dosen',
         'file_revisi',
         'catatan_mahasiswa',
         'catatan_dosen',
         'catatan_admin',
         'status',
+        'is_approved_by_dosen',
         'tanggal_pengumpulan',
         'tanggal_verifikasi',
     ];
 
     protected $casts = [
+        'is_approved_by_dosen' => 'boolean',
         'tanggal_pengumpulan' => 'datetime',
         'tanggal_verifikasi' => 'datetime',
         'created_at' => 'datetime',
@@ -31,6 +34,35 @@ class SeminarRevision extends Model
     public function seminar()
     {
         return $this->belongsTo(Seminar::class);
+    }
+
+    public function items()
+    {
+        return $this->hasMany(SeminarRevisionItem::class, 'revision_id');
+    }
+
+    public function createdByDosen()
+    {
+        return $this->belongsTo(User::class, 'created_by_dosen');
+    }
+
+    // Get progress percentage
+    public function getProgressPercentage(): int
+    {
+        $total = $this->items()->count();
+        if ($total === 0) return 0;
+        
+        $approved = $this->items()->approved()->count();
+        return round(($approved / $total) * 100);
+    }
+
+    // Check if all items are approved
+    public function allItemsApproved(): bool
+    {
+        $total = $this->items()->count();
+        if ($total === 0) return false;
+        
+        return $this->items()->approved()->count() === $total;
     }
 
     // Scopes

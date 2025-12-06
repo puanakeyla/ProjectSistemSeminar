@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test API Dosen</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        button {
+            padding: 10px 20px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .error {
+            color: red;
+        }
+        .success {
+            color: green;
+        }
+        input {
+            padding: 8px;
+            width: 300px;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test API Dosen Jadwal</h1>
+    
+    <div class="section">
+        <h3>1. Test Login Dosen</h3>
+        <input type="text" id="nidn" placeholder="NIDN" value="1234567890">
+        <input type="password" id="password" placeholder="Password" value="password">
+        <button onclick="testLogin()">Login</button>
+        <div id="login-result"></div>
+    </div>
+
+    <div class="section">
+        <h3>2. Test Get Seminars</h3>
+        <p>Token: <span id="token-display">Belum login</span></p>
+        <button onclick="testGetSeminars()">Get Seminars</button>
+        <div id="seminars-result"></div>
+    </div>
+
+    <div class="section">
+        <h3>3. Clear Token</h3>
+        <button onclick="clearToken()" style="background: #f44336;">Clear Token</button>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://127.0.0.1:8000/api';
+
+        function updateTokenDisplay() {
+            const token = localStorage.getItem('token');
+            document.getElementById('token-display').textContent = token ? token.substring(0, 20) + '...' : 'Belum login';
+        }
+
+        async function testLogin() {
+            const nidn = document.getElementById('nidn').value;
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('login-result');
+            
+            resultDiv.innerHTML = '<p>Loading...</p>';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/dosen/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({ nidn, password })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    localStorage.setItem('token', data.access_token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    updateTokenDisplay();
+                    resultDiv.innerHTML = `<p class="success">✓ Login berhasil!</p><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                } else {
+                    resultDiv.innerHTML = `<p class="error">✗ Login gagal: ${data.message}</p><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">✗ Error: ${error.message}</p>`;
+                console.error('Login error:', error);
+            }
+        }
+
+        async function testGetSeminars() {
+            const token = localStorage.getItem('token');
+            const resultDiv = document.getElementById('seminars-result');
+            
+            if (!token) {
+                resultDiv.innerHTML = '<p class="error">✗ Belum login. Silakan login terlebih dahulu.</p>';
+                return;
+            }
+            
+            resultDiv.innerHTML = '<p>Loading...</p>';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/dosen/seminars?status=all`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <p class="success">✓ Berhasil memuat ${data.data.length} seminar</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <p class="error">✗ Gagal (Status ${response.status}): ${data.message}</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">✗ Error: ${error.message}</p>`;
+                console.error('Get seminars error:', error);
+            }
+        }
+
+        function clearToken() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            updateTokenDisplay();
+            alert('Token cleared!');
+        }
+
+        // Update token display on load
+        updateTokenDisplay();
+    </script>
+</body>
+</html>

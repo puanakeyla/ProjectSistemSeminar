@@ -1,7 +1,7 @@
 .status-wrapper {
   width: 100%;
   min-height: 100vh;
-  background: linear-gradient(135deg, #0A4174 0%, #49769F 50%, #7BBDE8 100%);
+  background: linear-gradient(135deg, #0b1f3f, #346caa);
   padding: 40px;
   box-sizing: border-box;
 }
@@ -27,10 +27,56 @@
   margin: 0;
 }
 
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  background: white;
+  border-radius: 16px;
+  padding: 60px 20px;
+  text-align: center;
+  margin: 40px auto;
+  max-width: 420px;
+}
+
+.loading-icon {
+  width: 68px;
+  height: 68px;
+  border-radius: 16px;
+  background: rgba(29, 78, 216, 0.08);
+  color: #1d4ed8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading-state h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.loading-state p {
+  margin: 0;
+  font-size: 15px;
+  color: #64748b;
+}
+
+.icon-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 .status-content {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 25px;
 }
 
 .status-card {
@@ -173,17 +219,22 @@
   border-left: 3px solid #ddd;
 }
 
+.approval-item .approval-dosen-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
 .approval-item .approval-role {
   font-size: 13px;
   font-weight: 600;
   color: #2c3e50;
-  min-width: 130px;
 }
 
 .approval-item .approval-name {
   font-size: 13px;
   color: #7f8c8d;
-  flex: 1;
 }
 
 .approval-item .approval-status {

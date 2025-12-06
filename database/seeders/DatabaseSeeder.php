@@ -106,8 +106,8 @@ class DatabaseSeeder extends Seeder
 
         $seminar2 = \App\Models\Seminar::create([
             'mahasiswa_id' => $mahasiswa2->id,
-            'pembimbing1_id' => $dosen1->id,
-            'pembimbing2_id' => $dosen2->id,
+            'pembimbing1_id' => $dosen2->id,
+            'pembimbing2_id' => $dosen1->id,
             'penguji_id' => $dosen3->id,
             'judul' => 'Sistem Informasi Manajemen Perpustakaan Berbasis Web menggunakan Laravel',
             'tipe' => 'hasil',
@@ -117,9 +117,9 @@ class DatabaseSeeder extends Seeder
 
         $seminar3 = \App\Models\Seminar::create([
             'mahasiswa_id' => $mahasiswa3->id,
-            'pembimbing1_id' => $dosen2->id,
+            'pembimbing1_id' => $dosen3->id,
             'pembimbing2_id' => $dosen1->id,
-            'penguji_id' => $dosen3->id,
+            'penguji_id' => $dosen2->id,
             'judul' => 'Analisis Kinerja Algoritma Sorting pada Big Data dengan Benchmark Testing',
             'tipe' => 'kompre',
             'abstrak' => 'Melakukan perbandingan kinerja berbagai algoritma sorting (Quick Sort, Merge Sort, Heap Sort) dalam menangani dataset besar. Menggunakan metode benchmark untuk mengukur efisiensi waktu dan memori secara akurat.',
@@ -127,7 +127,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // Create Approvals untuk setiap seminar (status pending)
-        // Seminar 1 Approvals
+        // Seminar 1 Approvals (1 Pembimbing + 2 Penguji = 3 approvals)
         \App\Models\SeminarApproval::create([
             'seminar_id' => $seminar1->id,
             'dosen_id' => $dosen1->id,
@@ -150,13 +150,13 @@ class DatabaseSeeder extends Seeder
         // Seminar 2 Approvals
         \App\Models\SeminarApproval::create([
             'seminar_id' => $seminar2->id,
-            'dosen_id' => $dosen1->id,
+            'dosen_id' => $dosen2->id,
             'peran' => 'pembimbing1',
             'status' => 'pending',
         ]);
         \App\Models\SeminarApproval::create([
             'seminar_id' => $seminar2->id,
-            'dosen_id' => $dosen2->id,
+            'dosen_id' => $dosen1->id,
             'peran' => 'pembimbing2',
             'status' => 'pending',
         ]);
@@ -170,7 +170,7 @@ class DatabaseSeeder extends Seeder
         // Seminar 3 Approvals
         \App\Models\SeminarApproval::create([
             'seminar_id' => $seminar3->id,
-            'dosen_id' => $dosen2->id,
+            'dosen_id' => $dosen3->id,
             'peran' => 'pembimbing1',
             'status' => 'pending',
         ]);
@@ -182,14 +182,14 @@ class DatabaseSeeder extends Seeder
         ]);
         \App\Models\SeminarApproval::create([
             'seminar_id' => $seminar3->id,
-            'dosen_id' => $dosen3->id,
+            'dosen_id' => $dosen2->id,
             'peran' => 'penguji',
             'status' => 'pending',
         ]);
 
         $this->command->info('');
         $this->command->info('✅ Database seeded successfully!');
-        $this->command->info('📊 Created: 3 Mahasiswa, 3 Dosen, 3 Seminars, 9 Approvals');
+        $this->command->info('📊 Created: 3 Mahasiswa, 3 Dosen, 3 Seminars, 9 Approvals (1 Pembimbing + 2 Penguji per seminar)');
         $this->command->info('');
         $this->command->info('📧 Login Credentials:');
         $this->command->info('   👤 Admin: admin@univ.ac.id / admin123');

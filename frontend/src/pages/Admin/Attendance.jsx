@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import './Attendance.css';
 import { adminAPI } from '../../services/api';
-import { Calendar, CheckCircle } from 'lucide-react';
+import { Calendar, CheckCircle, Loader2, RefreshCcw, Edit3 } from 'lucide-react';
 
 function Attendance() {
   const [attendances, setAttendances] = useState([]);
@@ -119,7 +119,7 @@ function Attendance() {
 
   const getMethodBadge = (method) => {
     return method === 'qr_scan'
-      ? { label: '📱 QR Scan', class: 'qr-scan' }
+      ? { label: '📱 Scan QR', class: 'qr-scan' }
       : { label: '✍️ Manual', class: 'manual' };
   };
 
@@ -136,9 +136,12 @@ function Attendance() {
   if (loading) {
     return (
       <div className="admin-attendance">
-        <div className="loading-container">
-          <div className="spinner"></div>
-          <p>Memuat data absensi...</p>
+        <div className="loading-state">
+          <div className="loading-icon">
+            <Loader2 size={32} className="icon-spin" />
+          </div>
+          <h2>Memuat data...</h2>
+          <p>Harap tunggu sebentar.</p>
         </div>
       </div>
     );
@@ -154,10 +157,10 @@ function Attendance() {
         </div>
         <div className="header-actions">
           <button className="btn-manual" onClick={handleAddManual}>
-            ✍️ Absensi Manual
+            <Edit3 className="w-4 h-4" /> Absensi Manual
           </button>
           <button className="refresh-btn" onClick={fetchData}>
-            🔄 Refresh
+            <RefreshCcw className="w-4 h-4" /> Segarkan
           </button>
         </div>
       </div>
@@ -172,8 +175,9 @@ function Attendance() {
 
           {schedules.length === 0 ? (
             <div className="empty-state">
-              <div className="empty-icon"><Calendar className="w-8 h-8" /></div>
-              <p>Tidak ada jadwal</p>
+              <div className="empty-icon"><Calendar size={32} /></div>
+              <h2>Belum Ada Jadwal Mendatang</h2>
+              <p>Coba pilih filter lain atau segarkan data</p>
             </div>
           ) : (
             <div className="schedules-list">
@@ -225,8 +229,8 @@ function Attendance() {
 
           {attendances.length === 0 ? (
             <div className="empty-state">
-              <div className="empty-icon"><CheckCircle className="w-8 h-8" /></div>
-              <h3>Tidak Ada Data</h3>
+              <div className="empty-icon"><CheckCircle size={32} /></div>
+              <h2>Belum Ada Data Kehadiran</h2>
               <p>{selectedSchedule ? 'Belum ada yang absen untuk seminar ini' : 'Pilih jadwal untuk melihat absensi'}</p>
             </div>
           ) : (

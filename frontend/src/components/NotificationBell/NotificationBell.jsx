@@ -12,7 +12,7 @@ function NotificationBell() {
 
   useEffect(() => {
     fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 30000); // Poll every 30 seconds
+    const interval = setInterval(fetchUnreadCount, 60000); // Poll every 60 seconds instead of 30
     return () => clearInterval(interval);
   }, []);
 
@@ -32,7 +32,11 @@ function NotificationBell() {
       const response = await notificationAPI.getUnreadCount();
       setUnreadCount(response.data.count);
     } catch (error) {
-      console.error('Failed to fetch unread count:', error);
+      // Silently fail for unread count to prevent console spam
+      if (error.response?.status === 401) {
+        // Token expired, stop polling
+        return;
+      }
     }
   };
 
@@ -95,13 +99,83 @@ function NotificationBell() {
         return <XCircle size={20} className="notif-icon-rejected" />;
       case 'seminar_cancelled_by_mahasiswa':
         return <XCircle size={20} className="notif-icon-cancelled" />;
+      case 'seminar_cancelled_by_admin':
+        return <XCircle size={20} className="notif-icon-cancelled" />;
       case 'seminar_approved':
         return <Check size={20} className="notif-icon-success" />;
       case 'seminar_scheduled':
         return <Calendar size={20} className="notif-icon-info" />;
+      case 'seminar_rescheduled':
+        return <Calendar size={20} className="notif-icon-warning" />;
+      case 'new_seminar_submission':
+        return <Bell size={20} className="notif-icon-new" />;
       default:
         return <Bell size={20} className="notif-icon-default" />;
     }
+  };
+
+  const renderNotificationDetails = (notif) => {
+    const data = notif.data || {};
+    
+    return (
+      <div className="notif-details">
+        {/* Rejected By Info */}
+        {data.rejected_by && (
+          <div className="notif-meta">
+            <span className="meta-label">Ditolak oleh:</span>
+            <span className="meta-value">{data.rejected_by}</span>
+          </div>
+        )}
+        
+        {/* Cancelled By Info */}
+        {data.cancelled_by && (
+          <div className="notif-meta">
+            <span className="meta-label">Dibatalkan oleh:</span>
+            <span className="meta-value">{data.cancelled_by} ({data.cancelled_by_role || 'Admin'})</span>
+          </div>
+        )}
+        
+        {/* Approved By Info */}
+        {data.approved_by && (
+          <div className="notif-meta">
+            <span className="meta-label">Disetujui oleh:</span>
+            <span className="meta-value">{data.approved_by} ({data.approved_role || ''})</span>
+          </div>
+        )}
+        
+        {/* Reason */}
+        {(data.rejection_reason || data.cancel_reason) && (
+          <div className="notif-meta reason">
+            <span className="meta-label">Alasan:</span>
+            <span className="meta-value">{data.rejection_reason || data.cancel_reason}</span>
+          </div>
+        )}
+        
+        {/* Schedule Info */}
+        {data.waktu_mulai && data.ruang && (
+          <div className="notif-meta">
+            <span className="meta-label">Jadwal:</span>
+            <span className="meta-value">{new Date(data.waktu_mulai).toLocaleString('id-ID')} - {data.ruang}</span>
+          </div>
+        )}
+        
+        {/* Reschedule Info */}
+        {data.old_time && data.new_time && (
+          <div className="notif-meta">
+            <span className="meta-label">Diubah oleh:</span>
+            <span className="meta-value">{data.updated_by}</span>
+          </div>
+        )}
+        
+        {/* Mahasiswa Info (for dosen/admin) */}
+        {data.mahasiswa_name && (
+          <div className="notif-meta">
+            <span className="meta-label">Mahasiswa:</span>
+            <span className="meta-value">{data.mahasiswa_name} ({data.mahasiswa_npm})</span>
+          </div>
+        )}
+      </div>
+    );
   };
 
   const formatTime = (timestamp) => {
@@ -159,6 +233,7 @@ function NotificationBell() {
                   <div className="notif-content">
                     <h4>{notif.title}</h4>
                     <p>{notif.message}</p>
+                    {renderNotificationDetails(notif)}
                     <span className="notif-time">{formatTime(notif.created_at)}</span>
                   </div>
                   <div className="notif-actions">

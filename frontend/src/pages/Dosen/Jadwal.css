@@ -9,6 +9,7 @@
   --jadwal-text: #0f172a;
   --jadwal-border: #e2e8f0;
   --jadwal-radius: 22px;
+  --revisi-primary: #1d4ed8;
 }
 
 .jadwal-page {
@@ -48,19 +49,36 @@
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  padding: 64px 32px;
+  background: white;
+  border-radius: 16px;
+  padding: 60px 20px;
   text-align: center;
+  margin: 40px auto;
+  max-width: 420px;
 }
 
 .jadwal-state-icon {
-  width: 64px;
-  height: 64px;
-  border-radius: 18px;
+  width: 68px;
+  height: 68px;
+  border-radius: 16px;
   background: rgba(29, 78, 216, 0.08);
+  color: #1d4ed8;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--jadwal-primary);
+}
+
+.jadwal-state h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.jadwal-state p {
+  margin: 0;
+  font-size: 15px;
+  color: #64748b;
 }
 
 .icon-spin {
@@ -124,20 +142,23 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 18px;
-  border-radius: 999px;
-  border: 1px solid var(--jadwal-primary);
-  background: var(--jadwal-surface);
-  color: var(--jadwal-primary);
+  padding: 12px 24px;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(135deg, #4A6FA5 0%, #7BA5C9 100%);
+  color: white;
   font-weight: 600;
-  font-size: 13px;
+  font-size: 15px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(74, 111, 165, 0.2);
 }
 
 .jadwal-refresh-btn:hover:not(:disabled) {
-  background: rgba(29, 78, 216, 0.08);
+  background: linear-gradient(135deg, #3A5F95 0%, #6B95B9 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(74, 111, 165, 0.3);
 }
 
 .jadwal-refresh-btn:disabled {
@@ -227,7 +248,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--jadwal-primary);
+  color: var(--revisi-primary);
 }
 
 .jadwal-empty h3 {

@@ -16,14 +16,51 @@ class SeminarController extends Controller
 {
     /**
      * List seminars milik mahasiswa login
+     * Include revision information
      */
     public function index(Request $request): JsonResponse
     {
-        $seminars = Seminar::with(['schedule', 'approvals.dosen'])
+        // Optimize with select and eager loading
+        $seminars = Seminar::select(['id', 'mahasiswa_id', 'pembimbing1_id', 'pembimbing2_id', 'penguji_id', 'judul', 'jenis_seminar', 'status', 'created_at', 'cancelled_at', 'cancel_reason', 'cancelled_by'])
+            ->with([
+                'schedule:id,seminar_id,tanggal,waktu_mulai,ruangan',
+                'cancelledBy:id,name,role',
+                'approvals' => function($query) {
+                    $query->select(['id', 'seminar_id', 'dosen_id', 'peran', 'status'])
+                          ->orderByRaw("CASE peran WHEN 'pembimbing1' THEN 1 WHEN 'pembimbing2' THEN 2 WHEN 'penguji' THEN 3 END");
+                },
+                'approvals.dosen:id,name',
+                'pembimbing1:id,name',
+                'pembimbing2:id,name',
+                'penguji:id,name',
+                'revisions' => function($query) {
+                    $query->select(['id', 'seminar_id', 'status', 'created_at'])
+                          ->latest()
+                          ->limit(1)
+                          ->with(['items:id,seminar_revision_id,status,created_by']);
+                }
+            ])
             ->where('mahasiswa_id', $request->user()->id)
             ->orderByDesc('created_at')
             ->get()
-            ->map(fn($s) => $this->mapSeminar($s));
+            ->map(function($seminar) {
+                $latestRevision = $seminar->revisions->first();
+                
+                $data = $this->mapSeminar($seminar);
+                
+                // Add revision data
+                $data['revision'] = $latestRevision ? [
+                    'id' => $latestRevision->id,
+                    'status' => $latestRevision->status,
+                    'total_items' => $latestRevision->items->count(),
+                    'approved_items' => $latestRevision->items->where('status', 'approved')->count(),
+                    'pending_items' => $latestRevision->items->where('status', 'pending')->count(),
+                    'submitted_items' => $latestRevision->items->where('status', 'submitted')->count(),
+                    'progress' => $latestRevision->getProgressPercentage(),
+                ] : null;
+                
+                return $data;
+            });
 
         return response()->json([
             'message' => 'Seminars retrieved',
@@ -31,16 +68,77 @@ class SeminarController extends Controller
         ]);
     }
 
-    /** Show single seminar */
+    /** Show single seminar with full revision details */
     public function show(Request $request, int $id): JsonResponse
     {
-        $seminar = Seminar::with(['schedule', 'approvals.dosen'])
+        $seminar = Seminar::with([
+                'schedule', 
+                'approvals.dosen',
+                'cancelledBy:id,name,role',
+                'pembimbing1:id,name,email',
+                'pembimbing2:id,name,email',
+                'penguji:id,name,email',
+                'revisions.items.createdBy:id,name',
+                'revisions.items.validator:id,name'
+            ])
             ->where('mahasiswa_id', $request->user()->id)
             ->findOrFail($id);
 
+        $data = $this->mapSeminar($seminar, true);
+        
+        // Add full revision details
+        $latestRevision = $seminar->revisions->first();
+        if ($latestRevision) {
+            // Group items by dosen
+            $itemsByDosen = $latestRevision->items->groupBy('created_by')->map(function($items, $dosenId) {
+                $firstItem = $items->first();
+                return [
+                    'dosen_id' => $dosenId,
+                    'dosen_name' => $firstItem->createdBy->name,
+                    'total_items' => $items->count(),
+                    'approved_items' => $items->where('status', 'approved')->count(),
+                    'pending_items' => $items->where('status', 'pending')->count(),
+                    'submitted_items' => $items->where('status', 'submitted')->count(),
+                    'rejected_items' => $items->where('status', 'rejected')->count(),
+                    'items' => $items->map(function($item) {
+                        return [
+                            'id' => $item->id,
+                            'poin_revisi' => $item->poin_revisi,
+                            'kategori' => $item->kategori,
+                            'status' => $item->status,
+                            'status_display' => $item->getStatusDisplay(),
+                            'status_color' => $item->getStatusColor(),
+                            'mahasiswa_notes' => $item->mahasiswa_notes,
+                            'file_path' => $item->file_path,
+                            'file_url' => $item->getFileUrl(),
+                            'rejection_reason' => $item->rejection_reason,
+                            'revision_count' => $item->revision_count,
+                            'submitted_at' => $item->submitted_at?->format('d M Y H:i'),
+                            'validated_at' => $item->validated_at?->format('d M Y H:i'),
+                            'validator' => $item->validator ? $item->validator->name : null,
+                        ];
+                    })->values()
+                ];
+            })->values();
+
+            $data['revision'] = [
+                'id' => $latestRevision->id,
+                'status' => $latestRevision->status,
+                'catatan_dosen' => $latestRevision->catatan_dosen,
+                'progress' => $latestRevision->getProgressPercentage(),
+                'total_items' => $latestRevision->items->count(),
+                'approved_items' => $latestRevision->items->where('status', 'approved')->count(),
+                'pending_items' => $latestRevision->items->where('status', 'pending')->count(),
+                'submitted_items' => $latestRevision->items->where('status', 'submitted')->count(),
+                'rejected_items' => $latestRevision->items->where('status', 'rejected')->count(),
+                'items_by_dosen' => $itemsByDosen,
+                'approval_status' => $seminar->getRevisionApprovalStatus(),
+            ];
+        }
+
         return response()->json([
             'message' => 'Seminar detail',
-            'data' => $this->mapSeminar($seminar, true),
+            'data' => $data,
         ]);
     }
 
@@ -71,6 +169,7 @@ class SeminarController extends Controller
         $seminar->update([
             'status' => 'cancelled',
             'cancelled_at' => now(),
+            'cancelled_by' => $request->user()->id,
             'cancel_reason' => $validated['reason'] ?? 'Dibatalkan oleh mahasiswa',
         ]);
 
@@ -148,6 +247,9 @@ class SeminarController extends Controller
             ]);
         }
 
+        // Send notification to all stakeholders
+        NotificationService::notifyNewSeminarSubmission($seminar);
+
         return response()->json([
             'message' => 'Pengajuan seminar berhasil dikirim. Menunggu persetujuan dosen.',
             'data' => $this->mapSeminar($seminar->fresh(['pembimbing1', 'pembimbing2', 'penguji'])),
@@ -173,7 +275,7 @@ class SeminarController extends Controller
     public function getDosenList(): JsonResponse
     {
         $dosenList = User::where('role', 'dosen')
-            ->select('id', 'name', 'email', 'npm')
+            ->select('id', 'name', 'email', 'nidn')
             ->orderBy('name')
             ->get();
 
@@ -212,6 +314,8 @@ class SeminarController extends Controller
             'cancelled_at' => $s->cancelled_at?->toIso8601String(),
             'cancel_reason' => $s->cancel_reason,
             'is_cancelled' => $s->isCancelled(),
+            'cancelled_by_name' => $s->cancelledBy?->name,
+            'cancelled_by_role' => $s->cancelledBy?->role,
         ];
 
         if ($s->relationLoaded('approvals')) {

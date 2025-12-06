@@ -81,4 +81,97 @@ class SeminarSchedule extends Model
     {
         return $this->waktu_mulai->format('H:i');
     }
+
+    /**
+     * Get end time of seminar
+     */
+    public function getEndTime()
+    {
+        return $this->waktu_mulai->copy()->addMinutes($this->durasi_menit);
+    }
+
+    /**
+     * Check if seminar is currently ongoing (with grace period)
+     * Grace period: 15 minutes before start, 30 minutes after end
+     */
+    public function isOngoing(int $gracePeriodBefore = 15, int $gracePeriodAfter = 30): bool
+    {
+        $now = now();
+        $startWithGrace = $this->waktu_mulai->copy()->subMinutes($gracePeriodBefore);
+        $endWithGrace = $this->getEndTime()->addMinutes($gracePeriodAfter);
+
+        return $now->between($startWithGrace, $endWithGrace);
+    }
+
+    /**
+     * Check if seminar has started
+     */
+    public function hasStarted(): bool
+    {
+        return now() >= $this->waktu_mulai;
+    }
+
+    /**
+     * Check if seminar has ended
+     */
+    public function hasEnded(): bool
+    {
+        return now() > $this->getEndTime();
+    }
+
+    /**
+     * Get seminar status (upcoming, ongoing, finished)
+     */
+    public function getSeminarStatus(): string
+    {
+        if ($this->isOngoing()) {
+            return 'ongoing';
+        } elseif ($this->hasEnded()) {
+            return 'finished';
+        } else {
+            return 'upcoming';
+        }
+    }
+
+    /**
+     * Get seminar status display
+     */
+    public function getSeminarStatusDisplay(): string
+    {
+        return match($this->getSeminarStatus()) {
+            'ongoing' => 'Sedang Berlangsung',
+            'finished' => 'Selesai',
+            'upcoming' => 'Akan Datang',
+            default => '-'
+        };
+    }
+
+    /**
+     * Get minutes until seminar starts (negative if already started)
+     */
+    public function getMinutesUntilStart(): int
+    {
+        return now()->diffInMinutes($this->waktu_mulai, false);
+    }
+
+    /**
+     * Get minutes until seminar ends (negative if already ended)
+     */
+    public function getMinutesUntilEnd(): int
+    {
+        return now()->diffInMinutes($this->getEndTime(), false);
+    }
+
+    /**
+     * Scope: Currently ongoing seminars
+     */
+    public function scopeOngoing($query, int $gracePeriodBefore = 15, int $gracePeriodAfter = 30)
+    {
+        $now = now();
+        return $query->where('waktu_mulai', '<=', $now->copy()->addMinutes($gracePeriodBefore))
+            ->where(function($q) use ($now, $gracePeriodAfter) {
+                $q->whereRaw('DATE_ADD(waktu_mulai, INTERVAL (durasi_menit + ?) MINUTE) >= ?', 
+                    [$gracePeriodAfter, $now]);
+            });
+    }
 }

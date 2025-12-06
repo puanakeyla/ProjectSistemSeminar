@@ -22,8 +22,10 @@ class LoginController extends Controller
             'password' => 'required|string|min:6',
         ]);
 
-        // Find user by email
-        $user = User::where('email', $request->email)->first();
+        // Optimized: Select only needed columns
+        $user = User::select('id', 'name', 'email', 'password', 'role', 'npm', 'nidn')
+            ->where('email', $request->email)
+            ->first();
 
         // Check if user exists and password is correct
         if (!$user || !Hash::check($request->password, $user->password)) {
@@ -32,17 +34,10 @@ class LoginController extends Controller
             ]);
         }
 
-        // Check if user is active (you can add 'is_active' field later)
-        // if (!$user->is_active) {
-        //     return response()->json([
-        //         'message' => 'Akun Anda dinonaktifkan. Silakan hubungi administrator.'
-        //     ], Response::HTTP_FORBIDDEN);
-        // }
+        // Create token with shorter expiration for better security
+        $token = $user->createToken('semar-token', ['*'], now()->addDays(7))->plainTextToken;
 
-        // Create token
-        $token = $user->createToken('semar-token')->plainTextToken;
-
-        // Return response
+        // Return minimal response for faster transfer
         return response()->json([
             'message' => 'Login berhasil',
             'user' => [
@@ -62,6 +57,7 @@ class LoginController extends Controller
      */
     public function user(Request $request)
     {
+        // User already loaded by auth middleware, just format response
         $user = $request->user();
 
         return response()->json([
@@ -72,7 +68,6 @@ class LoginController extends Controller
                 'role' => $user->role,
                 'npm' => $user->npm,
                 'nidn' => $user->nidn,
-                'created_at' => $user->created_at,
             ]
         ], Response::HTTP_OK);
     }

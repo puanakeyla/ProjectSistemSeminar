@@ -1,13 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, CheckCircle, Clock, XCircle, GraduationCap, ClipboardList, Calendar, QrCode, Upload, FileCheck, Zap } from 'lucide-react';
-// icons changed to emojis
+import { FileText, CheckCircle, Clock, XCircle, GraduationCap, ClipboardList, Calendar, QrCode, Upload, FileCheck, Zap, AlertTriangle } from 'lucide-react';
 import axios from 'axios';
-import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { StatCard } from '../../components/dashboard/StatCard';
 import { SectionCard } from '../../components/dashboard/SectionCard';
 import { Skeleton } from '../../components/ui/skeleton';
 import { Alert, AlertDescription } from '../../components/ui/alert';
+
+// Lazy load heavy chart components
+const BarChart = lazy(() => import('recharts').then(m => ({ default: m.BarChart })));
+const Bar = lazy(() => import('recharts').then(m => ({ default: m.Bar })));
+const LineChart = lazy(() => import('recharts').then(m => ({ default: m.LineChart })));
+const Line = lazy(() => import('recharts').then(m => ({ default: m.Line })));
+const PieChart = lazy(() => import('recharts').then(m => ({ default: m.PieChart })));
+const Pie = lazy(() => import('recharts').then(m => ({ default: m.Pie })));
+const Cell = lazy(() => import('recharts').then(m => ({ default: m.Cell })));
+const XAxis = lazy(() => import('recharts').then(m => ({ default: m.XAxis })));
+const YAxis = lazy(() => import('recharts').then(m => ({ default: m.YAxis })));
+const CartesianGrid = lazy(() => import('recharts').then(m => ({ default: m.CartesianGrid })));
+const Tooltip = lazy(() => import('recharts').then(m => ({ default: m.Tooltip })));
+const Legend = lazy(() => import('recharts').then(m => ({ default: m.Legend })));
+const ResponsiveContainer = lazy(() => import('recharts').then(m => ({ default: m.ResponsiveContainer })));
 
 const API_URL = 'http://localhost:8000/api';
 
@@ -20,10 +33,24 @@ function Dashboard() {
     attended: 0
   });
   const [recentActivities, setRecentActivities] = useState([]);
-  const [cancelledSeminars, setCancelledSeminars] = useState([]);
-  const [showAllCancelled, setShowAllCancelled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState('');
+
+  // Memoize computed values BEFORE any conditional returns
+  const statsDisplay = useMemo(() => [
+    { label: 'Total Pengajuan', value: stats.total, icon: FileText, color: '#3B82F6' },
+    { label: 'Disetujui', value: stats.approved, icon: CheckCircle, color: '#10b981' },
+    { label: 'Menunggu Verifikasi', value: stats.pending_verification, icon: Clock, color: '#f59e0b' },
+    { label: 'Butuh Revisi', value: stats.revising, icon: XCircle, color: '#ef4444' },
+    { label: 'Seminar Dihadiri', value: stats.attended, icon: GraduationCap, color: '#8b5cf6' }
+  ], [stats]);
+
+  const quickActions = useMemo(() => [
+    { icon: FileText, label: 'Ajukan Seminar Baru', targetPage: 'pengajuan', color: '#3B82F6' },
+    { icon: ClipboardList, label: 'Cek Status', targetPage: 'status', color: '#10b981' },
+    { icon: QrCode, label: 'Scan QR Absensi', targetPage: 'scanqr', color: '#8b5cf6' },
+    { icon: Upload, label: 'Upload Revisi', targetPage: 'revisi', color: '#f59e0b' }
+  ], []);
 
   useEffect(() => {
     fetchDashboardData();
@@ -40,9 +67,16 @@ function Dashboard() {
         setUserName(user.name);
       }
 
+      // Add timeout to prevent hanging
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
       const response = await axios.get(`${API_URL}/mahasiswa/dashboard`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
 
       const data = response.data.data;
       setStats({
@@ -53,9 +87,14 @@ function Dashboard() {
         attended: data.attended_seminars_count || 0
       });
       setRecentActivities(data.recent_seminars || []);
+      setScheduledSeminars(data.scheduled_seminars || []);
       setCancelledSeminars(data.cancelled_seminars || []);
     } catch (err) {
-      console.error('Error fetching dashboard:', err);
+      if (err.name === 'AbortError') {
+        console.error('Request timeout');
+      } else {
+        console.error('Error fetching dashboard:', err);
+      }
     } finally {
       setLoading(false);
     }
@@ -76,21 +115,6 @@ function Dashboard() {
       </div>
     );
   }
-
-  const statsDisplay = [
-    { label: 'Total Pengajuan', value: stats.total, icon: FileText, color: '#3B82F6' },
-    { label: 'Disetujui', value: stats.approved, icon: CheckCircle, color: '#10b981' },
-    { label: 'Menunggu Verifikasi', value: stats.pending_verification, icon: Clock, color: '#f59e0b' },
-    { label: 'Butuh Revisi', value: stats.revising, icon: XCircle, color: '#ef4444' },
-    { label: 'Seminar Dihadiri', value: stats.attended, icon: GraduationCap, color: '#8b5cf6' }
-  ];
-
-  const quickActions = [
-    { icon: FileText, label: 'Ajukan Seminar Baru', targetPage: 'pengajuan', color: '#3B82F6' },
-    { icon: ClipboardList, label: 'Cek Status', targetPage: 'status', color: '#10b981' },
-    { icon: QrCode, label: 'Scan QR Absensi', targetPage: 'scanqr', color: '#8b5cf6' },
-    { icon: Upload, label: 'Upload Revisi', targetPage: 'revisi', color: '#f59e0b' }
-  ];
 
   const handleQuickAction = (page) => {
     if (!page) return;
@@ -118,9 +142,9 @@ function Dashboard() {
     <div className="dashboard-wrapper">
       <div className="max-w-7xl mx-auto space-y-8">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.2 }}
           className="bg-white dark:bg-dark-800 rounded-2xl p-6 md:p-8 shadow-soft border border-gray-200 dark:border-dark-700"
         >
           <div className="flex items-center justify-between gap-4">
@@ -140,6 +164,17 @@ function Dashboard() {
                 </p>
               </div>
             </div>
+            <div className="ml-auto flex items-center gap-4">
+              <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                <Calendar className="w-5 h-5 text-primary-500" />
+                {new Date().toLocaleDateString('id-ID', {
+                  weekday: 'long',
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric'
+                })}
+              </div>
+            </div>
           </div>
         </motion.div>
 
@@ -155,138 +190,6 @@ function Dashboard() {
             />
           ))}
         </div>
-
-        {cancelledSeminars.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.2 }}
-            className="bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/30 rounded-2xl p-6 border-2 border-red-200 dark:border-red-800 shadow-lg"
-          >
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-red-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">
-                <XCircle className="w-6 h-6 text-white" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-bold text-red-900 dark:text-red-100 mb-1">
-                  Seminar Dibatalkan
-                </h3>
-                <p className="text-sm text-red-700 dark:text-red-300 mb-4">
-                  {cancelledSeminars.length} seminar Anda dibatalkan oleh dosen pembimbing/penguji
-                </p>
-                <div className="space-y-3">
-                  {(showAllCancelled ? cancelledSeminars : cancelledSeminars.slice(0, 3)).map((seminar, index) => (
-                    <motion.div
-                      key={seminar.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.3, delay: 0.1 * index }}
-                      className="bg-white dark:bg-dark-800 rounded-xl p-4 border border-red-200 dark:border-red-800"
-                    >
-                      <div className="flex items-start justify-between gap-3 mb-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="inline-flex px-2.5 py-0.5 text-xs font-bold rounded-full bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300">
-                              {seminar.jenis_seminar}
-                            </span>
-                          </div>
-                          <p className="text-sm font-semibold text-gray-900 dark:text-white line-clamp-2">
-                            {seminar.judul}
-                          </p>
-                        </div>
-                        <div className="text-right flex-shrink-0">
-                          <p className="text-xs text-red-600 dark:text-red-400 font-medium">
-                            {seminar.days_ago === 0 ? 'Hari ini' : `${seminar.days_ago} hari lalu`}
-                          </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                            {seminar.cancelled_at}
-                          </p>
-                        </div>
-                      </div>
-                      {seminar.cancel_reason && (
-                        <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
-                          <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                            Alasan Pembatalan:
-                          </p>
-                          <p className="text-xs text-gray-600 dark:text-gray-400 italic">
-                            "{seminar.cancel_reason}"
-                          </p>
-                        </div>
-                      )}
-                    </motion.div>
-                  ))}
-                </div>
-                {cancelledSeminars.length > 3 && (
-                  <button
-                    onClick={() => setShowAllCancelled(!showAllCancelled)}
-                    className="mt-4 w-full px-4 py-2 text-sm font-semibold text-red-700 dark:text-red-300 bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 rounded-lg transition-colors duration-200"
-                  >
-                    {showAllCancelled ? 'Tampilkan Lebih Sedikit' : `Selengkapnya (${cancelledSeminars.length - 3} lainnya)`}
-                  </button>
-                )}
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.3 }}
-        >
-          <SectionCard
-            title="Pengajuan Terbaru"
-            description="Pantau perkembangan pengajuan seminar Anda di sini"
-            icon={Calendar}
-          >
-            {recentActivities.length === 0 ? (
-              <div className="text-center py-16">
-                <div className="w-20 h-20 bg-gray-100 dark:bg-dark-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <FileCheck className="w-10 h-10 text-gray-400 dark:text-gray-600" />
-                </div>
-                <p className="text-gray-500 dark:text-gray-400 font-medium">
-                  Belum ada pengajuan seminar
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {recentActivities.map((activity, index) => (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3, delay: 0.4 + index * 0.05 }}
-                    className="group p-4 bg-gray-50 dark:bg-dark-700 rounded-xl border border-transparent hover:border-primary-200 dark:hover:border-primary-500/40 hover:bg-white dark:hover:bg-dark-600 hover:shadow-soft transition-all duration-200"
-                  >
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-                      <div className="flex items-center gap-3 flex-1">
-                        <div className="flex-1">
-                          <h4 className="text-base font-semibold text-gray-900 dark:text-white mb-1">
-                            {activity.judul}
-                          </h4>
-                          <span className="inline-block px-3 py-1 text-xs font-bold uppercase tracking-wider bg-primary-50 dark:bg-primary-950 text-primary-600 dark:text-primary-400 rounded-full">
-                            {activity.jenis_seminar}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex flex-col items-end gap-2">
-                        <span
-                          className="px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded-full"
-                          style={getStatusStyle(activity.status, activity.status_color)}
-                        >
-                          {activity.status}
-                        </span>
-                        <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">
-                          {activity.created_at}
-                        </span>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            )}
-          </SectionCard>
-        </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}

@@ -135,10 +135,7 @@ function Pengajuan() {
       setBerkasFileName('');
 
       // Redirect ke halaman status setelah 2 detik
-      setTimeout(() => {
-        window.location.href = '/mahasiswa/status';
-      }, 2000);
-
+        // Stay on the Pengajuan page after submission
     } catch (err) {
       console.error('Error submitting seminar:', err);
       if (err.response?.data?.message) {
@@ -258,22 +255,24 @@ function Pengajuan() {
             </div>
           </div>
 
-          <div className="form-group">
-            <label>Penguji <span className="required">*</span></label>
-            <select
-              name="penguji_id"
-              value={formData.penguji_id}
-              onChange={handleChange}
-              required
-              disabled={loading}
-            >
-              <option value="">Pilih Penguji</option>
-              {dosenList.map((dosen) => (
-                <option key={dosen.id} value={dosen.id}>
-                  {dosen.name} {dosen.nidn ? `(${dosen.nidn})` : ''}
-                </option>
-              ))}
-            </select>
+          <div className="form-row">
+            <div className="form-group">
+              <label>Penguji <span className="required">*</span></label>
+              <select
+                name="penguji_id"
+                value={formData.penguji_id}
+                onChange={handleChange}
+                required
+                disabled={loading}
+              >
+                <option value="">Pilih Penguji</option>
+                {dosenList.map((dosen) => (
+                  <option key={dosen.id} value={dosen.id}>
+                    {dosen.name} {dosen.nidn ? `(${dosen.nidn})` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div className="form-group">

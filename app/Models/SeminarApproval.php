@@ -127,9 +127,9 @@ class SeminarApproval extends Model
         $key = Str::lower(str_replace([' ', '-'], '', $value));
 
         return match ($key) {
-            'pembimbing1', 'pembimbing_1' => 'pembimbing1',
+            'pembimbing1', 'pembimbing_1', 'pembimbing' => 'pembimbing1',
             'pembimbing2', 'pembimbing_2' => 'pembimbing2',
-            'penguji' => 'penguji',
+            'penguji', 'penguji1', 'penguji_1', 'penguji2', 'penguji_2' => 'penguji',
             default => $value,
         };
     }

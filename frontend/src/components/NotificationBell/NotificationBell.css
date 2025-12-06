@@ -160,6 +160,14 @@
   color: #95a5a6;
 }
 
+.notif-icon-warning {
+  color: #f39c12;
+}
+
+.notif-icon-new {
+  color: #9b59b6;
+}
+
 .notif-content {
   flex: 1;
   min-width: 0;
@@ -182,6 +190,48 @@
 .notif-time {
   font-size: 11px;
   color: #999;
+}
+
+.notif-details {
+  margin-top: 8px;
+  padding: 10px;
+  background-color: #f8f9fa;
+  border-left: 3px solid #3498db;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.notif-meta {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 6px;
+  line-height: 1.5;
+}
+
+.notif-meta:last-child {
+  margin-bottom: 0;
+}
+
+.meta-label {
+  font-weight: 600;
+  color: #555;
+  min-width: 80px;
+  flex-shrink: 0;
+}
+
+.meta-value {
+  color: #333;
+  flex: 1;
+}
+
+.reason {
+  background-color: #fff3cd;
+  border-left-color: #ffc107;
+  padding: 8px 10px;
+  margin-top: 8px;
+  border-radius: 4px;
+  font-style: italic;
+  color: #856404;
 }
 
 .notif-actions {

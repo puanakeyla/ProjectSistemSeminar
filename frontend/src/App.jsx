@@ -7,18 +7,22 @@ import Status from './pages/Mahasiswa/Status'
 import Jadwal from './pages/Mahasiswa/Jadwal'
 import DaftarHadir from './pages/Mahasiswa/DaftarHadir'
 import Revisi from './pages/Mahasiswa/Revisi'
+import RevisiItems from './pages/Mahasiswa/RevisiItems'
+import SeminarMahasiswa from './pages/Mahasiswa/SeminarMahasiswa'
 import ScanQR from './pages/Mahasiswa/ScanQR'
 // Dosen Components
 import DashboardDosen from './pages/Dosen/Dashboard'
 import Approval from './pages/Dosen/Approval'
 import JadwalDosen from './pages/Dosen/Jadwal'
+import RevisiDosen from './pages/Dosen/Revisi'
+import SeminarDosen from './pages/Dosen/Seminar'
+import SeminarDetail from './pages/Dosen/SeminarDetail'
 // Admin Components
 import DashboardAdmin from './pages/Admin/Dashboard'
 import Verification from './pages/Admin/Verification'
 import Schedule from './pages/Admin/Schedule'
 import QRCodePage from './pages/Admin/QRCode'
 import AttendancePage from './pages/Admin/Attendance'
-import RevisionPage from './pages/Admin/Revision'
 import './App.css'
 import { BarChart3, FileText, ClipboardList, Calendar, CheckCircle, QrCode, FileCheck } from 'lucide-react'
 import Sidebar from './components/Sidebar'
@@ -73,32 +77,32 @@ function App() {
   const getMenuItems = (role) => {
     if (role === 'admin') {
       return [
-        { id: 'dashboard', label: 'Dashboard', icon: <BarChart3 className="w-5 h-5" /> },
+        { id: 'dashboard', label: 'Dasbor', icon: <BarChart3 className="w-5 h-5" /> },
         { id: 'verification', label: 'Verifikasi', icon: <ClipboardList className="w-5 h-5" /> },
-        { id: 'schedule', label: 'Jadwal', icon: <Calendar className="w-5 h-5" /> },
-        { id: 'qrcode', label: 'QR Code', icon: <QrCode className="w-5 h-5" /> },
-        { id: 'attendance', label: 'Absensi', icon: <CheckCircle className="w-5 h-5" /> },
-        { id: 'revision', label: 'Revisi', icon: <FileCheck className="w-5 h-5" /> }
+        { id: 'schedule', label: 'Penjadwalan', icon: <Calendar className="w-5 h-5" /> },
+        { id: 'qrcode', label: 'Kode QR', icon: <QrCode className="w-5 h-5" /> },
+        { id: 'attendance', label: 'Kehadiran', icon: <CheckCircle className="w-5 h-5" /> }
       ]
     }
 
     if (role === 'dosen') {
       return [
-        { id: 'dashboard', label: 'Dashboard', icon: <BarChart3 className="w-5 h-5" /> },
-        { id: 'approval', label: 'Persetujuan Pengajuan', icon: <ClipboardList className="w-5 h-5" /> },
+        { id: 'dashboard', label: 'Dasbor', icon: <BarChart3 className="w-5 h-5" /> },
+        { id: 'seminar', label: 'Seminar & Revisi', icon: <FileText className="w-5 h-5" /> },
+        { id: 'approval', label: 'Persetujuan', icon: <ClipboardList className="w-5 h-5" /> },
         { id: 'jadwal', label: 'Jadwal', icon: <Calendar className="w-5 h-5" /> }
       ]
     }
 
     // default mahasiswa
     return [
-      { id: 'dashboard', label: 'Dashboard', icon: <BarChart3 className="w-5 h-5" /> },
+      { id: 'dashboard', label: 'Dasbor', icon: <BarChart3 className="w-5 h-5" /> },
+      { id: 'seminar-mahasiswa', label: 'Seminar & Revisi', icon: <FileText className="w-5 h-5" /> },
       { id: 'pengajuan', label: 'Pengajuan Seminar', icon: <FileText className="w-5 h-5" /> },
       { id: 'status', label: 'Status Pengajuan', icon: <ClipboardList className="w-5 h-5" /> },
       { id: 'jadwal', label: 'Jadwal Seminar', icon: <Calendar className="w-5 h-5" /> },
       { id: 'daftarhadir', label: 'Daftar Hadir', icon: <CheckCircle className="w-5 h-5" /> },
-      { id: 'scanqr', label: 'Scan QR Absensi', icon: <QrCode className="w-5 h-5" /> },
-      { id: 'revisi', label: 'Revisi & Upload', icon: <FileCheck className="w-5 h-5" /> }
+      { id: 'scanqr', label: 'Pindai Kode QR', icon: <QrCode className="w-5 h-5" /> }
     ]
   }
 
@@ -135,17 +139,25 @@ function App() {
           <main className={`content-area ${currentPage === 'revisi' ? 'blue-page' : ''}`}>
             {/* Mahasiswa pages */}
             {currentPage === 'dashboard' && role === 'mahasiswa' && <Dashboard />}
+            {currentPage === 'seminar-mahasiswa' && role === 'mahasiswa' && <Revisi />}
             {currentPage === 'pengajuan' && role === 'mahasiswa' && <Pengajuan />}
             {currentPage === 'status' && role === 'mahasiswa' && <Status />}
             {currentPage === 'jadwal' && role === 'mahasiswa' && <Jadwal />}
             {currentPage === 'daftarhadir' && role === 'mahasiswa' && <DaftarHadir />}
             {currentPage === 'scanqr' && role === 'mahasiswa' && <ScanQR />}
-            {currentPage === 'revisi' && role === 'mahasiswa' && <Revisi />}
+            {currentPage === 'revisi' && role === 'mahasiswa' && <RevisiItems />}
+            {currentPage === 'seminar-old' && role === 'mahasiswa' && <SeminarMahasiswa />}
 
             {/* Dosen pages */}
             {currentPage === 'dashboard' && role === 'dosen' && <DashboardDosen setCurrentPage={setCurrentPage} />}
+            {currentPage === 'seminar' && role === 'dosen' && <RevisiDosen />}
+            {currentPage.startsWith('seminar-detail-') && role === 'dosen' && (
+              <SeminarDetail seminarId={currentPage.replace('seminar-detail-', '')} />
+            )}
             {currentPage === 'approval' && role === 'dosen' && <Approval />}
             {currentPage === 'jadwal' && role === 'dosen' && <JadwalDosen />}
+            {currentPage === 'revisi' && role === 'dosen' && <RevisiDosen />}
+            {currentPage === 'seminar-old' && role === 'dosen' && <SeminarDosen />}
 
             {/* Admin pages */}
             {role === 'admin' && currentPage === 'dashboard' && <DashboardAdmin />}
@@ -153,7 +165,6 @@ function App() {
             {role === 'admin' && currentPage === 'schedule' && <Schedule />}
             {role === 'admin' && currentPage === 'qrcode' && <QRCodePage />}
             {role === 'admin' && currentPage === 'attendance' && <AttendancePage />}
-            {role === 'admin' && currentPage === 'revision' && <RevisionPage />}
           </main>
         </div>
       </div>

@@ -44,12 +44,52 @@ function DosenJadwal() {
     try {
       setLoading(true);
       setError(null);
+      
+      // Check if token exists
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('Sesi Anda telah berakhir. Silakan login kembali.');
+        return;
+      }
+
+      console.log('Fetching dosen seminars...');
       const response = await dosenAPI.getMySeminars('all');
-      setSeminars(response.data || []);
+      console.log('Seminars response:', response);
+      
+      const seminarsList = response?.data?.data || response?.data || response || [];
+      setSeminars(Array.isArray(seminarsList) ? seminarsList : []);
     } catch (err) {
       console.error('Failed to fetch dosen schedules:', err);
-      const message = err.response?.data?.message || 'Gagal memuat jadwal dosen.';
-      setError(message);
+      console.error('Error response:', err?.response);
+      
+      setSeminars([]);
+      
+      // Detailed error handling
+      if (err?.code === 'ECONNABORTED') {
+        setError('Permintaan timeout. Silakan coba lagi.');
+      } else if (err?.response) {
+        // Server responded with error
+        const status = err.response.status;
+        const message = err.response.data?.message;
+        
+        if (status === 401) {
+          setError('Sesi Anda telah berakhir. Silakan login kembali.');
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          setTimeout(() => window.location.href = '/login', 2000);
+        } else if (status === 403) {
+          setError('Anda tidak memiliki akses ke halaman ini.');
+        } else if (status === 500) {
+          setError('Terjadi kesalahan server. Silakan hubungi administrator.');
+        } else {
+          setError(message || 'Gagal memuat jadwal dosen.');
+        }
+      } else if (err.request) {
+        // Request was made but no response
+        setError('Tidak dapat terhubung ke server. Pastikan server Laravel berjalan di http://127.0.0.1:8000');
+      } else {
+        setError('Terjadi kesalahan: ' + err.message);
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -132,7 +172,7 @@ function DosenJadwal() {
             <div className="jadwal-state-icon">
               <Loader2 size={32} className="icon-spin" />
             </div>
-            <h2>Memuat jadwal dosen...</h2>
+            <h2>Memuat data...</h2>
             <p>Harap tunggu sebentar.</p>
           </div>
         </div>
@@ -217,11 +257,11 @@ function DosenJadwal() {
 
                   <div className="student-row">
                     <div className="student-avatar">
-                      {seminar.mahasiswa_name.charAt(0)}
+                      {seminar.mahasiswa?.name?.charAt(0) || 'M'}
                     </div>
                     <div className="student-details">
-                      <p className="student-name">{seminar.mahasiswa_name}</p>
-                      <p className="student-npm">{seminar.mahasiswa_npm}</p>
+                      <p className="student-name">{seminar.mahasiswa?.name || 'N/A'}</p>
+                      <p className="student-npm">{seminar.mahasiswa?.npm || 'N/A'}</p>
                     </div>
                   </div>
 
@@ -247,7 +287,7 @@ function DosenJadwal() {
                   </div>
 
                   <div className="jadwal-footer">
-                    <span className="role-label">Peran Anda: <strong>{seminar.user_role}</strong></span>
+                    <span className="role-label">Peran Anda: <strong>{seminar.my_role}</strong></span>
                     {!schedule ? (
                       <span className="pending-text">Menunggu jadwal dari admin</span>
                     ) : (
@@ -292,7 +332,7 @@ function DosenJadwal() {
                     <GraduationCap size={14} />
                     Mahasiswa
                   </p>
-                  <p className="info-value">{cancelModal.seminar?.mahasiswa_name}</p>
+                  <p className="info-value">{cancelModal.seminar?.mahasiswa?.name || 'N/A'}</p>
                 </div>
                 <div>
                   <p className="info-label">

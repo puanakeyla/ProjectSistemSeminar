@@ -1,0 +1,439 @@
+import { useState, useEffect, useMemo } from 'react';
+import { FileEdit, Loader2, AlertTriangle, Inbox, Calendar, UserRound } from 'lucide-react';
+import axios from 'axios';
+import './Revisi.css';
+
+function Revisi() {
+  const [seminars, setSeminars] = useState([]);
+  const [selectedSeminar, setSelectedSeminar] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [activeTab, setActiveTab] = useState('all');
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitForm, setSubmitForm] = useState({
+    mahasiswa_notes: '',
+    file: null
+  });
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchSeminars();
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const fetchSeminars = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await axios.get('http://localhost:8000/api/mahasiswa/seminars', {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+
+      // Filter only scheduled seminars with revisions
+      const scheduledWithRevisions = response.data.data.filter(s => s.schedule && s.revision);
+      setSeminars(scheduledWithRevisions);
+    } catch (err) {
+      console.error('Error:', err);
+      setError(err.response?.data?.message || 'Gagal memuat data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchSeminarDetail = async (id) => {
+    try {
+      const response = await axios.get(`http://localhost:8000/api/mahasiswa/seminars/${id}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      setSelectedSeminar(response.data.data);
+      setShowDetailModal(true);
+    } catch (err) {
+      console.error('Error:', err);
+      alert('Gagal memuat detail');
+    }
+  };
+
+  const handleSubmitItem = async () => {
+    if (!submitForm.file) {
+      alert('File harus diupload');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      const formData = new FormData();
+      formData.append('mahasiswa_notes', submitForm.mahasiswa_notes);
+      formData.append('file', submitForm.file);
+
+      await axios.post(
+        `http://localhost:8000/api/mahasiswa/revisions/${selectedSeminar.revision.id}/items/${selectedItem.id}/submit`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      );
+
+      alert('✅ Revisi berhasil disubmit');
+      setShowSubmitModal(false);
+      setSelectedItem(null);
+      setSubmitForm({ mahasiswa_notes: '', file: null });
+      await fetchSeminarDetail(selectedSeminar.id);
+      await fetchSeminars();
+    } catch (err) {
+      alert('❌ ' + (err.response?.data?.message || 'Gagal submit revisi'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const filteredSeminars = useMemo(() => {
+    return seminars.filter(s => {
+      if (activeTab === 'all') return true;
+      if (!s.revision || !s.revision.items_by_dosen) return false;
+
+      const allItems = s.revision.items_by_dosen.flatMap(g => g.items);
+      
+      if (activeTab === 'pending') {
+        return allItems.some(item => item.status === 'pending' || item.status === 'rejected');
+      }
+      if (activeTab === 'submitted') {
+        return allItems.some(item => item.status === 'submitted');
+      }
+      if (activeTab === 'approved') {
+        return allItems.every(item => item.status === 'approved');
+      }
+      return true;
+    });
+  }, [seminars, activeTab]);
+
+  const getTipeColor = (tipe) => {
+    const colors = {
+      proposal: '#667eea',
+      hasil: '#27ae60',
+      komprehensif: '#f39c12',
+    };
+    return colors[tipe?.toLowerCase()] || '#666';
+  };
+
+  const formatTitleCase = (value) => {
+    if (!value) return '-';
+    return value.toString().replace(/_/g, ' ').split(' ').filter(Boolean)
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
+  };
+
+  const formatDate = (value) => {
+    if (!value) return '-';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+  };
+
+  if (loading) {
+    return (
+      <div className="revisi-wrapper">
+        <div className="revisi-loading">
+          <div className="revisi-loading-icon">
+            <Loader2 size={50} />
+          </div>
+          <h2>Memuat data...</h2>
+          <p>Harap tunggu sebentar.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="revisi-wrapper">
+        <div className="revisi-error">
+          <div className="revisi-error-icon">
+            <AlertTriangle size={40} />
+          </div>
+          <h2>Terjadi Kesalahan</h2>
+          <p>{error}</p>
+          <button className="revisi-retry-btn" onClick={fetchSeminars}>Coba Lagi</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="revisi-wrapper">
+      <div className="revisi-header">
+        <div className="revisi-header-left">
+          <div className="revisi-header-icon">
+            <FileEdit size={24} />
+          </div>
+          <h1>Revisi Seminar</h1>
+          <p>Kelola dan submit revisi seminar Anda</p>
+        </div>
+        <div className="revisi-badge">
+          <span className="revisi-badge-count">{seminars.length}</span>
+          <span className="revisi-badge-label">Seminar</span>
+        </div>
+      </div>
+
+      {seminars.length > 0 && (
+        <div className="revisi-tabs">
+          <button
+            className={`revisi-tab ${activeTab === 'all' ? 'active' : ''}`}
+            onClick={() => setActiveTab('all')}
+          >
+            Semua
+            <span className="revisi-tab-count">{seminars.length}</span>
+          </button>
+          <button
+            className={`revisi-tab ${activeTab === 'pending' ? 'active' : ''}`}
+            onClick={() => setActiveTab('pending')}
+          >
+            Pending
+            <span className="revisi-tab-count">
+              {seminars.filter(s => {
+                const allItems = s.revision?.items_by_dosen?.flatMap(g => g.items) || [];
+                return allItems.some(item => item.status === 'pending' || item.status === 'rejected');
+              }).length}
+            </span>
+          </button>
+          <button
+            className={`revisi-tab ${activeTab === 'submitted' ? 'active' : ''}`}
+            onClick={() => setActiveTab('submitted')}
+          >
+            Submitted
+            <span className="revisi-tab-count">
+              {seminars.filter(s => {
+                const allItems = s.revision?.items_by_dosen?.flatMap(g => g.items) || [];
+                return allItems.some(item => item.status === 'submitted');
+              }).length}
+            </span>
+          </button>
+          <button
+            className={`revisi-tab ${activeTab === 'approved' ? 'active' : ''}`}
+            onClick={() => setActiveTab('approved')}
+          >
+            Selesai
+            <span className="revisi-tab-count">
+              {seminars.filter(s => {
+                const allItems = s.revision?.items_by_dosen?.flatMap(g => g.items) || [];
+                return allItems.length > 0 && allItems.every(item => item.status === 'approved');
+              }).length}
+            </span>
+          </button>
+        </div>
+      )}
+
+      <div className="revisi-content">
+        {filteredSeminars.length === 0 ? (
+          <div className="revisi-empty">
+            <div className="revisi-empty-icon">
+              <Inbox size={40} />
+            </div>
+            <h2>Tidak Ada Revisi</h2>
+            <p>Anda belum memiliki revisi seminar yang perlu diselesaikan.</p>
+          </div>
+        ) : (
+          filteredSeminars.map(seminar => (
+            <div key={seminar.id} className="revisi-card" onClick={() => fetchSeminarDetail(seminar.id)}>
+              <div className="revisi-card-header">
+                <div className="revisi-student">
+                  <div className="revisi-avatar">
+                    {seminar.mahasiswa.name.charAt(0)}
+                  </div>
+                  <div className="revisi-student-info">
+                    <h3>{seminar.mahasiswa.name}</h3>
+                    <span className="revisi-npm">{seminar.mahasiswa.npm}</span>
+                  </div>
+                </div>
+                <span className="revisi-type-badge" style={{ backgroundColor: getTipeColor(seminar.jenis_seminar) }}>
+                  {formatTitleCase(seminar.jenis_seminar)}
+                </span>
+              </div>
+
+              <div className="revisi-card-body">
+                <h3 className="revisi-title">{seminar.judul}</h3>
+
+                <div className="revisi-meta">
+                  <span className="revisi-meta-item">
+                    <Calendar size={14} className="revisi-meta-icon" />
+                    {formatDate(seminar.schedule?.tanggal)}
+                  </span>
+                  <span className="revisi-meta-item">
+                    <UserRound size={14} className="revisi-meta-icon" />
+                    {seminar.revision?.total_items || 0} Poin Revisi
+                  </span>
+                </div>
+
+                {seminar.revision && (
+                  <div className="revisi-progress-section">
+                    <div className="revisi-progress-header">
+                      <span className="revisi-progress-label">Progress</span>
+                      <span className="revisi-progress-percent">{seminar.revision.progress}%</span>
+                    </div>
+                    <div className="revisi-progress-bar">
+                      <div className="revisi-progress-fill" style={{ width: `${seminar.revision.progress}%` }} />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Detail Modal */}
+      {showDetailModal && selectedSeminar && (
+        <div className="revisi-modal-overlay" onClick={() => setShowDetailModal(false)}>
+          <div className="revisi-modal" onClick={e => e.stopPropagation()}>
+            <div className="revisi-modal-header">
+              <h2>Detail Revisi - {selectedSeminar.mahasiswa.name}</h2>
+              <button className="revisi-modal-close" onClick={() => setShowDetailModal(false)}>×</button>
+            </div>
+
+            <div className="revisi-modal-body">
+              {selectedSeminar.revision && (
+                <>
+                  <div className="revisi-detail-section">
+                    <div className="revisi-stats">
+                      <div className="revisi-stat-box approved">
+                        <div className="revisi-stat-num">{selectedSeminar.revision.approved_items}</div>
+                        <div className="revisi-stat-label">Disetujui</div>
+                      </div>
+                      <div className="revisi-stat-box submitted">
+                        <div className="revisi-stat-num">{selectedSeminar.revision.submitted_items}</div>
+                        <div className="revisi-stat-label">Disubmit</div>
+                      </div>
+                      <div className="revisi-stat-box pending">
+                        <div className="revisi-stat-num">{selectedSeminar.revision.pending_items}</div>
+                        <div className="revisi-stat-label">Pending</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="revisi-detail-section">
+                    <h3>Poin Revisi</h3>
+                    {selectedSeminar.revision.items_by_dosen?.map((group, idx) => (
+                      <div key={idx} className="revisi-dosen-group">
+                        <div className="revisi-dosen-header">
+                          <span className="revisi-dosen-name">
+                            👨‍🏫 {group.dosen_name}
+                          </span>
+                          <div className="revisi-dosen-stats">
+                            <span className="revisi-stat-badge approved">✅ {group.approved_items}</span>
+                            <span className="revisi-stat-badge submitted">📤 {group.submitted_items}</span>
+                            <span className="revisi-stat-badge pending">⏳ {group.pending_items}</span>
+                          </div>
+                        </div>
+                        <div className="revisi-items-list">
+                          {group.items.map((item, itemIdx) => (
+                            <div key={itemIdx} className="revisi-item">
+                              <div className="revisi-item-header">
+                                <span className="revisi-item-num">#{itemIdx + 1}</span>
+                                <span className={`revisi-item-status ${item.status}`}>
+                                  {item.status_display}
+                                </span>
+                              </div>
+                              <p className="revisi-item-text">{item.poin_revisi}</p>
+                              {item.kategori && (
+                                <span className="revisi-item-category">📌 {item.kategori}</span>
+                              )}
+                              
+                              {(item.status === 'pending' || item.status === 'rejected') && (
+                                <div className="revisi-item-actions">
+                                  <button
+                                    className="revisi-submit-btn"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedItem(item);
+                                      setShowSubmitModal(true);
+                                    }}
+                                  >
+                                    Submit Revisi
+                                  </button>
+                                </div>
+                              )}
+
+                              {item.rejection_reason && (
+                                <div style={{ marginTop: '10px', padding: '10px', background: '#fee', borderRadius: '6px', fontSize: '13px' }}>
+                                  <strong>❌ Ditolak:</strong> {item.rejection_reason}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Submit Modal */}
+      {showSubmitModal && selectedItem && (
+        <div className="revisi-modal-overlay" onClick={() => setShowSubmitModal(false)}>
+          <div className="revisi-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+            <div className="revisi-modal-header">
+              <h2>Submit Revisi</h2>
+              <button className="revisi-modal-close" onClick={() => setShowSubmitModal(false)}>×</button>
+            </div>
+
+            <div className="revisi-modal-body">
+              <div style={{ padding: '12px', background: '#f9fafb', borderRadius: '8px', marginBottom: '20px' }}>
+                <strong>Poin:</strong>
+                <p style={{ margin: '8px 0 0 0', fontSize: '14px' }}>{selectedItem.poin_revisi}</p>
+              </div>
+
+              <div className="revisi-form-group">
+                <label>Catatan (Opsional)</label>
+                <textarea
+                  value={submitForm.mahasiswa_notes}
+                  onChange={e => setSubmitForm({ ...submitForm, mahasiswa_notes: e.target.value })}
+                  placeholder="Tambahkan catatan untuk dosen..."
+                  rows="3"
+                />
+              </div>
+
+              <div className="revisi-form-group">
+                <label>Upload File *</label>
+                <div className="revisi-file-input">
+                  <label className="revisi-file-label">
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                      onChange={e => setSubmitForm({ ...submitForm, file: e.target.files[0] })}
+                    />
+                    {submitForm.file ? '📎 File terpilih' : '📁 Klik untuk upload file'}
+                  </label>
+                  {submitForm.file && (
+                    <div className="revisi-file-selected">
+                      {submitForm.file.name}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="revisi-modal-actions">
+              <button className="revisi-btn-cancel" onClick={() => setShowSubmitModal(false)}>
+                Batal
+              </button>
+              <button className="revisi-btn-primary" onClick={handleSubmitItem} disabled={submitting}>
+                {submitting ? 'Mengirim...' : 'Submit'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default Revisi;

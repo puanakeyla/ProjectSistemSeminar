@@ -111,7 +111,8 @@ function Approval() {
       setPendingApprovals(Array.isArray(approvalsList) ? approvalsList : []);
     } catch (err) {
       console.error('Failed to fetch approvals:', err);
-      setError('Gagal memuat data persetujuan. Silakan coba lagi.');
+      console.error('Error details:', err?.response?.data);
+      setError(err?.response?.data?.message || 'Gagal memuat data persetujuan. Silakan coba lagi.');
       setPendingApprovals([]);
     } finally {
       setLoading(false);

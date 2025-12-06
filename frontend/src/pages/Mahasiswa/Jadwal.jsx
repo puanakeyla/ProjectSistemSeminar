@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import './Jadwal.css';
-import { Clock, AlertTriangle, Calendar, MapPin, User, CheckCircle } from 'lucide-react'
+import { Clock, AlertTriangle, Calendar, MapPin, User, CheckCircle, Loader2 } from 'lucide-react'
 
 const API_URL = 'http://localhost:8000/api';
 
@@ -34,9 +34,12 @@ function Jadwal() {
   if (loading) {
     return (
       <div className="jadwal-wrapper">
-        <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-          <div style={{ fontSize: '48px', marginBottom: '20px' }}><Clock className="w-12 h-12 mx-auto" /></div>
-          <h2>Memuat jadwal...</h2>
+        <div className="loading-state">
+          <div className="loading-icon">
+            <Loader2 size={32} className="icon-spin" />
+          </div>
+          <h2>Memuat data...</h2>
+          <p>Harap tunggu sebentar.</p>
         </div>
       </div>
     );
@@ -45,8 +48,10 @@ function Jadwal() {
   if (error) {
     return (
       <div className="jadwal-wrapper">
-        <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-          <div style={{ fontSize: '48px', marginBottom: '20px' }}><AlertTriangle className="w-12 h-12 mx-auto text-warning" /></div>
+        <div className="jadwal-empty-state">
+          <div className="jadwal-empty-icon" style={{ background: 'rgba(220, 38, 38, 0.08)', color: '#dc2626' }}>
+            <AlertTriangle size={32} />
+          </div>
           <h2>Terjadi Kesalahan</h2>
           <p style={{ color: '#ef4444', marginBottom: '20px' }}>{error}</p>
           <button onClick={fetchJadwal} style={{ padding: '12px 24px', background: '#4E8EA2', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>
@@ -66,17 +71,21 @@ function Jadwal() {
 
       <div className="jadwal-content">
         {jadwalList.length === 0 ? (
-          <div style={{ background: 'white', padding: '60px 20px', borderRadius: '16px', textAlign: 'center' }}>
-            <div style={{ fontSize: '80px', marginBottom: '20px', opacity: 0.5 }}><Calendar className="w-20 h-20 mx-auto opacity-50" /></div>
-            <h2 style={{ color: '#64748b', marginBottom: '12px' }}>Belum Ada Jadwal</h2>
-            <p style={{ color: '#94a3b8' }}>Jadwal seminar akan muncul setelah admin menjadwalkan</p>
+          <div className="jadwal-empty-state">
+            <div className="jadwal-empty-icon">
+              <Calendar size={32} />
+            </div>
+            <h2>Belum Ada Jadwal</h2>
+            <p>Jadwal seminar akan muncul setelah admin menjadwalkan</p>
           </div>
         ) : (
           <div className="jadwal-grid">
             {jadwalList.map((jadwal) => (
               <div key={jadwal.id} className="jadwal-card">
                 <div className="jadwal-card-header">
-                  <span className="jenis-badge">{jadwal.jenis_seminar}</span>
+                  {jadwal.jenis_seminar && jadwal.jenis_seminar !== '-' && (
+                    <span className="jenis-badge">{jadwal.jenis_seminar}</span>
+                  )}
                   <h3>{jadwal.mahasiswa_name}</h3>
                   <span className="npm-badge">{jadwal.mahasiswa_npm}</span>
                 </div>

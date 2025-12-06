@@ -3,7 +3,7 @@ import axios from 'axios';
 // Base URL untuk API Laravel
 const API_BASE_URL = 'http://127.0.0.1:8000/api';
 
-// Create axios instance
+// Create axios instance with optimized timeout
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -11,14 +11,18 @@ const api = axios.create({
     'Accept': 'application/json',
   },
   withCredentials: true,
+  timeout: 30000, // 30s timeout - lebih generous untuk menghindari cancel prematur
 });
 
 // Add token to requests if exists
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    // Only add token for protected routes (not login)
+    if (!config.url.includes('/login')) {
+      const token = localStorage.getItem('token');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
     return config;
   },
@@ -27,11 +31,48 @@ api.interceptors.request.use(
   }
 );
 
+// Handle response errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    // Handle 401 - Unauthorized (tapi tidak untuk login endpoint)
+    if (error.response?.status === 401 && !error.config?.url?.includes('/login')) {
+      // Clear invalid token
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      
+      // Only redirect if not on login page
+      if (!window.location.pathname.includes('/login') && window.location.pathname !== '/') {
+        window.location.href = '/';
+      }
+    }
+    
+    return Promise.reject(error);
+  }
+);
+
 // Auth API
 export const authAPI = {
   login: async (email, password) => {
-    const response = await api.post('/login', { email, password });
-    return response.data;
+    try {
+      const response = await api.post('/login', { 
+        email: email.trim(), 
+        password 
+      });
+      return response.data;
+    } catch (error) {
+      // Re-throw with better error info
+      if (error.response) {
+        throw error;
+      } else if (error.request) {
+        // Request dibuat tapi tidak ada response
+        const networkError = new Error('Tidak dapat terhubung ke server');
+        networkError.code = 'ERR_NETWORK';
+        throw networkError;
+      } else {
+        throw error;
+      }
+    }
   },
   
   logout: async () => {
@@ -98,6 +139,19 @@ export const dosenAPI = {
   cancelSeminar: async (id, data) => {
     // data: { cancel_reason: string }
     const response = await api.post(`/dosen/seminars/${id}/cancel`, data);
+    return response.data;
+  },
+
+  // Get revisions (for dosen to validate)
+  getRevisions: async () => {
+    const response = await api.get('/dosen/revisions');
+    return response.data;
+  },
+
+  // Validate revision
+  validateRevision: async (id, data) => {
+    // data: { status: 'accepted'|'rejected', catatan_dosen?: string }
+    const response = await api.post(`/dosen/revisions/${id}/validate`, data);
     return response.data;
   },
 };

@@ -17,27 +17,38 @@ class ApprovalController extends Controller
      */
     public function pendingApprovals(Request $request): JsonResponse
     {
-        $approvals = SeminarApproval::with([
-                'seminar.mahasiswa', 
-                'seminar.pembimbing1', 
-                'seminar.pembimbing2', 
-                'seminar.penguji'
-            ])
-            ->where('dosen_id', $request->user()->id)
-            ->whereHas('seminar', function ($query) {
-                $query->where('status', '!=', 'cancelled');
-            })
-            ->menunggu()
-            ->orderBy('created_at', 'desc')
-            ->get()
-            ->map(function ($approval) {
-                return $this->formatApprovalData($approval);
-            });
+        try {
+            $approvals = SeminarApproval::with([
+                    'seminar:id,mahasiswa_id,judul,tipe,abstrak,file_berkas,status',
+                    'seminar.mahasiswa:id,name,npm', 
+                    'seminar.pembimbing1:id,name', 
+                    'seminar.pembimbing2:id,name',
+                    'seminar.penguji:id,name',
+                    'seminar.approvals:id,seminar_id,dosen_id,peran,status,catatan,available_dates,updated_at',
+                    'seminar.approvals.dosen:id,name'
+                ])
+                ->where('dosen_id', $request->user()->id)
+                ->whereHas('seminar', function ($query) {
+                    $query->where('status', '!=', 'cancelled');
+                })
+                ->menunggu()
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->map(function ($approval) {
+                    return $this->formatApprovalData($approval);
+                });
 
-        return response()->json([
-            'message' => 'Pending approvals retrieved successfully',
-            'data' => $approvals
-        ]);
+            return response()->json([
+                'message' => 'Pending approvals retrieved successfully',
+                'data' => $approvals
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error fetching pending approvals: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Gagal memuat data persetujuan',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -50,7 +61,7 @@ class ApprovalController extends Controller
         $query = SeminarApproval::with([
             'seminar.mahasiswa', 
             'seminar.pembimbing1', 
-            'seminar.pembimbing2', 
+            'seminar.pembimbing2',
             'seminar.penguji'
         ])
         ->where('dosen_id', $request->user()->id);
@@ -80,7 +91,7 @@ class ApprovalController extends Controller
         $approval = SeminarApproval::with([
                 'seminar.mahasiswa', 
                 'seminar.pembimbing1', 
-                'seminar.pembimbing2', 
+                'seminar.pembimbing2',
                 'seminar.penguji',
                 'seminar.approvals.dosen'
             ])
@@ -152,6 +163,14 @@ class ApprovalController extends Controller
 
         $approval->update($updateData);
 
+        // Send notification if approved
+        if ($validated['status'] === 'approved') {
+            NotificationService::notifySeminarApproved(
+                $approval->seminar->fresh(['mahasiswa']),
+                $request->user()
+            );
+        }
+
         // Check if all approvals are completed
         $this->checkSeminarOverallStatus($approval->seminar);
 
@@ -168,30 +187,66 @@ class ApprovalController extends Controller
      */
     public function mySeminars(Request $request): JsonResponse
     {
-        $status = $request->get('status', 'all'); // all, menunggu, disetujui, ditolak
+        try {
+            $status = $request->get('status', 'all'); // all, menunggu, disetujui, ditolak
+            $user = $request->user();
 
-        $query = Seminar::with(['mahasiswa', 'pembimbing1', 'pembimbing2', 'penguji', 'approvals', 'schedule'])
-            ->where(function ($query) use ($request) {
-                $query->where('pembimbing1_id', $request->user()->id)
-                    ->orWhere('pembimbing2_id', $request->user()->id)
-                    ->orWhere('penguji_id', $request->user()->id);
-            });
+            \Log::info('Fetching dosen seminars', [
+                'dosen_id' => $user->id,
+                'dosen_name' => $user->name,
+                'status_filter' => $status
+            ]);
 
-        // Filter by status
-        if ($status !== 'all') {
-            $query->where('status', $status);
+            // Optimized query with specific columns
+            $query = Seminar::select([
+                    'id', 'judul', 'jenis_seminar', 'mahasiswa_id', 
+                    'pembimbing1_id', 'pembimbing2_id', 'penguji_id',
+                    'status', 'created_at', 'cancelled_at'
+                ])
+                ->with([
+                    'mahasiswa:id,name,npm',
+                    'schedule:id,seminar_id,ruang,waktu_mulai,waktu_selesai',
+                    'approvals' => function($q) use ($user) {
+                        $q->select('id', 'seminar_id', 'dosen_id', 'status')
+                          ->where('dosen_id', $user->id);
+                    }
+                ])
+                ->where(function ($query) use ($user) {
+                    $query->where('pembimbing1_id', $user->id)
+                        ->orWhere('pembimbing2_id', $user->id)
+                        ->orWhere('penguji_id', $user->id);
+                });
+
+            // Filter by status
+            if ($status !== 'all') {
+                $query->where('status', $status);
+            }
+
+            $seminars = $query->orderBy('created_at', 'desc')
+                ->limit(100) // Limit untuk mencegah timeout
+                ->get()
+                ->map(function ($seminar) use ($user) {
+                    return $this->formatSeminarData($seminar, $user);
+                });
+
+            \Log::info('Dosen seminars fetched successfully', [
+                'count' => $seminars->count()
+            ]);
+
+            return response()->json([
+                'message' => 'My seminars retrieved successfully',
+                'data' => $seminars
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error fetching dosen seminars', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'message' => 'Gagal memuat jadwal: ' . $e->getMessage()
+            ], 500);
         }
-
-        $seminars = $query->orderBy('created_at', 'desc')
-            ->get()
-            ->map(function ($seminar) use ($request) {
-                return $this->formatSeminarData($seminar, $request->user());
-            });
-
-        return response()->json([
-            'message' => 'My seminars retrieved successfully',
-            'data' => $seminars
-        ]);
     }
 
     /**
@@ -351,10 +406,10 @@ class ApprovalController extends Controller
                 // Send notifications to all parties
                 NotificationService::notifyScheduleConflict($seminar->fresh(['mahasiswa', 'pembimbing1', 'pembimbing2', 'penguji']));
             } else {
-                // Has matching dates - set to approved for admin to schedule
+                // Has matching dates - keep as pending_verification for admin to verify
+                // Admin must verify before scheduling
                 $seminar->update([
-                    'status' => 'approved',
-                    'verified_at' => now()
+                    'status' => 'pending_verification'
                 ]);
             }
             return;
@@ -415,50 +470,88 @@ class ApprovalController extends Controller
         $data = [
             'id' => $approval->id,
             'seminar_id' => $approval->seminar_id,
-            'mahasiswa_name' => $seminar->mahasiswa->name,
-            'mahasiswa_npm' => $seminar->mahasiswa->npm,
+            'mahasiswa_name' => $seminar->mahasiswa->name ?? 'N/A',
+            'mahasiswa_npm' => $seminar->mahasiswa->npm ?? 'N/A',
             'judul' => $seminar->judul,
+            'jenis_seminar' => $seminar->tipe,
             'tipe' => $seminar->tipe,
             'abstrak' => $seminar->abstrak,
             'file_berkas' => $seminar->file_berkas,
             'peran' => $approval->peran,
             'status' => $approval->status,
             'created_at' => $approval->created_at->format('d M Y'),
+            'tanggal_pengajuan' => $approval->created_at->format('d M Y'),
             'updated_at' => $approval->updated_at->format('d M Y H:i'),
             'days_pending' => $approval->created_at->diffInDays(now()),
         ];
 
-        // Get other dosen's approved dates
-        $otherApprovedDates = $seminar->approvals()
-            ->where('id', '!=', $approval->id)
-            ->where('status', 'approved')
-            ->whereNotNull('available_dates')
-            ->get()
-            ->map(function ($otherApproval) {
-                return [
-                    'dosen_name' => $otherApproval->dosen->name,
-                    'peran' => $otherApproval->peran,
-                    'dates' => $otherApproval->available_dates ?? [],
-                ];
-            })->filter(function ($item) {
-                return !empty($item['dates']);
-            })->values();
+        // Get other dosen's approved dates from loaded relationship
+        $otherApprovedDates = collect();
+        if ($seminar->relationLoaded('approvals')) {
+            $otherApprovedDates = $seminar->approvals
+                ->where('id', '!=', $approval->id)
+                ->where('status', 'approved')
+                ->whereNotNull('available_dates')
+                ->map(function ($otherApproval) {
+                    return [
+                        'dosen_name' => $otherApproval->dosen->name ?? 'N/A',
+                        'peran' => $otherApproval->peran,
+                        'dates' => $otherApproval->available_dates ?? [],
+                    ];
+                })->filter(function ($item) {
+                    return !empty($item['dates']);
+                })->values();
+        } else {
+            // Fallback if not loaded
+            $otherApprovedDates = $seminar->approvals()
+                ->where('id', '!=', $approval->id)
+                ->where('status', 'approved')
+                ->whereNotNull('available_dates')
+                ->with('dosen:id,name')
+                ->get()
+                ->map(function ($otherApproval) {
+                    return [
+                        'dosen_name' => $otherApproval->dosen->name ?? 'N/A',
+                        'peran' => $otherApproval->peran,
+                        'dates' => $otherApproval->available_dates ?? [],
+                    ];
+                })->filter(function ($item) {
+                    return !empty($item['dates']);
+                })->values();
+        }
 
         $data['other_approved_dates'] = $otherApprovedDates;
 
-        // Get other dosen's rejections (if any)
-        $otherRejections = $seminar->approvals()
-            ->where('id', '!=', $approval->id)
-            ->where('status', 'rejected')
-            ->get()
-            ->map(function ($otherApproval) {
-                return [
-                    'dosen_name' => $otherApproval->dosen->name,
-                    'peran' => $otherApproval->peran,
-                    'rejection_reason' => $otherApproval->catatan ?? 'Tidak ada alasan spesifik',
-                    'rejected_at' => $otherApproval->updated_at->format('d M Y H:i'),
-                ];
-            })->values();
+        // Get other dosen's rejections (if any) from loaded relationship
+        $otherRejections = collect();
+        if ($seminar->relationLoaded('approvals')) {
+            $otherRejections = $seminar->approvals
+                ->where('id', '!=', $approval->id)
+                ->where('status', 'rejected')
+                ->map(function ($otherApproval) {
+                    return [
+                        'dosen_name' => $otherApproval->dosen->name ?? 'N/A',
+                        'peran' => $otherApproval->peran,
+                        'rejection_reason' => $otherApproval->catatan ?? 'Tidak ada alasan spesifik',
+                        'rejected_at' => $otherApproval->updated_at->format('d M Y H:i'),
+                    ];
+                })->values();
+        } else {
+            // Fallback if not loaded
+            $otherRejections = $seminar->approvals()
+                ->where('id', '!=', $approval->id)
+                ->where('status', 'rejected')
+                ->with('dosen:id,name')
+                ->get()
+                ->map(function ($otherApproval) {
+                    return [
+                        'dosen_name' => $otherApproval->dosen->name ?? 'N/A',
+                        'peran' => $otherApproval->peran,
+                        'rejection_reason' => $otherApproval->catatan ?? 'Tidak ada alasan spesifik',
+                        'rejected_at' => $otherApproval->updated_at->format('d M Y H:i'),
+                    ];
+                })->values();
+        }
 
         $data['other_rejections'] = $otherRejections;
 
@@ -498,6 +591,13 @@ class ApprovalController extends Controller
     private function formatSeminarData(Seminar $seminar, $user): array
     {
         $userRole = $this->getUserRoleInSeminar($seminar, $user);
+        
+        // Get approval status from loaded relationship instead of querying again
+        $approvalStatus = 'menunggu';
+        if ($seminar->approvals && $seminar->approvals->isNotEmpty()) {
+            $approval = $seminar->approvals->first();
+            $approvalStatus = $approval->status;
+        }
 
         return [
             'id' => $seminar->id,
@@ -518,7 +618,7 @@ class ApprovalController extends Controller
                 'is_today' => $seminar->schedule->isToday(),
                 'is_past' => $seminar->schedule->isPast(),
             ] : null,
-            'approval_status' => $seminar->getApprovalStatus($user->id),
+            'approval_status' => $approvalStatus,
         ];
     }
 
@@ -651,5 +751,141 @@ class ApprovalController extends Controller
         }
 
         return response()->download($path, basename($path));
+    }
+
+    /**
+     * Final approval after seminar presentation (approve/reject/need revision)
+     * Can only be done during seminar time
+     */
+    public function finalApproval(Request $request, $seminarId): JsonResponse
+    {
+        $validated = $request->validate([
+            'decision' => ['required', Rule::in(['approved', 'rejected', 'needs_revision'])],
+            'catatan' => 'nullable|string|max:1000',
+        ]);
+
+        $user = $request->user();
+        $seminar = Seminar::with(['schedule'])->findOrFail($seminarId);
+
+        // Check if dosen is involved in this seminar
+        $isInvolved = $seminar->pembimbing1_id == $user->id 
+                   || $seminar->pembimbing2_id == $user->id 
+                   || $seminar->penguji_id == $user->id;
+
+        if (!$isInvolved) {
+            return response()->json([
+                'message' => 'Anda tidak memiliki akses untuk memberikan penilaian akhir'
+            ], 403);
+        }
+
+        // Check if seminar has schedule
+        if (!$seminar->schedule) {
+            return response()->json([
+                'message' => 'Seminar belum dijadwalkan'
+            ], 422);
+        }
+
+        // Check if seminar is ongoing (with grace period)
+        if (!$seminar->schedule->isOngoing(gracePeriodBefore: 15, gracePeriodAfter: 60)) {
+            $status = $seminar->schedule->getSeminarStatus();
+            
+            if ($status === 'upcoming') {
+                $minutesUntil = $seminar->schedule->getMinutesUntilStart();
+                return response()->json([
+                    'message' => "Penilaian akhir hanya dapat dilakukan saat seminar berlangsung. Seminar dimulai dalam {$minutesUntil} menit.",
+                    'seminar_status' => 'upcoming',
+                    'minutes_until_start' => $minutesUntil
+                ], 422);
+            } else {
+                return response()->json([
+                    'message' => 'Waktu untuk memberikan penilaian akhir sudah lewat',
+                    'seminar_status' => 'finished'
+                ], 422);
+            }
+        }
+
+        // Update seminar status based on decision
+        $statusMap = [
+            'approved' => 'approved',
+            'rejected' => 'rejected',
+            'needs_revision' => 'revising'
+        ];
+
+        $seminar->update([
+            'status' => $statusMap[$validated['decision']],
+            'catatan_akhir' => $validated['catatan'] ?? null,
+            'tanggal_penilaian' => now(),
+        ]);
+
+        $messages = [
+            'approved' => 'Seminar disetujui',
+            'rejected' => 'Seminar ditolak',
+            'needs_revision' => 'Seminar memerlukan revisi'
+        ];
+
+        return response()->json([
+            'message' => $messages[$validated['decision']],
+            'data' => [
+                'seminar_id' => $seminar->id,
+                'status' => $seminar->status,
+                'decision' => $validated['decision'],
+            ]
+        ]);
+    }
+
+    /**
+     * Get seminar status and check if can give final approval
+     */
+    public function getSeminarApprovalStatus(Request $request, $seminarId): JsonResponse
+    {
+        $user = $request->user();
+        $seminar = Seminar::with(['schedule'])->findOrFail($seminarId);
+
+        // Check if dosen is involved
+        $isInvolved = $seminar->pembimbing1_id == $user->id 
+                   || $seminar->pembimbing2_id == $user->id 
+                   || $seminar->penguji_id == $user->id;
+
+        if (!$isInvolved) {
+            return response()->json([
+                'message' => 'Anda tidak memiliki akses'
+            ], 403);
+        }
+
+        $canApprove = false;
+        $reason = '';
+        $seminarStatus = 'unknown';
+        $timeInfo = [];
+
+        if (!$seminar->schedule) {
+            $reason = 'Seminar belum dijadwalkan';
+        } else {
+            $seminarStatus = $seminar->schedule->getSeminarStatus();
+            
+            if ($seminar->schedule->isOngoing(15, 60)) {
+                $canApprove = true;
+                $timeInfo = [
+                    'minutes_until_end' => $seminar->schedule->getMinutesUntilEnd(),
+                ];
+            } else {
+                if ($seminarStatus === 'upcoming') {
+                    $minutesUntil = $seminar->schedule->getMinutesUntilStart();
+                    $reason = "Seminar dimulai dalam {$minutesUntil} menit";
+                    $timeInfo['minutes_until_start'] = $minutesUntil;
+                } else {
+                    $reason = 'Waktu penilaian sudah lewat';
+                }
+            }
+        }
+
+        return response()->json([
+            'data' => [
+                'can_approve' => $canApprove,
+                'reason' => $reason,
+                'seminar_status' => $seminarStatus,
+                'seminar_status_display' => $seminar->schedule ? $seminar->schedule->getSeminarStatusDisplay() : '-',
+                'time_info' => $timeInfo,
+            ]
+        ]);
     }
 }

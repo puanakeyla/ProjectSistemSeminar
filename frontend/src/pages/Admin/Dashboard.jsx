@@ -5,6 +5,7 @@ import {
   Clock,
   CalendarDays,
   CheckCircle2,
+  CheckCircle,
   ClipboardList,
   AlertTriangle,
   RefreshCcw,
@@ -29,8 +30,6 @@ function Dashboard() {
   })
   const [recentSeminars, setRecentSeminars] = useState([])
   const [todaySeminars, setTodaySeminars] = useState([])
-  const [cancelledSeminars, setCancelledSeminars] = useState([])
-  const [showAllCancelled, setShowAllCancelled] = useState(false)
   const [pendingVerificationList, setPendingVerificationList] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -43,12 +42,21 @@ function Dashboard() {
     try {
       setLoading(true)
       setError(null)
+      
+      // Add timeout to prevent hanging
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10s timeout
+      
       const [dashboardResponse, allSeminarsResponse] = await Promise.all([
-        adminAPI.getDashboard(),
-        adminAPI.getSeminarsForVerification('all')
+        adminAPI.getDashboard({ signal: controller.signal }),
+        adminAPI.getSeminarsForVerification('all', { signal: controller.signal })
       ])
       
-      const data = dashboardResponse.data || dashboardResponse
+      clearTimeout(timeoutId)
+      
+      // Extract data from nested response
+      const responseData = dashboardResponse.data || dashboardResponse
+      const data = responseData.data || responseData
 
       // Calculate verification rate: (approved + scheduled) / total * 100
       const total = data?.seminar_statistics?.total || 0
@@ -69,7 +77,6 @@ function Dashboard() {
       })
       setRecentSeminars(Array.isArray(data?.recent_seminars) ? data.recent_seminars : [])
       setTodaySeminars(Array.isArray(data?.today_seminars) ? data.today_seminars : [])
-      setCancelledSeminars(Array.isArray(data?.cancelled_seminars) ? data.cancelled_seminars : [])
       
       // Get all seminars with pending_verification status (show approval progress for all)
       const allSeminars = allSeminarsResponse.data || []
@@ -103,10 +110,10 @@ function Dashboard() {
   }
 
   const statsDisplay = [
-    { label: 'Total Seminars', value: stats.totalSeminars, icon: BarChart2, color: '#3b82f6' },
-    { label: 'Pending Verification', value: stats.pendingVerification, icon: Clock, color: '#f59e0b' },
-    { label: 'Today Schedules', value: stats.scheduledToday, icon: CalendarDays, color: '#8b5cf6' },
-    { label: 'Total Attendance', value: stats.totalAttendance, icon: CheckCircle2, color: '#10b981' }
+    { label: 'Total Seminar', value: stats.totalSeminars, icon: BarChart2, color: '#3b82f6' },
+    { label: 'Menunggu Verifikasi', value: stats.pendingVerification, icon: Clock, color: '#f59e0b' },
+    { label: 'Jadwal Hari Ini', value: stats.scheduledToday, icon: CalendarDays, color: '#8b5cf6' },
+    { label: 'Total Kehadiran', value: stats.totalAttendance, icon: CheckCircle2, color: '#10b981' }
   ]
 
   const progressMetrics = [
@@ -161,19 +168,19 @@ function Dashboard() {
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
-                  Dashboard Admin
+                  Dasbor Admin
                 </h1>
                 <p className="text-base text-gray-600 dark:text-gray-400">
                   Sistem Manajemen Seminar Universitas Lampung
                 </p>
-              </div>
             </div>
+          </div>
             <button
               type="button"
               onClick={fetchDashboardData}
-              className="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:border-primary-300 hover:text-primary-600 dark:border-dark-600 dark:text-gray-200"
+              className="refresh-btn"
             >
-              <RefreshCcw className="w-4 h-4" /> Refresh
+              <RefreshCcw className="w-4 h-4" /> Segarkan
             </button>
           </div>
         </motion.div>
@@ -198,82 +205,6 @@ function Dashboard() {
             />
           ))}
         </div>
-
-        {cancelledSeminars.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.2 }}
-            className="bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/30 rounded-2xl p-6 border-2 border-red-200 dark:border-red-800 shadow-lg"
-          >
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-red-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">
-                <XCircle className="w-6 h-6 text-white" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-bold text-red-900 dark:text-red-100 mb-1">
-                  Seminar Dibatalkan
-                </h3>
-                <p className="text-sm text-red-700 dark:text-red-300 mb-4">
-                  {cancelledSeminars.length} seminar dibatalkan oleh dosen pembimbing/penguji
-                </p>
-                <div className="space-y-3">
-                  {(showAllCancelled ? cancelledSeminars : cancelledSeminars.slice(0, 3)).map((seminar, index) => (
-                    <motion.div
-                      key={seminar.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.3, delay: 0.1 * index }}
-                      className="bg-white dark:bg-dark-800 rounded-xl p-4 border border-red-200 dark:border-red-800"
-                    >
-                      <div className="flex items-start justify-between gap-3 mb-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="inline-flex px-2.5 py-0.5 text-xs font-bold rounded-full bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300">
-                              {seminar.jenis_seminar}
-                            </span>
-                          </div>
-                          <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                            {seminar.mahasiswa_name} ({seminar.mahasiswa_npm})
-                          </p>
-                          <p className="text-sm text-gray-600 dark:text-gray-300 mt-1 line-clamp-2">
-                            {seminar.judul}
-                          </p>
-                        </div>
-                        <div className="text-right flex-shrink-0">
-                          <p className="text-xs text-red-600 dark:text-red-400 font-medium">
-                            {seminar.days_ago === 0 ? 'Hari ini' : `${seminar.days_ago} hari lalu`}
-                          </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                            {seminar.cancelled_at}
-                          </p>
-                        </div>
-                      </div>
-                      {seminar.cancel_reason && (
-                        <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
-                          <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                            Alasan Pembatalan:
-                          </p>
-                          <p className="text-xs text-gray-600 dark:text-gray-400 italic">
-                            "{seminar.cancel_reason}"
-                          </p>
-                        </div>
-                      )}
-                    </motion.div>
-                  ))}
-                </div>
-                {cancelledSeminars.length > 3 && (
-                  <button
-                    onClick={() => setShowAllCancelled(!showAllCancelled)}
-                    className="mt-4 w-full px-4 py-2 text-sm font-semibold text-red-700 dark:text-red-300 bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 rounded-lg transition-colors duration-200"
-                  >
-                    {showAllCancelled ? 'Tampilkan Lebih Sedikit' : `Selengkapnya (${cancelledSeminars.length - 3} lainnya)`}
-                  </button>
-                )}
-              </div>
-            </div>
-          </motion.div>
-        )}
 
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           <SectionCard

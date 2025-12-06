@@ -55,22 +55,24 @@
 
 .refresh-btn {
   padding: 12px 24px;
-  background: linear-gradient(135deg, #0A4174 0%, #4E8EA2 100%);
+  background: linear-gradient(135deg, #4A6FA5 0%, #7BA5C9 100%);
   border: none;
-  border-radius: 10px;
+  border-radius: 12px;
   color: white;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 15px;
   cursor: pointer;
   transition: all 0.3s ease;
   display: flex;
   align-items: center;
   gap: 8px;
+  box-shadow: 0 2px 8px rgba(74, 111, 165, 0.2);
 }
 
 .refresh-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(10, 65, 116, 0.3);
+  background: linear-gradient(135deg, #3A5F95 0%, #6B95B9 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(74, 111, 165, 0.3);
 }
 
 /* Error Message */
@@ -245,26 +247,38 @@
 
 /* Empty State */
 .empty-state {
-  text-align: center;
+  background: white;
   padding: 60px 20px;
+  border-radius: 16px;
+  text-align: center;
 }
 
 .empty-icon {
-  font-size: 64px;
-  margin-bottom: 16px;
-  opacity: 0.5;
+  width: 68px;
+  height: 68px;
+  border-radius: 16px;
+  background: rgba(29, 78, 216, 0.08);
+  color: #1d4ed8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+}
+
+.empty-state h2 {
+  color: #64748b;
+  margin-bottom: 12px;
+  font-size: 24px;
 }
 
 .empty-state h3 {
-  font-size: 20px;
-  font-weight: 600;
-  color: #0A1929;
-  margin: 0 0 8px 0;
+  color: #64748b;
+  margin-bottom: 12px;
+  font-size: 24px;
 }
 
 .empty-state p {
-  font-size: 14px;
-  color: #64748b;
+  color: #94a3b8;
   margin: 0;
 }
 

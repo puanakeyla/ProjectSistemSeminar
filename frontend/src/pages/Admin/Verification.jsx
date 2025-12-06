@@ -124,9 +124,12 @@ function Verification() {
   if (loading) {
     return (
       <div className="admin-verification">
-        <div className="loading-container">
-          <div className="spinner"></div>
-          <p>Memuat daftar seminar...</p>
+        <div className="loading-state">
+          <div className="loading-icon">
+            <Loader2 size={32} className="icon-spin" />
+          </div>
+          <h2>Memuat data...</h2>
+          <p>Harap tunggu sebentar.</p>
         </div>
       </div>
     );
@@ -184,10 +187,10 @@ function Verification() {
         {seminars.length === 0 ? (
           <div className="approval-empty">
             <div className="approval-empty-icon">
-              <CheckCircle2 size={36} />
+              <CheckCircle2 size={32} />
             </div>
-            <h2>Tidak Ada Seminar Menunggu Verifikasi</h2>
-            <p>Semua pengajuan seminar sudah diproses dengan baik.</p>
+            <h2>Belum Ada Seminar Mendatang</h2>
+            <p>Coba pilih filter lain atau segarkan data</p>
           </div>
         ) : (
           <>
@@ -397,9 +400,9 @@ function Verification() {
               ) : (
                 <div className="detail-placeholder">
                   <div className="detail-placeholder-icon">
-                    <ClipboardList size={40} />
+                    <ClipboardList size={32} />
                   </div>
-                  <h3>Pilih Seminar</h3>
+                  <h2>Pilih Seminar</h2>
                   <p>Pilih seminar dari daftar untuk melihat detail dan status approval</p>
                 </div>
               )}

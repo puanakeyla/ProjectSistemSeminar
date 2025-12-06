@@ -15,21 +15,49 @@ function Login({ onLogin }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    
+    // Prevent double submission
+    if (loading) return;
+    
+    // Clear previous error and state
     setError('');
+    setLoading(true);
 
     try {
+      // Clear any existing auth data before login
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+
+      // Login request tanpa abort controller yang agresif
       const response = await authAPI.login(email, password);
 
+      // Validate response
+      if (!response || !response.token || !response.user) {
+        throw new Error('Response tidak valid dari server');
+      }
+
+      // Store data
       localStorage.setItem('token', response.token);
       localStorage.setItem('user', JSON.stringify(response.user));
 
+      // Trigger login immediately
       onLogin(response.user);
     } catch (err) {
       console.error('Login error:', err);
-      const errorMsg = err.response?.data?.message || 'Email atau kata sandi salah!';
-      setError(errorMsg);
-    } finally {
+      
+      // Handle specific error types
+      if (err.code === 'ECONNABORTED') {
+        setError('Koneksi timeout. Silakan coba lagi.');
+      } else if (err.code === 'ERR_NETWORK') {
+        setError('Tidak dapat terhubung ke server. Periksa koneksi internet Anda.');
+      } else if (err.response?.status === 422) {
+        setError('Email atau kata sandi salah!');
+      } else if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else {
+        setError('Terjadi kesalahan. Silakan coba lagi.');
+      }
+      
       setLoading(false);
     }
   };
@@ -48,9 +76,9 @@ function Login({ onLogin }) {
       <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-gradient-radial from-accent-purple/10 to-transparent rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
 
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
         className="w-full max-w-6xl relative z-10"
       >
         {/* Main Container */}
@@ -58,9 +86,9 @@ function Login({ onLogin }) {
           <div className="flex flex-col lg:flex-row">
             {/* Info Panel */}
             <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.3, delay: 0.1 }}
               className="flex-1 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-dark-800 dark:to-dark-900 p-8 lg:p-12"
             >
               {/* Logo/Illustration */}
@@ -92,11 +120,8 @@ function Login({ onLogin }) {
                 {/* Features List */}
                 <ul className="space-y-4 pt-4">
                   {features.map((feature, index) => (
-                    <motion.li
+                    <li
                       key={index}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.3, delay: 0.3 + index * 0.1 }}
                       className="flex items-start gap-3"
                     >
                       <div className="flex-shrink-0 w-6 h-6 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center text-xs">
@@ -105,7 +130,7 @@ function Login({ onLogin }) {
                       <span className="text-sm font-semibold text-gray-700 dark:text-gray-200 pt-0.5">
                         {feature.text}
                       </span>
-                    </motion.li>
+                    </li>
                   ))}
                 </ul>
               </div>
@@ -113,9 +138,9 @@ function Login({ onLogin }) {
 
             {/* Form Panel */}
             <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.3, delay: 0.15 }}
               className="w-full lg:w-[480px] bg-gray-50 dark:bg-dark-800 p-8 lg:p-12"
             >
               <div className="space-y-8">
@@ -156,7 +181,10 @@ function Login({ onLogin }) {
                     <Input
                       type="text"
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        if (error) setError(''); // Clear error saat user mengetik
+                      }}
                       placeholder="Masukkan email atau NIM Anda"
                       required
                       disabled={loading}
@@ -173,7 +201,10 @@ function Login({ onLogin }) {
                     <Input
                       type="password"
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        if (error) setError(''); // Clear error saat user mengetik
+                      }}
                       placeholder="Masukkan kata sandi Anda"
                       required
                       disabled={loading}

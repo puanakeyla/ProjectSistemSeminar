@@ -1,7 +1,7 @@
 /* Scan QR Page */
 .scan-qr-wrapper {
   padding: 24px;
-  background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
+  background: linear-gradient(135deg, #0b1f3f, #346caa);
   min-height: calc(100vh - 80px);
 }
 

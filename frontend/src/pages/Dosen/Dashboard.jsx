@@ -10,28 +10,43 @@ import { Skeleton } from '../../components/ui/skeleton'
 function Dashboard({ setCurrentPage }) {
   const [dashboardData, setDashboardData] = useState(null)
   const [pendingApprovals, setPendingApprovals] = useState([])
-  const [cancelledSeminars, setCancelledSeminars] = useState([])
-  const [showAllCancelled, setShowAllCancelled] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [dosenName, setDosenName] = useState('')
 
   useEffect(() => {
     fetchDashboardData()
+    
+    // Get dosen name from localStorage
+    const userStr = localStorage.getItem('user')
+    if (userStr) {
+      const user = JSON.parse(userStr)
+      setDosenName(user.name)
+    }
   }, [])
 
   const fetchDashboardData = async () => {
     try {
       setLoading(true)
-      const response = await dosenAPI.getDashboard()
+      
+      // Add timeout to prevent hanging
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10s timeout
+      
+      const response = await dosenAPI.getDashboard({ signal: controller.signal })
+      clearTimeout(timeoutId)
+      
       const data = response?.data || {}
       
       setDashboardData(data)
       setPendingApprovals(data.pending_approvals || [])
-      setCancelledSeminars(data.cancelled_seminars || [])
     } catch (err) {
-      console.error('Failed to fetch dashboard data:', err)
+      if (err.name === 'AbortError') {
+        console.error('Request timeout')
+      } else {
+        console.error('Failed to fetch dashboard data:', err)
+      }
       setDashboardData({})
       setPendingApprovals([])
-      setCancelledSeminars([])
     } finally {
       setLoading(false)
     }
@@ -89,10 +104,10 @@ function Dashboard({ setCurrentPage }) {
             </div>
             <div>
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
-                Dashboard Dosen
+                Dasbor Dosen
               </h1>
               <p className="text-base text-gray-600 dark:text-gray-400">
-                Selamat datang di Portal Dosen Pembimbing
+                Selamat datang, <span className="font-semibold text-primary-600 dark:text-primary-400">{dosenName}</span>
               </p>
             </div>
             <div className="ml-auto flex items-center gap-4">
@@ -121,85 +136,6 @@ function Dashboard({ setCurrentPage }) {
             />
           ))}
         </div>
-
-        {cancelledSeminars.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.2 }}
-            className="bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/30 rounded-2xl p-6 border-2 border-red-200 dark:border-red-800 shadow-lg"
-          >
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-red-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">
-                <AlertTriangle className="w-6 h-6 text-white" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-bold text-red-900 dark:text-red-100 mb-1">
-                  Seminar Dibatalkan
-                </h3>
-                <p className="text-sm text-red-700 dark:text-red-300 mb-4">
-                  {cancelledSeminars.length} seminar baru-baru ini dibatalkan oleh mahasiswa
-                </p>
-                <div className="space-y-3">
-                  {(showAllCancelled ? cancelledSeminars : cancelledSeminars.slice(0, 3)).map((seminar, index) => (
-                    <motion.div
-                      key={seminar.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.3, delay: 0.1 * index }}
-                      className="bg-white dark:bg-dark-800 rounded-xl p-4 border border-red-200 dark:border-red-800"
-                    >
-                      <div className="flex items-start justify-between gap-3 mb-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="inline-flex px-2.5 py-0.5 text-xs font-bold rounded-full bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300">
-                              {seminar.jenis_seminar}
-                            </span>
-                            <span className="text-xs text-gray-500 dark:text-gray-400">
-                              {seminar.user_role}
-                            </span>
-                          </div>
-                          <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                            {seminar.mahasiswa_name} ({seminar.mahasiswa_npm})
-                          </p>
-                          <p className="text-sm text-gray-600 dark:text-gray-300 mt-1 line-clamp-2">
-                            {seminar.judul}
-                          </p>
-                        </div>
-                        <div className="text-right flex-shrink-0">
-                          <p className="text-xs text-red-600 dark:text-red-400 font-medium">
-                            {seminar.days_ago === 0 ? 'Hari ini' : `${seminar.days_ago} hari lalu`}
-                          </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                            {seminar.cancelled_at}
-                          </p>
-                        </div>
-                      </div>
-                      {seminar.cancel_reason && (
-                        <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
-                          <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                            Alasan Pembatalan:
-                          </p>
-                          <p className="text-xs text-gray-600 dark:text-gray-400 italic">
-                            "{seminar.cancel_reason}"
-                          </p>
-                        </div>
-                      )}
-                    </motion.div>
-                  ))}
-                </div>
-                {cancelledSeminars.length > 3 && (
-                  <button
-                    onClick={() => setShowAllCancelled(!showAllCancelled)}
-                    className="mt-4 w-full px-4 py-2 text-sm font-semibold text-red-700 dark:text-red-300 bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 rounded-lg transition-colors duration-200"
-                  >
-                    {showAllCancelled ? 'Tampilkan Lebih Sedikit' : `Selengkapnya (${cancelledSeminars.length - 3} lainnya)`}
-                  </button>
-                )}
-              </div>
-            </div>
-          </motion.div>
-        )}
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           <SectionCard

@@ -65,7 +65,7 @@ function ScanQR() {
       setError('');
     } catch (err) {
       console.error('QR Validation error:', err);
-      setError(err.response?.data?.message || 'QR Code tidak valid atau sudah kadaluarsa');
+      setError(err.response?.data?.message || 'Kode QR tidak valid atau sudah kadaluarsa');
       setResult(null);
     }
   };
@@ -94,8 +94,8 @@ function ScanQR() {
   return (
     <div className="scan-qr-wrapper">
       <div className="scan-qr-header">
-        <h1>Scan QR Code Absensi</h1>
-        <p>Scan QR code yang ditampilkan saat seminar berlangsung</p>
+        <h1>Pindai Kode QR Absensi</h1>
+        <p>Pindai kode QR yang ditampilkan saat seminar berlangsung</p>
       </div>
 
       <div className="scan-qr-content">
@@ -105,13 +105,13 @@ function ScanQR() {
             <h3>Cara Menggunakan</h3>
             <ol>
               <li>Pastikan Anda berada di ruangan seminar</li>
-              <li>Klik tombol "Mulai Scan" di bawah</li>
-              <li>Arahkan kamera ke QR Code yang ditampilkan</li>
-              <li>Tunggu hingga QR Code terdeteksi otomatis</li>
-              <li>Absensi Anda akan tercatat jika QR Code valid</li>
+              <li>Klik tombol "Mulai Pindai" di bawah</li>
+              <li>Arahkan kamera ke kode QR yang ditampilkan</li>
+              <li>Tunggu hingga kode QR terdeteksi otomatis</li>
+              <li>Absensi Anda akan tercatat jika kode QR valid</li>
             </ol>
             <button className="btn-start-scan" onClick={handleStartScan}>
-              <Camera className="w-4 h-4 mr-2 inline" /> Mulai Scan QR Code
+              <Camera className="w-4 h-4 mr-2 inline" /> Mulai Pindai Kode QR
             </button>
           </div>
         )}
@@ -121,7 +121,7 @@ function ScanQR() {
             <div className="scanner-box">
               <div id="qr-reader"></div>
             </div>
-            <p className="scanner-hint">Arahkan kamera ke QR Code</p>
+            <p className="scanner-hint">Arahkan kamera ke kode QR</p>
             <button className="btn-stop-scan" onClick={handleStopScan}>
               <XCircle className="w-4 h-4 mr-2 inline" /> Batal
             </button>
@@ -131,11 +131,11 @@ function ScanQR() {
         {error && (
           <div className="result-card error">
             <div className="result-icon"><XCircle className="w-8 h-8 text-danger" /></div>
-            <h3>Scan Gagal</h3>
+            <h3>Pemindaian Gagal</h3>
             <p>{error}</p>
             <div className="result-actions">
               <button className="btn-retry" onClick={handleStartScan}>
-                <RefreshCw className="w-4 h-4 mr-2 inline" /> Scan Ulang
+                <RefreshCw className="w-4 h-4 mr-2 inline" /> Pindai Ulang
               </button>
             </div>
           </div>
@@ -172,7 +172,7 @@ function ScanQR() {
                 setResult(null);
                 setError('');
               }}>
-                Scan QR Lain
+                Pindai Kode QR Lain
               </button>
             </div>
           </div>
@@ -183,10 +183,10 @@ function ScanQR() {
         <div className="info-box">
           <h4><AlertTriangle className="w-5 h-5 inline mr-2 text-warning" /> Penting!</h4>
           <ul>
-            <li>QR Code hanya berlaku pada waktu seminar (±15 menit dari jadwal)</li>
+            <li>Kode QR hanya berlaku pada waktu seminar (±15 menit dari jadwal)</li>
             <li>Pastikan koneksi internet Anda stabil</li>
             <li>Izinkan akses kamera saat diminta browser</li>
-            <li>Gunakan pencahayaan yang cukup untuk hasil scan terbaik</li>
+            <li>Gunakan pencahayaan yang cukup untuk hasil pindai terbaik</li>
           </ul>
         </div>
       </div>

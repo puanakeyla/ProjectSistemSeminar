@@ -14,13 +14,14 @@ use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Admin\AttendanceController as AdminAttendanceController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\QRController as AdminQRController;
-use App\Http\Controllers\Admin\RevisionController as AdminRevisionController;
 use App\Http\Controllers\Admin\ScheduleController as AdminScheduleController;
 use App\Http\Controllers\Admin\VerificationController as AdminVerificationController;
 
 // Dosen (Sudah benar pakai alias)
 use App\Http\Controllers\Dosen\ApprovalController;
 use App\Http\Controllers\Dosen\DashboardController as DosenDashboardController;
+use App\Http\Controllers\Dosen\RevisionController as DosenRevisionController;
+use App\Http\Controllers\Dosen\SeminarController as DosenSeminarController;
 
 // Mahasiswa (INI YANG DIPERBAIKI)
 use App\Http\Controllers\Mahasiswa\AttendanceController as MahasiswaAttendanceController;
@@ -72,8 +73,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // ==================== MAHASISWA ROUTES (SUDAH DIPERBAIKI) ====================
     Route::prefix('mahasiswa')->middleware('role:mahasiswa')->group(function () {
         
-        // Dashboard
-        Route::get('/dashboard', [MahasiswaDashboardController::class, 'index']);
+        // Dashboard - with cache (2 minutes)
+        Route::get('/dashboard', [MahasiswaDashboardController::class, 'index'])->middleware('cache.response:2');
         Route::get('/profile', [MahasiswaDashboardController::class, 'profile']);
         
         // Seminars
@@ -96,15 +97,20 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/revisions', [MahasiswaRevisionController::class, 'store']);
         Route::get('/revisions/seminars/available', [MahasiswaRevisionController::class, 'getAvailableSeminars']);
         Route::get('/revisions/seminars/{seminarId}', [MahasiswaRevisionController::class, 'getSeminarRevisions']);
+        Route::post('/revisions/{revisionId}/items/{itemId}/submit', [MahasiswaRevisionController::class, 'submitItem']);
     });
 
     // ==================== DOSEN ROUTES (Sudah benar) ====================
     Route::prefix('dosen')->middleware('role:dosen')->group(function () {
         
-        // Dashboard
-        Route::get('/dashboard', [DosenDashboardController::class, 'index']);
+        // Dashboard - with cache (2 minutes)
+        Route::get('/dashboard', [DosenDashboardController::class, 'index'])->middleware('cache.response:2');
         Route::get('/profile', [DosenDashboardController::class, 'profile']);
         Route::get('/upcoming-seminars', [DosenDashboardController::class, 'upcomingSeminars']);
+        
+        // Seminars (NEW - for seminar list and detail)
+        Route::get('/seminars', [DosenSeminarController::class, 'index']);
+        Route::get('/seminars/{id}', [DosenSeminarController::class, 'show']);
         
         // Approvals
         Route::get('/approvals/pending', [ApprovalController::class, 'pendingApprovals']);
@@ -112,14 +118,23 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/approvals/{id}', [ApprovalController::class, 'showApproval']);
         Route::put('/approvals/{id}', [ApprovalController::class, 'updateApproval']);
         
-        // Seminars
-        Route::get('/seminars', [ApprovalController::class, 'mySeminars']);
+        // Seminar Actions
         Route::post('/seminars/{id}/cancel', [ApprovalController::class, 'cancelSeminar']);
         Route::get('/seminars/{id}/file/view', [ApprovalController::class, 'viewFile']);
         Route::get('/seminars/{id}/file/download', [ApprovalController::class, 'downloadFile']);
+        Route::post('/seminars/{id}/final-approval', [ApprovalController::class, 'finalApproval']);
+        Route::get('/seminars/{id}/approval-status', [ApprovalController::class, 'getSeminarApprovalStatus']);
         
         // Attendance
         Route::post('/attendance/status', [ApprovalController::class, 'updateAttendanceStatus']);
+        
+        // Revisions
+        Route::get('/revisions', [DosenRevisionController::class, 'index']);
+        Route::post('/revisions', [DosenRevisionController::class, 'store']);
+        Route::get('/revisions/{id}', [DosenRevisionController::class, 'show']);
+        Route::post('/revisions/{id}/validate', [DosenRevisionController::class, 'validate']);
+        Route::post('/revisions/{seminarId}/items', [DosenRevisionController::class, 'addRevisionItem']);
+        Route::post('/revisions/{revisionId}/items/{itemId}/validate', [DosenRevisionController::class, 'validateItem']);
         
         // Statistics
         Route::get('/statistics', [ApprovalController::class, 'getStatistics']);
@@ -128,8 +143,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // ==================== ADMIN ROUTES (Sudah benar) ====================
     Route::prefix('admin')->middleware('role:admin')->group(function () {
         
-        // Dashboard
-        Route::get('/dashboard', [AdminDashboardController::class, 'index']);
+        // Dashboard - with cache (2 minutes)
+        Route::get('/dashboard', [AdminDashboardController::class, 'index'])->middleware('cache.response:2');
         Route::get('/system-overview', [AdminDashboardController::class, 'systemOverview']);
         
         // Verification
@@ -162,12 +177,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/attendances/manual', [AdminAttendanceController::class, 'manualAttendance']);
         Route::delete('/attendances/{attendanceId}', [AdminAttendanceController::class, 'destroy']);
         Route::get('/attendances/mahasiswa-list', [AdminAttendanceController::class, 'getMahasiswaList']);
-        
-        // Revisions
-        Route::get('/revisions', [AdminRevisionController::class, 'index']);
-        Route::get('/revisions/{id}', [AdminRevisionController::class, 'show']);
-        Route::post('/revisions/{id}/validate', [AdminRevisionController::class, 'validate']);
-        Route::get('/revisions/statistics', [AdminRevisionController::class, 'statistics']);
     });
 
     // ==================== SEMINAR OWNER PROTECTED ROUTES ====================

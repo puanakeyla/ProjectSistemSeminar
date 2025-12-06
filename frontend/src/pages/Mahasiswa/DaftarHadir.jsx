@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { FileText, Clock, AlertTriangle, Loader2 } from 'lucide-react';
 import './DaftarHadir.css';
 
 const API_URL = 'http://localhost:8000/api';
@@ -53,9 +54,12 @@ function DaftarHadir() {
   if (loading) {
     return (
       <div className="daftar-hadir-wrapper">
-        <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-          <div style={{ fontSize: '48px', marginBottom: '20px' }}>⏳</div>
-          <h2>Memuat riwayat kehadiran...</h2>
+        <div className="loading-state">
+          <div className="loading-icon">
+            <Loader2 size={32} className="icon-spin" />
+          </div>
+          <h2>Memuat data...</h2>
+          <p>Harap tunggu sebentar.</p>
         </div>
       </div>
     );
@@ -64,8 +68,10 @@ function DaftarHadir() {
   if (error) {
     return (
       <div className="daftar-hadir-wrapper">
-        <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-          <div style={{ fontSize: '48px', marginBottom: '20px' }}>⚠️</div>
+        <div className="daftar-hadir-empty-state">
+          <div className="daftar-hadir-empty-icon" style={{ background: 'rgba(220, 38, 38, 0.08)', color: '#dc2626' }}>
+            <AlertTriangle size={32} />
+          </div>
           <h2>Terjadi Kesalahan</h2>
           <p style={{ color: '#ef4444', marginBottom: '20px' }}>{error}</p>
           <button onClick={fetchDaftarHadir} style={{ padding: '12px 24px', background: '#4E8EA2', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>
@@ -85,10 +91,12 @@ function DaftarHadir() {
 
       <div className="daftar-hadir-content">
         {daftarHadirList.length === 0 ? (
-          <div style={{ background: 'white', padding: '60px 20px', borderRadius: '16px', textAlign: 'center' }}>
-            <div style={{ fontSize: '80px', marginBottom: '20px', opacity: 0.5 }}>📋</div>
-            <h2 style={{ color: '#64748b', marginBottom: '12px' }}>Belum Ada Kehadiran</h2>
-            <p style={{ color: '#94a3b8' }}>Anda belum mengikuti seminar apapun</p>
+          <div className="daftar-hadir-empty-state">
+            <div className="daftar-hadir-empty-icon">
+              <FileText size={32} />
+            </div>
+            <h2>Belum Ada Kehadiran</h2>
+            <p>Anda belum mengikuti seminar apapun</p>
           </div>
         ) : (
           <>
@@ -110,7 +118,11 @@ function DaftarHadir() {
                     <tr key={item.id ?? index}>
                       <td>{index + 1}</td>
                       <td>
-                        <span className="jenis-badge">{item.jenis_seminar}</span>
+                        {item.jenis_seminar && item.jenis_seminar !== '-' ? (
+                          <span className="jenis-badge">{item.jenis_seminar}</span>
+                        ) : (
+                          <span>-</span>
+                        )}
                       </td>
                       <td>
                         <div>
@@ -145,7 +157,7 @@ function DaftarHadir() {
                 <div className="summary-icon">📊</div>
                 <div className="summary-content">
                   <h3>{Array.isArray(daftarHadirList) ? daftarHadirList.filter(item => item.metode_absen === 'qr').length : 0}</h3>
-                  <p>Via QR Code</p>
+                  <p>Via Kode QR</p>
                 </div>
               </div>
 

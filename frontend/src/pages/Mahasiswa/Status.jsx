@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import './Status.css';
-import { CheckCircle, XCircle, Clock, Calendar, User, Gavel } from 'lucide-react'
+import { CheckCircle, XCircle, Clock, Calendar, User, Gavel, Loader2 } from 'lucide-react'
 
 const API_URL = 'http://127.0.0.1:8000/api';
 const CANCELLABLE_STATUSES = ['draft', 'pending_verification', 'revising', 'approved', 'scheduled'];
@@ -122,9 +122,12 @@ function Status() {
   if (loading) {
     return (
       <div className="status-wrapper">
-        <div className="status-header">
-          <h1>Status Pengajuan</h1>
-          <p>Memuat data...</p>
+        <div className="loading-state">
+          <div className="loading-icon">
+            <Loader2 size={32} className="icon-spin" />
+          </div>
+          <h2>Memuat data...</h2>
+          <p>Harap tunggu sebentar.</p>
         </div>
       </div>
     );
@@ -159,7 +162,9 @@ function Status() {
             <div key={item.id} className={`status-card ${getStatusClass(item.status)}`}>
               <div className="status-card-header">
                 <div>
-                  <span className="jenis-badge">{item.tipe_display}</span>
+                  {item.tipe_display && item.tipe_display !== '-' && (
+                    <span className="jenis-badge">{item.tipe_display}</span>
+                  )}
                   <h3>{item.judul}</h3>
                 </div>
                 <span className={`status-badge ${getStatusClass(item.status)}`}>
@@ -185,12 +190,15 @@ function Status() {
                     <div className="approval-list">
                       {item.approvals.map((approval, idx) => (
                         <div key={idx} className="approval-item">
-                          <span className="approval-role">
-                            {approval.peran === 'pembimbing1' ? (<><User className="w-4 h-4 inline mr-1"/> Pembimbing 1</>) :
-                             approval.peran === 'pembimbing2' ? (<><User className="w-4 h-4 inline mr-1"/> Pembimbing 2</>) :
-                             (<><Gavel className="w-4 h-4 inline mr-1"/> Penguji</>)}
-                          </span>
-                          <span className="approval-name">{approval.dosen?.name}</span>
+                          <div className="approval-dosen-info">
+                            <div className="approval-role">
+                              {approval.peran === 'pembimbing1' ? (<><User className="w-4 h-4 inline mr-1"/> Pembimbing 1</>) :
+                               approval.peran === 'pembimbing2' ? (<><User className="w-4 h-4 inline mr-1"/> Pembimbing 2</>) :
+                               approval.peran === 'penguji' ? (<><Gavel className="w-4 h-4 inline mr-1"/> Penguji</>) :
+                               (<><Gavel className="w-4 h-4 inline mr-1"/> {approval.peran}</>)}
+                            </div>
+                            <div className="approval-name">{approval.dosen?.name}</div>
+                          </div>
                           <span className={`approval-status ${approval.status}`}>
                             {approval.status === 'approved' ? (<><CheckCircle className="w-4 h-4 inline mr-1"/> Disetujui</>) :
                              approval.status === 'rejected' ? (<><XCircle className="w-4 h-4 inline mr-1"/> Ditolak</>) :
@@ -225,11 +233,20 @@ function Status() {
                   </div>
                 )}
 
-                {item.is_cancelled && (
+                {item.is_cancelled && item.cancelled_by_name && (
+                  <div className="info-row">
+                    <span className="info-label">Dibatalkan Oleh:</span>
+                    <span className="info-value" style={{ color: '#ef4444', fontWeight: 600 }}>
+                      {item.cancelled_by_name} ({item.cancelled_by_role === 'mahasiswa' ? 'Mahasiswa' : item.cancelled_by_role === 'dosen' ? 'Dosen' : 'Admin'})
+                    </span>
+                  </div>
+                )}
+
+                {item.is_cancelled && item.cancel_reason && (
                   <div className="info-row cancelled-info">
-                    <span className="info-label">Alasan Pembatalan:</span>
+                    <span className="info-label">{item.cancelled_by_name ? 'Alasan Pembatalan:' : 'Alasan:'}</span>
                     <span className="info-value">
-                      {item.cancel_reason || 'Tidak ada alasan'}
+                      {item.cancel_reason}
                     </span>
                   </div>
                 )}
