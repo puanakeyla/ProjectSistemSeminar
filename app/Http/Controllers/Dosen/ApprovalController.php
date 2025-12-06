@@ -96,7 +96,13 @@ class ApprovalController extends Controller
                 'seminar.approvals.dosen'
             ])
             ->where('dosen_id', $request->user()->id)
-            ->findOrFail($id);
+            ->find($id);
+
+        if (!$approval) {
+            return response()->json([
+                'message' => 'Data persetujuan tidak ditemukan atau Anda tidak memiliki akses.'
+            ], 404);
+        }
 
         // Get other approvals for this seminar
         $otherApprovals = $approval->seminar->approvals
@@ -140,8 +146,20 @@ class ApprovalController extends Controller
 
         $approval = SeminarApproval::with(['seminar'])
             ->where('dosen_id', $request->user()->id)
-            ->where('status', 'pending') // Only allow updating pending approvals
-            ->findOrFail($id);
+            ->find($id);
+
+        if (!$approval) {
+            return response()->json([
+                'message' => 'Data persetujuan tidak ditemukan atau Anda tidak memiliki akses.'
+            ], 404);
+        }
+
+        // Check if already processed
+        if ($approval->status !== 'pending') {
+            return response()->json([
+                'message' => 'Persetujuan ini sudah diproses sebelumnya dengan status: ' . $approval->getStatusDisplay()
+            ], 422);
+        }
 
         if ($approval->seminar->isCancelled()) {
             return response()->json([

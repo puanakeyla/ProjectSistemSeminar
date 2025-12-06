@@ -328,6 +328,25 @@ class NotificationService
                 ]
             );
         }
+
+        // Notify all admins
+        $admins = \App\Models\User::where('role', 'admin')->get();
+        foreach ($admins as $admin) {
+            self::createNotification(
+                $admin->id,
+                $seminar->id,
+                'seminar_scheduled',
+                $title,
+                $message . " Mahasiswa: {$seminar->mahasiswa->name} ({$seminar->mahasiswa->npm}).",
+                [
+                    'seminar_id' => $seminar->id,
+                    'mahasiswa_name' => $seminar->mahasiswa->name,
+                    'mahasiswa_npm' => $seminar->mahasiswa->npm,
+                    'waktu_mulai' => $schedule->waktu_mulai,
+                    'ruang' => $schedule->ruang,
+                ]
+            );
+        }
     }
 
     /**
