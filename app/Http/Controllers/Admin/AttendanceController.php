@@ -20,7 +20,7 @@ class AttendanceController extends Controller
         $filter = $request->get('filter', 'all'); // all, today, week, month
 
         $query = SeminarAttendance::with([
-            'mahasiswa', 
+            'mahasiswa',
             'schedule.seminar.mahasiswa',
             'schedule.seminar.pembimbing1',
             'schedule.seminar.pembimbing2',
@@ -29,7 +29,7 @@ class AttendanceController extends Controller
 
         switch ($filter) {
             case 'today':
-                $query->today();
+                $query->whereDate('waktu_absen', today());
                 break;
             case 'week':
                 $query->where('waktu_absen', '>=', now()->subWeek());
@@ -42,7 +42,34 @@ class AttendanceController extends Controller
         $attendances = $query->orderBy('waktu_absen', 'desc')
             ->get()
             ->map(function ($attendance) {
-                return $this->formatAttendanceData($attendance);
+                return [
+                    'id' => $attendance->id,
+                    'mahasiswa_id' => $attendance->mahasiswa_id,
+                    'seminar_schedule_id' => $attendance->seminar_schedule_id,
+                    'mahasiswa' => [
+                        'id' => $attendance->mahasiswa->id,
+                        'name' => $attendance->mahasiswa->name,
+                        'npm' => $attendance->mahasiswa->npm,
+                    ],
+                    'schedule' => [
+                        'id' => $attendance->schedule->id,
+                        'ruang' => $attendance->schedule->ruang,
+                        'waktu_mulai' => $attendance->schedule->waktu_mulai->format('Y-m-d H:i:s'),
+                        'seminar' => [
+                            'id' => $attendance->schedule->seminar->id,
+                            'judul' => $attendance->schedule->seminar->judul,
+                            'mahasiswa' => [
+                                'name' => $attendance->schedule->seminar->mahasiswa->name,
+                                'npm' => $attendance->schedule->seminar->mahasiswa->npm,
+                            ],
+                        ],
+                    ],
+                    'waktu_absen' => $attendance->waktu_absen ? $attendance->waktu_absen->format('Y-m-d H:i:s') : null,
+                    'waktu_scan' => $attendance->waktu_absen ? $attendance->waktu_absen->format('Y-m-d H:i:s') : null,
+                    'metode' => $attendance->metode_absen ?? $attendance->metode,
+                    'metode_absen' => $attendance->metode_absen ?? $attendance->metode,
+                    'status' => $attendance->status ?? 'present',
+                ];
             });
 
         return response()->json([
@@ -115,8 +142,8 @@ class AttendanceController extends Controller
 
         // Monthly attendance trend
         $monthlyTrend = SeminarAttendance::selectRaw('
-                YEAR(waktu_absen) as year, 
-                MONTH(waktu_absen) as month, 
+                YEAR(waktu_absen) as year,
+                MONTH(waktu_absen) as month,
                 COUNT(*) as total_attendances,
                 COUNT(DISTINCT mahasiswa_id) as unique_attendees
             ')
@@ -260,6 +287,142 @@ class AttendanceController extends Controller
             'message' => 'Mahasiswa list retrieved successfully',
             'data' => $mahasiswas
         ]);
+    }
+
+    /**
+     * Get complete attendance report for a specific schedule
+     */
+    public function getCompleteReport($scheduleId): JsonResponse
+    {
+        $schedule = SeminarSchedule::with([
+            'seminar.mahasiswa',
+            'seminar.pembimbing1',
+            'seminar.pembimbing2',
+            'seminar.penguji'
+        ])->findOrFail($scheduleId);
+
+        // Get mahasiswa attendances
+        $mahasiswaAttendances = SeminarAttendance::with(['mahasiswa'])
+            ->where('seminar_schedule_id', $scheduleId)
+            ->orderBy('waktu_absen')
+            ->get()
+            ->map(function ($attendance) {
+                return [
+                    'id' => $attendance->id,
+                    'name' => $attendance->mahasiswa->name,
+                    'npm' => $attendance->mahasiswa->npm,
+                    'waktu_absen' => $attendance->waktu_absen ? $attendance->waktu_absen->format('d M Y H:i') : '-',
+                    'metode_absen' => $attendance->metode_absen ?? $attendance->metode,
+                    'status' => $attendance->status ?? 'present',
+                ];
+            });
+
+        // Get dosen attendances
+        $dosenAttendances = \App\Models\DosenAttendance::with(['dosen'])
+            ->where('seminar_schedule_id', $scheduleId)
+            ->get()
+            ->map(function ($attendance) {
+                return [
+                    'id' => $attendance->id,
+                    'name' => $attendance->dosen->name,
+                    'role' => $attendance->getRoleDisplay(),
+                    'status' => $attendance->getStatusDisplay(),
+                    'confirmed_at' => $attendance->confirmed_at ? $attendance->confirmed_at->format('d M Y H:i') : '-',
+                ];
+            });
+
+        // Check if key dosen are present
+        $seminar = $schedule->seminar;
+        $pembimbing1Status = $dosenAttendances->firstWhere('name', $seminar->pembimbing1->name);
+        $pembimbing2Status = $seminar->pembimbing2 ? $dosenAttendances->firstWhere('name', $seminar->pembimbing2->name) : null;
+        $pengujiStatus = $seminar->penguji ? $dosenAttendances->firstWhere('name', $seminar->penguji->name) : null;
+
+        $reportData = [
+            'seminar_info' => [
+                'id' => $seminar->id,
+                'judul' => $seminar->judul,
+                'jenis_seminar' => $seminar->getJenisSeminarDisplay(),
+                'mahasiswa_presenter' => $seminar->mahasiswa->name,
+                'npm_presenter' => $seminar->mahasiswa->npm,
+                'ruangan' => $schedule->ruang,
+                'tanggal' => $schedule->waktu_mulai->format('d M Y'),
+                'waktu' => $schedule->waktu_mulai->format('H:i') . ' - ' . $schedule->waktu_mulai->addMinutes($schedule->durasi_menit ?? 90)->format('H:i'),
+            ],
+            'dosen_team' => [
+                'pembimbing1' => [
+                    'name' => $seminar->pembimbing1->name,
+                    'status' => $pembimbing1Status ? $pembimbing1Status['status'] : 'Belum Check-in',
+                    'waktu' => $pembimbing1Status ? $pembimbing1Status['confirmed_at'] : '-',
+                ],
+                'pembimbing2' => $seminar->pembimbing2 ? [
+                    'name' => $seminar->pembimbing2->name,
+                    'status' => $pembimbing2Status ? $pembimbing2Status['status'] : 'Belum Check-in',
+                    'waktu' => $pembimbing2Status ? $pembimbing2Status['confirmed_at'] : '-',
+                ] : null,
+                'penguji' => $seminar->penguji ? [
+                    'name' => $seminar->penguji->name,
+                    'status' => $pengujiStatus ? $pengujiStatus['status'] : 'Belum Check-in',
+                    'waktu' => $pengujiStatus ? $pengujiStatus['confirmed_at'] : '-',
+                ] : null,
+            ],
+            'mahasiswa_attendances' => $mahasiswaAttendances,
+            'dosen_attendances' => $dosenAttendances,
+            'statistics' => [
+                'total_mahasiswa' => $mahasiswaAttendances->count(),
+                'total_dosen' => $dosenAttendances->count(),
+                'qr_attendance' => $mahasiswaAttendances->where('metode_absen', 'qr')->count(),
+                'manual_attendance' => $mahasiswaAttendances->where('metode_absen', 'manual')->count(),
+            ],
+        ];
+
+        return response()->json([
+            'message' => 'Complete attendance report retrieved successfully',
+            'data' => $reportData
+        ]);
+    }
+
+    /**
+     * Export attendance report as PDF
+     */
+    public function exportPDF($scheduleId)
+    {
+        $schedule = SeminarSchedule::with([
+            'seminar.mahasiswa',
+            'seminar.pembimbing1',
+            'seminar.pembimbing2',
+            'seminar.penguji'
+        ])->findOrFail($scheduleId);
+
+        // Get attendance data
+        $mahasiswaAttendances = SeminarAttendance::with(['mahasiswa'])
+            ->where('seminar_schedule_id', $scheduleId)
+            ->orderBy('waktu_absen')
+            ->get();
+
+        $dosenAttendances = \App\Models\DosenAttendance::with(['dosen'])
+            ->where('seminar_schedule_id', $scheduleId)
+            ->get();
+
+        $seminar = $schedule->seminar;
+
+        // Prepare data for PDF
+        $data = [
+            'seminar' => $seminar,
+            'schedule' => $schedule,
+            'mahasiswa_attendances' => $mahasiswaAttendances,
+            'dosen_attendances' => $dosenAttendances,
+            'generated_at' => now()->format('d M Y H:i'),
+        ];
+
+        // Check if DomPDF is installed
+        if (class_exists(\Barryvdh\DomPDF\Facade\Pdf::class)) {
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.attendance', $data);
+            $filename = 'Kehadiran_Seminar_' . $schedule->id . '_' . $seminar->mahasiswa->npm . '.pdf';
+            return $pdf->download($filename);
+        } else {
+            // Fallback: return HTML for manual print
+            return view('pdf.attendance', $data);
+        }
     }
 
     /**

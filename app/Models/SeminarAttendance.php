@@ -13,13 +13,16 @@ class SeminarAttendance extends Model
         'mahasiswa_id',
         'seminar_schedule_id',
         'waktu_scan',
+        'waktu_absen',
         'metode', // qr, manual
+        'metode_absen', // qr, manual
         'status', // present, late, invalid
         'qr_token',
     ];
 
     protected $casts = [
         'waktu_scan' => 'datetime',
+        'waktu_absen' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];

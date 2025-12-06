@@ -111,7 +111,50 @@ class QRController extends Controller
     }
 
     /**
-     * Validate QR code and check time validity
+     * Download QR Code as image file
+     */
+    public function downloadQR($scheduleId)
+    {
+        $schedule = SeminarSchedule::with(['seminar.mahasiswa'])->findOrFail($scheduleId);
+
+        if (!$schedule->qr_code_path) {
+            return response()->json([
+                'message' => 'QR Code belum dibuat untuk seminar ini'
+            ], 404);
+        }
+
+        // Get QR code image from API
+        $qrCodeUrl = $this->generateQRCodeUrl($schedule->qr_code_path);
+
+        try {
+            $imageContent = file_get_contents($qrCodeUrl);
+
+            if ($imageContent === false) {
+                return response()->json([
+                    'message' => 'Gagal mengunduh QR Code'
+                ], 500);
+            }
+
+            $filename = 'QR_Seminar_' . $schedule->id . '_' . $schedule->seminar->mahasiswa->npm . '.png';
+
+            return response($imageContent)
+                ->header('Content-Type', 'image/png')
+                ->header('Content-Disposition', 'attachment; filename="' . $filename . '"')
+                ->header('Content-Length', strlen($imageContent))
+                ->header('Content-Transfer-Encoding', 'binary')
+                ->header('Cache-Control', 'no-cache, no-store, must-revalidate, private')
+                ->header('Pragma', 'no-cache')
+                ->header('Expires', '0')
+                ->header('X-Content-Type-Options', 'nosniff'); // FIXED: Added semicolon
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Gagal mengunduh QR Code: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Validate QR code (time validation removed - can scan anytime)
      */
     public function validateQR(Request $request): JsonResponse
     {
@@ -129,20 +172,7 @@ class QRController extends Controller
             ], 422);
         }
 
-        // Check if seminar time is now (±15 minutes tolerance)
-        $now = now();
-        $startTime = $schedule->waktu_mulai;
-        $endTime = $startTime->copy()->addMinutes($schedule->durasi_menit);
-        $toleranceStart = $startTime->copy()->subMinutes(15);
-        $toleranceEnd = $endTime->copy()->addMinutes(15);
-
-        if ($now < $toleranceStart || $now > $toleranceEnd) {
-            return response()->json([
-                'message' => 'QR Code hanya berlaku pada waktu seminar (±15 menit)',
-                'valid_time' => false,
-                'seminar_time' => $schedule->getFormattedDateTime(),
-            ], 422);
-        }
+        // REMOVED: Time validation - QR code valid kapan saja
 
         return response()->json([
             'message' => 'QR Code valid',

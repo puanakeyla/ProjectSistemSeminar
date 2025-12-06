@@ -17,7 +17,7 @@ class AttendanceController extends Controller
     public function getSchedules(Request $request): JsonResponse
     {
         $user = $request->user();
-        
+
         // Get all scheduled seminars (including own seminars and seminars for attendance)
         $schedules = SeminarSchedule::with(['seminar.mahasiswa', 'seminar.pembimbing1', 'seminar.pembimbing2', 'seminar.penguji'])
             ->where('waktu_mulai', '>=', now()->subDay()) // Include today and future
@@ -25,14 +25,14 @@ class AttendanceController extends Controller
             ->get()
             ->filter(function ($schedule) use ($user) {
                 // Include if: approved seminar OR own seminar (regardless of status)
-                return $schedule->seminar->status === 'approved' || 
+                return $schedule->seminar->status === 'approved' ||
                        $schedule->seminar->mahasiswa_id === $user->id;
             })
             ->map(function ($schedule) use ($user) {
                 $isRegistered = SeminarAttendance::where('mahasiswa_id', $user->id)
                     ->where('seminar_schedule_id', $schedule->id)
                     ->exists();
-                
+
                 $isOwnSeminar = $schedule->seminar->mahasiswa_id == $user->id;
 
                 return [
@@ -134,76 +134,117 @@ class AttendanceController extends Controller
                 ];
             });
 
-        $totalAttended = $attendances->count();
-
         return response()->json([
             'message' => 'Attendance history retrieved successfully',
-            'data' => [
-                'total_attended' => $totalAttended,
-                'attendances' => $attendances,
-            ]
+            'data' => $attendances->map(function ($item) {
+                return [
+                    'id' => $item['id'],
+                    'jenis_seminar' => $item['jenis_seminar'],
+                    'mahasiswa_name' => $item['mahasiswa_presenter'],
+                    'mahasiswa_npm' => $item['npm_presenter'],
+                    'tanggal_display' => $item['tanggal_seminar'],
+                    'waktu_absen_display' => $item['waktu_absen'],
+                    'metode_absen' => $item['metode_absen'],
+                    'ruangan' => $item['ruangan'],
+                ];
+            })
         ]);
     }
 
     /**
-     * Scan QR code for attendance
+     * Scan QR code for attendance (using token from QR)
+     * UPDATED: Support both qr_token and qr_content, removed time validation
      */
     public function scanQRAttendance(Request $request): JsonResponse
     {
+        // Support both qr_token (new) and qr_content (old) for backward compatibility
         $validated = $request->validate([
-            'qr_content' => 'required|string',
-            'seminar_schedule_id' => 'required|exists:seminar_schedules,id',
+            'qr_token' => 'required_without:qr_content|string|nullable',
+            'qr_content' => 'required_without:qr_token|string|nullable',
         ]);
 
         $user = $request->user();
-        $schedule = SeminarSchedule::find($validated['seminar_schedule_id']);
+        $qrToken = $validated['qr_token'] ?? $validated['qr_content'] ?? null;
 
-        // Validate QR content (simple validation)
-        $expectedQR = "SEMAR-" . $schedule->id . "-" . $schedule->seminar_id;
-        if ($validated['qr_content'] !== $expectedQR) {
+        if (!$qrToken) {
             return response()->json([
-                'message' => 'QR Code tidak valid'
+                'message' => 'QR token atau content harus diisi'
+            ], 422);
+        }
+
+        // Find schedule by QR token
+        $schedule = SeminarSchedule::with(['seminar'])
+            ->where('qr_code_path', $qrToken)
+            ->first();
+
+        if (!$schedule) {
+            return response()->json([
+                'message' => 'QR Code tidak valid atau tidak ditemukan',
+                'debug_token' => $qrToken // Untuk debugging
             ], 422);
         }
 
         // Check if already attended
         $existingAttendance = SeminarAttendance::where('mahasiswa_id', $user->id)
-            ->where('seminar_schedule_id', $validated['seminar_schedule_id'])
+            ->where('seminar_schedule_id', $schedule->id)
             ->first();
 
         if ($existingAttendance) {
             return response()->json([
-                'message' => 'Anda sudah melakukan absensi untuk seminar ini'
+                'message' => 'Anda sudah melakukan absensi untuk seminar ini',
+                'data' => [
+                    'waktu_absen' => $existingAttendance->waktu_absen ? $existingAttendance->waktu_absen->format('d M Y H:i') : '-',
+                    'metode_absen' => $existingAttendance->metode_absen ?? $existingAttendance->metode,
+                ]
             ], 422);
         }
 
-        // Check if seminar is happening now (within 2 hours before and after)
-        $seminarTime = $schedule->waktu_mulai;
-        $currentTime = now();
-        $timeDifference = $currentTime->diffInHours($seminarTime);
-
-        if ($timeDifference > 2) {
-            return response()->json([
-                'message' => 'Absensi hanya dapat dilakukan 2 jam sebelum dan sesudah seminar'
-            ], 422);
-        }
+        // REMOVED: Time validation - dapat scan kapan saja
+        // Status always 'present' since no time checking
+        $status = 'present';
 
         // Record attendance
         $attendance = SeminarAttendance::create([
             'mahasiswa_id' => $user->id,
-            'seminar_schedule_id' => $validated['seminar_schedule_id'],
+            'seminar_schedule_id' => $schedule->id,
             'waktu_absen' => now(),
+            'waktu_scan' => now(),
             'metode_absen' => 'qr',
+            'metode' => 'qr',
+            'status' => $status,
+            'qr_token' => $qrToken,
         ]);
 
         return response()->json([
-            'message' => 'Absensi berhasil dicatat',
+            'message' => 'Absensi berhasil dicatat!',
             'data' => [
+                'id' => $attendance->id,
                 'seminar_title' => $schedule->seminar->judul,
                 'ruangan' => $schedule->ruang,
                 'waktu_absen' => $attendance->waktu_absen->format('d M Y H:i'),
                 'metode_absen' => $attendance->metode_absen,
+                'status' => $status,
+                'status_display' => 'Hadir',
             ]
         ]);
+    }
+
+    /**
+     * Upload and scan QR image for attendance
+     */
+    public function uploadQRScan(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'qr_image' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+        ]);
+
+        // In a real implementation, you would decode the QR image here
+        // For now, we'll simulate it by reading a token from the request
+        // You can use libraries like SimpleSoftwareIO/simple-qrcode or chillerlan/php-qrcode
+
+        return response()->json([
+            'message' => 'QR image upload endpoint - requires QR decoder library',
+            'note' => 'Please use scanQRAttendance endpoint with qr_token instead'
+        ], 501);
     }
 }

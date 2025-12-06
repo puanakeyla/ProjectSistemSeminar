@@ -10,12 +10,13 @@ import { Skeleton } from '../../components/ui/skeleton'
 function Dashboard({ setCurrentPage }) {
   const [dashboardData, setDashboardData] = useState(null)
   const [pendingApprovals, setPendingApprovals] = useState([])
+  const [scheduledSeminars, setScheduledSeminars] = useState([])
   const [loading, setLoading] = useState(true)
   const [dosenName, setDosenName] = useState('')
 
   useEffect(() => {
     fetchDashboardData()
-    
+
     // Get dosen name from localStorage
     const userStr = localStorage.getItem('user')
     if (userStr) {
@@ -27,18 +28,19 @@ function Dashboard({ setCurrentPage }) {
   const fetchDashboardData = async () => {
     try {
       setLoading(true)
-      
+
       // Add timeout to prevent hanging
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 10000) // 10s timeout
-      
+
       const response = await dosenAPI.getDashboard({ signal: controller.signal })
       clearTimeout(timeoutId)
-      
+
       const data = response?.data || {}
-      
+
       setDashboardData(data)
       setPendingApprovals(data.pending_approvals || [])
+      setScheduledSeminars(data.scheduled_seminars || [])
     } catch (err) {
       if (err.name === 'AbortError') {
         console.error('Request timeout')

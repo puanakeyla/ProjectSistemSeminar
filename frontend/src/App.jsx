@@ -14,6 +14,7 @@ import ScanQR from './pages/Mahasiswa/ScanQR'
 import DashboardDosen from './pages/Dosen/Dashboard'
 import Approval from './pages/Dosen/Approval'
 import JadwalDosen from './pages/Dosen/Jadwal'
+import CheckInDosen from './pages/Dosen/CheckIn'
 import RevisiDosen from './pages/Dosen/Revisi'
 import SeminarDosen from './pages/Dosen/Seminar'
 import SeminarDetail from './pages/Dosen/SeminarDetail'
@@ -90,7 +91,8 @@ function App() {
         { id: 'dashboard', label: 'Dasbor', icon: <BarChart3 className="w-5 h-5" /> },
         { id: 'seminar', label: 'Seminar & Revisi', icon: <FileText className="w-5 h-5" /> },
         { id: 'approval', label: 'Persetujuan', icon: <ClipboardList className="w-5 h-5" /> },
-        { id: 'jadwal', label: 'Jadwal', icon: <Calendar className="w-5 h-5" /> }
+        { id: 'jadwal', label: 'Jadwal', icon: <Calendar className="w-5 h-5" /> },
+        { id: 'checkin', label: 'Check-In', icon: <CheckCircle className="w-5 h-5" /> }
       ]
     }
 
@@ -156,6 +158,7 @@ function App() {
             )}
             {currentPage === 'approval' && role === 'dosen' && <Approval />}
             {currentPage === 'jadwal' && role === 'dosen' && <JadwalDosen />}
+            {currentPage === 'checkin' && role === 'dosen' && <CheckInDosen />}
             {currentPage === 'revisi' && role === 'dosen' && <RevisiDosen />}
             {currentPage === 'seminar-old' && role === 'dosen' && <SeminarDosen />}
 

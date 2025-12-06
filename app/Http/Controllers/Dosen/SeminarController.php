@@ -17,7 +17,7 @@ class SeminarController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
-        
+
         // Simplified query to avoid timeout
         // Only show seminars that are scheduled and have schedule
         $seminars = Seminar::select(['id', 'mahasiswa_id', 'pembimbing1_id', 'pembimbing2_id', 'penguji_id', 'judul', 'tipe', 'status', 'created_at'])
@@ -39,7 +39,7 @@ class SeminarController extends Controller
             ->limit(100) // Limit to prevent timeout
             ->get()
             ->map(function($seminar) use ($user) {
-                
+
                 // Determine dosen role
                 $role = '';
                 if ($seminar->pembimbing1_id == $user->id) {
@@ -105,7 +105,7 @@ class SeminarController extends Controller
     public function show(Request $request, $id): JsonResponse
     {
         $user = $request->user();
-        
+
         $seminar = Seminar::with([
                 'mahasiswa:id,name,npm,email',
                 'pembimbing1:id,name,email',
@@ -261,8 +261,113 @@ class SeminarController extends Controller
      */
     private function isDosenInvolvedInSeminar(Seminar $seminar, $user): bool
     {
-        return $seminar->pembimbing1_id == $user->id 
+        return $seminar->pembimbing1_id == $user->id
             || $seminar->pembimbing2_id == $user->id
             || $seminar->penguji_id == $user->id;
+    }
+
+    /**
+     * Check-in for dosen attendance
+     */
+    public function checkIn(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'seminar_schedule_id' => 'required|exists:seminar_schedules,id',
+        ]);
+
+        $user = $request->user();
+        $schedule = \App\Models\SeminarSchedule::with(['seminar'])->findOrFail($validated['seminar_schedule_id']);
+        $seminar = $schedule->seminar;
+
+        // Check if dosen is involved in this seminar
+        if (!$this->isDosenInvolvedInSeminar($seminar, $user)) {
+            return response()->json([
+                'message' => 'Anda tidak terlibat dalam seminar ini'
+            ], 403);
+        }
+
+        // NO TIME VALIDATION - Dosen can check-in anytime
+
+        // Determine dosen role
+        $role = '';
+        if ($seminar->pembimbing1_id == $user->id) {
+            $role = 'pembimbing1';
+        } elseif ($seminar->pembimbing2_id == $user->id) {
+            $role = 'pembimbing2';
+        } elseif ($seminar->penguji_id == $user->id) {
+            $role = 'penguji';
+        }
+
+        // Check if already checked in
+        $existingAttendance = \App\Models\DosenAttendance::where('seminar_schedule_id', $schedule->id)
+            ->where('dosen_id', $user->id)
+            ->first();
+
+        if ($existingAttendance) {
+            return response()->json([
+                'message' => 'Anda sudah melakukan check-in untuk seminar ini',
+                'data' => [
+                    'status' => $existingAttendance->status,
+                    'confirmed_at' => $existingAttendance->confirmed_at->format('d M Y H:i'),
+                ]
+            ], 422);
+        }
+
+        // Record dosen attendance
+        $attendance = \App\Models\DosenAttendance::create([
+            'seminar_schedule_id' => $schedule->id,
+            'dosen_id' => $user->id,
+            'role' => $role,
+            'status' => 'hadir',
+            'confirmed_at' => now(),
+        ]);
+
+        return response()->json([
+            'message' => 'Check-in berhasil dicatat',
+            'data' => [
+                'id' => $attendance->id,
+                'seminar_title' => $seminar->judul,
+                'role' => $role,
+                'role_display' => $attendance->getRoleDisplay(),
+                'ruangan' => $schedule->ruang,
+                'confirmed_at' => $attendance->confirmed_at->format('d M Y H:i'),
+                'status' => $attendance->status,
+            ]
+        ]);
+    }
+
+    /**
+     * Get dosen's attendance history
+     */
+    public function myAttendanceHistory(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $attendances = \App\Models\DosenAttendance::with(['schedule.seminar.mahasiswa'])
+            ->where('dosen_id', $user->id)
+            ->orderBy('confirmed_at', 'desc')
+            ->get()
+            ->map(function ($attendance) {
+                return [
+                    'id' => $attendance->id,
+                    'seminar_title' => $attendance->schedule->seminar->judul,
+                    'mahasiswa_name' => $attendance->schedule->seminar->mahasiswa->name,
+                    'mahasiswa_npm' => $attendance->schedule->seminar->mahasiswa->npm,
+                    'role' => $attendance->getRoleDisplay(),
+                    'status' => $attendance->getStatusDisplay(),
+                    'ruangan' => $attendance->schedule->ruang,
+                    'tanggal_seminar' => $attendance->schedule->waktu_mulai->format('d M Y'),
+                    'waktu_seminar' => $attendance->schedule->waktu_mulai->format('H:i'),
+                    'confirmed_at' => $attendance->confirmed_at->format('d M Y H:i'),
+                ];
+            });
+
+        return response()->json([
+            'message' => 'Attendance history retrieved successfully',
+            'data' => [
+                'total' => $attendances->count(),
+                'attendances' => $attendances,
+            ]
+        ]);
     }
 }

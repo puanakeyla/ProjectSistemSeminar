@@ -1,5 +1,5 @@
 import './Navbar.css';
-import { GraduationCap, BarChart3, CheckCircle, Calendar, FileText, LogOut } from 'lucide-react'
+import { GraduationCap, BarChart3, CheckCircle, Calendar, FileText, LogOut, UserCheck } from 'lucide-react'
 import NotificationBell from '../../components/NotificationBell/NotificationBell'
 
 function Navbar({ currentPage, onNavigate, onLogout, user }) {
@@ -7,6 +7,7 @@ function Navbar({ currentPage, onNavigate, onLogout, user }) {
     { id: 'dashboard', label: 'Dashboard', icon: <BarChart3 className="w-4 h-4" /> },
     { id: 'approval', label: 'Persetujuan Pengajuan', icon: <CheckCircle className="w-4 h-4" /> },
     { id: 'jadwal', label: 'Jadwal', icon: <Calendar className="w-4 h-4" /> },
+    { id: 'checkin', label: 'Check-In', icon: <UserCheck className="w-4 h-4" /> },
     { id: 'revisi', label: 'Revisi', icon: <FileText className="w-4 h-4" /> }
   ];
 

@@ -122,21 +122,42 @@ class VerificationController extends Controller
         // Update seminar status
         $updateData = [];
         if ($validated['status'] === 'approved') {
+            // Log verification history
+            $verificationHistory = $seminar->verification_history ?? [];
+            $verificationHistory[] = [
+                'admin_id' => $request->user()->id,
+                'admin_name' => $request->user()->name,
+                'action' => 'verified',
+                'timestamp' => now()->toIso8601String(),
+            ];
+
             $updateData = [
                 'status' => 'approved', // Approved by admin - ready for scheduling
                 'verified_at' => now(),
+                'verification_history' => $verificationHistory,
             ];
         } else {
+            // Log rejection history
+            $verificationHistory = $seminar->verification_history ?? [];
+            $verificationHistory[] = [
+                'admin_id' => $request->user()->id,
+                'admin_name' => $request->user()->name,
+                'action' => 'rejected',
+                'reason' => $validated['alasan'],
+                'timestamp' => now()->toIso8601String(),
+            ];
+
             $updateData = [
                 'status' => 'revising',
                 'alasan_ditolak' => $validated['alasan'],
+                'verification_history' => $verificationHistory,
             ];
         }
-        
+
         $seminar->update($updateData);
 
-        $message = $validated['status'] === 'approved' 
-            ? 'Seminar berhasil diverifikasi dan siap dijadwalkan' 
+        $message = $validated['status'] === 'approved'
+            ? 'Seminar berhasil diverifikasi dan siap dijadwalkan'
             : 'Seminar membutuhkan revisi';
 
         return response()->json([

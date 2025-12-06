@@ -263,7 +263,7 @@ function Attendance() {
                         <td className="seminar-cell">
                           {attendance.schedule?.seminar?.judul || '-'}
                         </td>
-                        <td>{formatDate(attendance.waktu_scan)}</td>
+                        <td>{formatDate(attendance.waktu_absen || attendance.waktu_scan)}</td>
                         <td>
                           <span className={`method-badge ${methodBadge.class}`}>
                             {methodBadge.label}

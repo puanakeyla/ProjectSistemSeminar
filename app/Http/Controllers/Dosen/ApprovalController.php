@@ -20,8 +20,8 @@ class ApprovalController extends Controller
         try {
             $approvals = SeminarApproval::with([
                     'seminar:id,mahasiswa_id,judul,tipe,abstrak,file_berkas,status',
-                    'seminar.mahasiswa:id,name,npm', 
-                    'seminar.pembimbing1:id,name', 
+                    'seminar.mahasiswa:id,name,npm',
+                    'seminar.pembimbing1:id,name',
                     'seminar.pembimbing2:id,name',
                     'seminar.penguji:id,name',
                     'seminar.approvals:id,seminar_id,dosen_id,peran,status,catatan,available_dates,updated_at',
@@ -59,8 +59,8 @@ class ApprovalController extends Controller
         $status = $request->get('status', 'all'); // all, setuju, ditolak
 
         $query = SeminarApproval::with([
-            'seminar.mahasiswa', 
-            'seminar.pembimbing1', 
+            'seminar.mahasiswa',
+            'seminar.pembimbing1',
             'seminar.pembimbing2',
             'seminar.penguji'
         ])
@@ -89,8 +89,8 @@ class ApprovalController extends Controller
     public function showApproval(Request $request, $id): JsonResponse
     {
         $approval = SeminarApproval::with([
-                'seminar.mahasiswa', 
-                'seminar.pembimbing1', 
+                'seminar.mahasiswa',
+                'seminar.pembimbing1',
                 'seminar.pembimbing2',
                 'seminar.penguji',
                 'seminar.approvals.dosen'
@@ -163,6 +163,15 @@ class ApprovalController extends Controller
 
         $approval->update($updateData);
 
+        // Log approval history
+        \App\Models\ApprovalHistory::create([
+            'seminar_id' => $approval->seminar_id,
+            'dosen_id' => $request->user()->id,
+            'action' => $validated['status'],
+            'role' => $approval->peran,
+            'catatan' => $validated['catatan'] ?? null,
+        ]);
+
         // Send notification if approved
         if ($validated['status'] === 'approved') {
             NotificationService::notifySeminarApproved(
@@ -175,8 +184,8 @@ class ApprovalController extends Controller
         $this->checkSeminarOverallStatus($approval->seminar);
 
         return response()->json([
-            'message' => $validated['status'] === 'approved' 
-                ? 'Seminar berhasil disetujui. Tanggal ketersediaan Anda telah tersimpan.' 
+            'message' => $validated['status'] === 'approved'
+                ? 'Seminar berhasil disetujui. Tanggal ketersediaan Anda telah tersimpan.'
                 : 'Seminar berhasil ditolak',
             'data' => $this->formatApprovalData($approval->fresh(['seminar.mahasiswa']), true)
         ]);
@@ -199,7 +208,7 @@ class ApprovalController extends Controller
 
             // Optimized query with specific columns
             $query = Seminar::select([
-                    'id', 'judul', 'jenis_seminar', 'mahasiswa_id', 
+                    'id', 'judul', 'jenis_seminar', 'mahasiswa_id',
                     'pembimbing1_id', 'pembimbing2_id', 'penguji_id',
                     'status', 'created_at', 'cancelled_at'
                 ])
@@ -288,8 +297,8 @@ class ApprovalController extends Controller
             ]
         );
 
-        $statusMessage = $validated['status'] === 'hadir' 
-            ? 'Konfirmasi kehadiran berhasil dicatat' 
+        $statusMessage = $validated['status'] === 'hadir'
+            ? 'Konfirmasi kehadiran berhasil dicatat'
             : 'Konfirmasi ketidakhadiran berhasil dicatat. Admin akan diberitahu.';
 
         return response()->json([
@@ -361,14 +370,14 @@ class ApprovalController extends Controller
         if ($rejectedApproval) {
             // Get the rejection reason
             $rejectionReason = $rejectedApproval->catatan ?? 'Tidak ada alasan spesifik';
-            
+
             // Cancel the seminar
             $seminar->update([
                 'status' => 'cancelled',
                 'cancelled_at' => now(),
                 'cancel_reason' => "Ditolak oleh {$rejectedApproval->dosen->name}. Alasan: {$rejectionReason}"
             ]);
-            
+
             // Delete any existing schedule
             if ($seminar->schedule) {
                 $seminar->schedule->delete();
@@ -380,7 +389,7 @@ class ApprovalController extends Controller
                 $rejectedApproval->dosen,
                 $rejectionReason
             );
-            
+
             return;
         }
 
@@ -389,7 +398,7 @@ class ApprovalController extends Controller
         if ($totalApprovals > 0 && $approvals->where('status', 'approved')->count() === $totalApprovals) {
             // Check if there are matching dates among all dosen
             $matchingDates = $this->findMatchingDates($approvals);
-            
+
             if (empty($matchingDates)) {
                 // No matching dates - auto-cancel the seminar
                 $seminar->update([
@@ -397,7 +406,7 @@ class ApprovalController extends Controller
                     'cancelled_at' => now(),
                     'cancel_reason' => 'Tidak ada kecocokan jadwal dari semua dosen pembimbing dan penguji. Silakan ajukan ulang seminar dengan menghubungi dosen terkait terlebih dahulu.'
                 ]);
-                
+
                 // Delete any existing schedule
                 if ($seminar->schedule) {
                     $seminar->schedule->delete();
@@ -440,7 +449,7 @@ class ApprovalController extends Controller
 
         // Find intersection of all dates
         $matchingDates = $allAvailableDates->first();
-        
+
         foreach ($allAvailableDates->skip(1) as $dates) {
             $matchingDates = array_intersect($matchingDates, $dates);
         }
@@ -559,11 +568,11 @@ class ApprovalController extends Controller
         if ($otherApprovedDates->isNotEmpty()) {
             $allDates = $otherApprovedDates->pluck('dates')->toArray();
             $commonDates = count($allDates) > 0 ? $allDates[0] : [];
-            
+
             foreach (array_slice($allDates, 1) as $dates) {
                 $commonDates = array_intersect($commonDates, $dates);
             }
-            
+
             $data['suggested_dates'] = array_values($commonDates);
         } else {
             $data['suggested_dates'] = [];
@@ -591,7 +600,7 @@ class ApprovalController extends Controller
     private function formatSeminarData(Seminar $seminar, $user): array
     {
         $userRole = $this->getUserRoleInSeminar($seminar, $user);
-        
+
         // Get approval status from loaded relationship instead of querying again
         $approvalStatus = 'menunggu';
         if ($seminar->approvals && $seminar->approvals->isNotEmpty()) {
@@ -716,13 +725,13 @@ class ApprovalController extends Controller
     public function viewFile(Request $request, $seminarId): mixed
     {
         $seminar = Seminar::findOrFail($seminarId);
-        
+
         if (!$seminar->file_berkas) {
             abort(404, 'File tidak ditemukan');
         }
 
         $path = storage_path('app/public/' . $seminar->file_berkas);
-        
+
         if (!file_exists($path)) {
             abort(404, 'File tidak ditemukan di server');
         }
@@ -739,13 +748,13 @@ class ApprovalController extends Controller
     public function downloadFile(Request $request, $seminarId): mixed
     {
         $seminar = Seminar::findOrFail($seminarId);
-        
+
         if (!$seminar->file_berkas) {
             abort(404, 'File tidak ditemukan');
         }
 
         $path = storage_path('app/public/' . $seminar->file_berkas);
-        
+
         if (!file_exists($path)) {
             abort(404, 'File tidak ditemukan di server');
         }
@@ -768,8 +777,8 @@ class ApprovalController extends Controller
         $seminar = Seminar::with(['schedule'])->findOrFail($seminarId);
 
         // Check if dosen is involved in this seminar
-        $isInvolved = $seminar->pembimbing1_id == $user->id 
-                   || $seminar->pembimbing2_id == $user->id 
+        $isInvolved = $seminar->pembimbing1_id == $user->id
+                   || $seminar->pembimbing2_id == $user->id
                    || $seminar->penguji_id == $user->id;
 
         if (!$isInvolved) {
@@ -788,7 +797,7 @@ class ApprovalController extends Controller
         // Check if seminar is ongoing (with grace period)
         if (!$seminar->schedule->isOngoing(gracePeriodBefore: 15, gracePeriodAfter: 60)) {
             $status = $seminar->schedule->getSeminarStatus();
-            
+
             if ($status === 'upcoming') {
                 $minutesUntil = $seminar->schedule->getMinutesUntilStart();
                 return response()->json([
@@ -842,8 +851,8 @@ class ApprovalController extends Controller
         $seminar = Seminar::with(['schedule'])->findOrFail($seminarId);
 
         // Check if dosen is involved
-        $isInvolved = $seminar->pembimbing1_id == $user->id 
-                   || $seminar->pembimbing2_id == $user->id 
+        $isInvolved = $seminar->pembimbing1_id == $user->id
+                   || $seminar->pembimbing2_id == $user->id
                    || $seminar->penguji_id == $user->id;
 
         if (!$isInvolved) {
@@ -861,7 +870,7 @@ class ApprovalController extends Controller
             $reason = 'Seminar belum dijadwalkan';
         } else {
             $seminarStatus = $seminar->schedule->getSeminarStatus();
-            
+
             if ($seminar->schedule->isOngoing(15, 60)) {
                 $canApprove = true;
                 $timeInfo = [
@@ -886,6 +895,34 @@ class ApprovalController extends Controller
                 'seminar_status_display' => $seminar->schedule ? $seminar->schedule->getSeminarStatusDisplay() : '-',
                 'time_info' => $timeInfo,
             ]
+        ]);
+    }
+
+    /**
+     * Get approval history for a seminar
+     */
+    public function getApprovalHistory($seminarId): JsonResponse
+    {
+        $seminar = Seminar::with([
+            'approvalHistories' => function($query) {
+                $query->with('dosen:id,name')->orderBy('created_at', 'desc');
+            }
+        ])->findOrFail($seminarId);
+
+        $histories = $seminar->approvalHistories->map(function ($history) {
+            return [
+                'id' => $history->id,
+                'dosen_name' => $history->dosen->name,
+                'action' => $history->getActionDisplay(),
+                'role' => $history->getRoleDisplay(),
+                'catatan' => $history->catatan,
+                'created_at' => $history->created_at->format('d M Y H:i'),
+            ];
+        });
+
+        return response()->json([
+            'message' => 'Approval history retrieved successfully',
+            'data' => $histories
         ]);
     }
 }

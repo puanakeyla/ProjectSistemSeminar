@@ -53,7 +53,7 @@ function ScanQR() {
       const token = localStorage.getItem('token');
       const response = await axios.post(
         `${API_URL}/mahasiswa/attendance/scan-qr`,
-        { token: decodedText },
+        { qr_token: decodedText },
         { headers: { Authorization: `Bearer ${token}` }}
       );
 

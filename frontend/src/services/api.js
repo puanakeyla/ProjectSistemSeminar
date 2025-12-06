@@ -40,13 +40,13 @@ api.interceptors.response.use(
       // Clear invalid token
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      
+
       // Only redirect if not on login page
       if (!window.location.pathname.includes('/login') && window.location.pathname !== '/') {
         window.location.href = '/';
       }
     }
-    
+
     return Promise.reject(error);
   }
 );
@@ -55,9 +55,9 @@ api.interceptors.response.use(
 export const authAPI = {
   login: async (email, password) => {
     try {
-      const response = await api.post('/login', { 
-        email: email.trim(), 
-        password 
+      const response = await api.post('/login', {
+        email: email.trim(),
+        password
       });
       return response.data;
     } catch (error) {
@@ -74,12 +74,12 @@ export const authAPI = {
       }
     }
   },
-  
+
   logout: async () => {
     const response = await api.post('/logout');
     return response.data;
   },
-  
+
   getUser: async () => {
     const response = await api.get('/user');
     return response.data;
@@ -96,8 +96,8 @@ export const dosenAPI = {
 
   // Get approval history
   getApprovalHistory: async (status = 'all') => {
-    const response = await api.get('/dosen/approvals/history', { 
-      params: { status } 
+    const response = await api.get('/dosen/approvals/history', {
+      params: { status }
     });
     return response.data;
   },
@@ -117,8 +117,8 @@ export const dosenAPI = {
 
   // Get seminars where dosen is involved
   getMySeminars: async (status = 'all') => {
-    const response = await api.get('/dosen/seminars', { 
-      params: { status } 
+    const response = await api.get('/dosen/seminars', {
+      params: { status }
     });
     return response.data;
   },
@@ -152,6 +152,19 @@ export const dosenAPI = {
   validateRevision: async (id, data) => {
     // data: { status: 'accepted'|'rejected', catatan_dosen?: string }
     const response = await api.post(`/dosen/revisions/${id}/validate`, data);
+    return response.data;
+  },
+
+  // Check-in for seminar
+  checkIn: async (data) => {
+    // data: { seminar_schedule_id: number }
+    const response = await api.post('/dosen/seminars/check-in', data);
+    return response.data;
+  },
+
+  // Get attendance history
+  getAttendanceHistory: async () => {
+    const response = await api.get('/dosen/attendance/history');
     return response.data;
   },
 };
@@ -326,6 +339,20 @@ export const notificationAPI = {
 
   deleteNotification: async (id) => {
     const response = await api.delete(`/notifications/${id}`);
+    return response.data;
+  },
+};
+
+// Mahasiswa API
+export const mahasiswaAPI = {
+  getAttendanceHistory: async () => {
+    const response = await api.get('/mahasiswa/attendance/history');
+    return response.data;
+  },
+
+  scanQR: async (data) => {
+    // data: { qr_token: string }
+    const response = await api.post('/mahasiswa/attendance/scan-qr', data);
     return response.data;
   },
 };

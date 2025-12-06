@@ -22,6 +22,7 @@ class Seminar extends Model
         'status',
         'skor_total',
         'verified_at',
+        'verification_history',
         'cancelled_at',
         'cancel_reason',
         'cancelled_by',
@@ -32,6 +33,7 @@ class Seminar extends Model
         'updated_at' => 'datetime',
         'verified_at' => 'datetime',
         'cancelled_at' => 'datetime',
+        'verification_history' => 'array',
     ];
 
     public function setStatusAttribute($value)
@@ -88,6 +90,11 @@ class Seminar extends Model
     public function approvals()
     {
         return $this->hasMany(SeminarApproval::class);
+    }
+
+    public function approvalHistories()
+    {
+        return $this->hasMany(ApprovalHistory::class);
     }
 
     public function schedule()
@@ -231,7 +238,7 @@ class Seminar extends Model
         // Check each dosen: all their items must be approved
         foreach ($dosenIds as $dosenId) {
             $totalItems = $revision->items()->where('created_by', $dosenId)->count();
-            
+
             // If dosen hasn't created any items, skip (they approved implicitly)
             if ($totalItems === 0) {
                 continue;
