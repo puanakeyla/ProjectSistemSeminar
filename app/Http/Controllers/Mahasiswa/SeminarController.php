@@ -37,7 +37,7 @@ class SeminarController extends Controller
                     $query->select(['id', 'seminar_id', 'status', 'created_at'])
                           ->latest()
                           ->limit(1)
-                          ->with(['items:id,seminar_revision_id,status,created_by']);
+                          ->with(['items:id,revision_id,status,created_by']);
                 }
             ])
             ->where('mahasiswa_id', $request->user()->id)
@@ -45,9 +45,9 @@ class SeminarController extends Controller
             ->get()
             ->map(function($seminar) {
                 $latestRevision = $seminar->revisions->first();
-                
+
                 $data = $this->mapSeminar($seminar);
-                
+
                 // Add revision data
                 $data['revision'] = $latestRevision ? [
                     'id' => $latestRevision->id,
@@ -58,7 +58,7 @@ class SeminarController extends Controller
                     'submitted_items' => $latestRevision->items->where('status', 'submitted')->count(),
                     'progress' => $latestRevision->getProgressPercentage(),
                 ] : null;
-                
+
                 return $data;
             });
 
@@ -72,7 +72,7 @@ class SeminarController extends Controller
     public function show(Request $request, int $id): JsonResponse
     {
         $seminar = Seminar::with([
-                'schedule', 
+                'schedule',
                 'approvals.dosen',
                 'cancelledBy:id,name,role',
                 'pembimbing1:id,name,email',
@@ -85,7 +85,7 @@ class SeminarController extends Controller
             ->findOrFail($id);
 
         $data = $this->mapSeminar($seminar, true);
-        
+
         // Add full revision details
         $latestRevision = $seminar->revisions->first();
         if ($latestRevision) {

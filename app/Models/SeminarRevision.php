@@ -11,6 +11,9 @@ class SeminarRevision extends Model
 
     protected $fillable = [
         'seminar_id',
+        'mahasiswa_id',
+        'nomor_revisi',
+        'catatan',
         'created_by_dosen',
         'file_revisi',
         'catatan_mahasiswa',
@@ -51,7 +54,7 @@ class SeminarRevision extends Model
     {
         $total = $this->items()->count();
         if ($total === 0) return 0;
-        
+
         $approved = $this->items()->approved()->count();
         return round(($approved / $total) * 100);
     }
@@ -61,7 +64,7 @@ class SeminarRevision extends Model
     {
         $total = $this->items()->count();
         if ($total === 0) return false;
-        
+
         return $this->items()->approved()->count() === $total;
     }
 

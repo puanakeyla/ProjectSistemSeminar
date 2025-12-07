@@ -7,6 +7,7 @@ use App\Models\Seminar;
 use App\Models\SeminarRevision;
 use App\Models\SeminarRevisionItem;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Validator;
@@ -19,7 +20,7 @@ class RevisionController extends Controller
     public function addRevisionItem(Request $request, $seminarId): JsonResponse
     {
         $user = $request->user();
-        
+
         // Validate request
         $validator = Validator::make($request->all(), [
             'poin_revisi' => 'required|string',
@@ -36,7 +37,7 @@ class RevisionController extends Controller
 
         // Check if seminar exists and user is authorized
         $seminar = Seminar::with('schedule')->find($seminarId);
-        
+
         if (!$seminar) {
             return response()->json([
                 'success' => false,
@@ -45,8 +46,8 @@ class RevisionController extends Controller
         }
 
         // Check if user is pembimbing or penguji
-        if ($seminar->pembimbing1_id != $user->id && 
-            $seminar->pembimbing2_id != $user->id && 
+        if ($seminar->pembimbing1_id != $user->id &&
+            $seminar->pembimbing2_id != $user->id &&
             $seminar->penguji_id != $user->id) {
             return response()->json([
                 'success' => false,
@@ -63,19 +64,30 @@ class RevisionController extends Controller
         }
 
         // Get or create revision for this seminar
+        // Generate nomor_revisi: get max + 1 for this seminar
+        $maxNomor = SeminarRevision::where('seminar_id', $seminarId)->max('nomor_revisi') ?? 0;
+
         $revision = SeminarRevision::firstOrCreate(
             ['seminar_id' => $seminarId],
-            ['status' => 'in_progress']
+            [
+                'mahasiswa_id' => $seminar->mahasiswa_id,
+                'nomor_revisi' => $maxNomor + 1,
+                'catatan' => 'Revisi dari dosen',
+                'status' => 'in_progress'
+            ]
         );
 
         // Create revision item
         $item = SeminarRevisionItem::create([
-            'seminar_revision_id' => $revision->id,
+            'revision_id' => $revision->id,
             'created_by' => $user->id,
             'poin_revisi' => $request->poin_revisi,
             'kategori' => $request->kategori,
             'status' => 'pending'
         ]);
+
+        // Send notification to mahasiswa
+        \App\Services\NotificationService::notifyRevisionAdded($seminar, $user, $item);
 
         return response()->json([
             'success' => true,
@@ -90,7 +102,7 @@ class RevisionController extends Controller
     public function validateItem(Request $request, $revisionId, $itemId): JsonResponse
     {
         $user = $request->user();
-        
+
         // Validate request
         $validator = Validator::make($request->all(), [
             'action' => 'required|in:approve,reject',
@@ -107,8 +119,8 @@ class RevisionController extends Controller
 
         // Find revision item
         $item = SeminarRevisionItem::with('revision.seminar')->find($itemId);
-        
-        if (!$item || $item->seminar_revision_id != $revisionId) {
+
+        if (!$item || $item->revision_id != $revisionId) {
             return response()->json([
                 'success' => false,
                 'message' => 'Item revisi tidak ditemukan'

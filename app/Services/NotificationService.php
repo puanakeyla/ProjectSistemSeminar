@@ -106,7 +106,7 @@ class NotificationService
     {
         $title = 'Pengajuan Seminar Ditolak';
         $dosenName = $rejectedBy->name;
-        
+
         // Get dosen role
         $role = '';
         if ($seminar->pembimbing1_id == $rejectedBy->id) {
@@ -215,7 +215,7 @@ class NotificationService
     public static function notifySeminarApproved(Seminar $seminar, User $approvedBy): void
     {
         $title = 'Pengajuan Seminar Disetujui';
-        
+
         // Get dosen role
         $role = '';
         if ($seminar->pembimbing1_id == $approvedBy->id) {
@@ -356,7 +356,7 @@ class NotificationService
     {
         $title = 'Seminar Dibatalkan oleh Mahasiswa';
         $message = "Seminar \"{$seminar->judul}\" telah dibatalkan oleh mahasiswa {$seminar->mahasiswa->name}.";
-        
+
         if ($reason) {
             $message .= " Alasan: {$reason}";
         }
@@ -438,7 +438,7 @@ class NotificationService
     {
         $title = 'Seminar Dibatalkan oleh Admin';
         $message = "Seminar \"{$seminar->judul}\" telah dibatalkan oleh Admin {$cancelledBy->name}.";
-        
+
         if ($reason) {
             $message .= " Alasan: {$reason}";
         }
@@ -690,5 +690,29 @@ class NotificationService
             'message' => $message,
             'data' => $data,
         ]);
+    }
+
+    /**
+     * Notify mahasiswa when dosen adds revision item
+     */
+    public static function notifyRevisionAdded(Seminar $seminar, User $dosen, $revisionItem): void
+    {
+        $title = 'Revisi Baru dari Dosen';
+        $message = "Dosen {$dosen->name} menambahkan revisi untuk seminar \"{$seminar->judul}\". Kategori: {$revisionItem->kategori}";
+
+        self::createNotification(
+            $seminar->mahasiswa_id,
+            $seminar->id,
+            'revision_added',
+            $title,
+            $message,
+            [
+                'seminar_id' => $seminar->id,
+                'revision_item_id' => $revisionItem->id,
+                'dosen_name' => $dosen->name,
+                'kategori' => $revisionItem->kategori,
+                'poin_revisi' => $revisionItem->poin_revisi,
+            ]
+        );
     }
 }

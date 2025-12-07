@@ -19,7 +19,7 @@ class RevisionController extends Controller
     public function submitItem(Request $request, $revisionId, $itemId): JsonResponse
     {
         $user = $request->user();
-        
+
         // Validate request
         $validator = Validator::make($request->all(), [
             'file' => 'required|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240', // 10MB
@@ -36,8 +36,8 @@ class RevisionController extends Controller
 
         // Find revision item
         $item = SeminarRevisionItem::with('revision.seminar.mahasiswa')->find($itemId);
-        
-        if (!$item || $item->seminar_revision_id != $revisionId) {
+
+        if (!$item || $item->revision_id != $revisionId) {
             return response()->json([
                 'success' => false,
                 'message' => 'Item revisi tidak ditemukan'
@@ -70,7 +70,7 @@ class RevisionController extends Controller
             $file = $request->file('file');
             $fileName = time() . '_' . $user->id . '_' . $file->getClientOriginalName();
             $filePath = $file->storeAs('revisions', $fileName, 'public');
-            
+
             $item->file_path = $filePath;
             $item->file_url = Storage::url($filePath);
         }

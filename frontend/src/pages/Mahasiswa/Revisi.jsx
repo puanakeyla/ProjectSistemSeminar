@@ -121,20 +121,28 @@ function Revisi() {
     }
   };
 
-  const filteredItems =
-    selectedSeminar?.revision?.items?.filter((item) => {
-      if (activeTab === 'all') return true;
-      if (activeTab === 'pending') return item.status === 'pending';
-      if (activeTab === 'submitted') return item.status === 'submitted';
-      if (activeTab === 'approved') return item.status === 'approved';
-      return true;
-    }) || [];
+  // Flatten items from items_by_dosen structure
+  const allItems = selectedSeminar?.revision?.items_by_dosen?.flatMap(dosen =>
+    dosen.items.map(item => ({
+      ...item,
+      dosen_name: dosen.dosen_name,
+      dosen_id: dosen.dosen_id
+    }))
+  ) || [];
+
+  const filteredItems = allItems.filter((item) => {
+    if (activeTab === 'all') return true;
+    if (activeTab === 'pending') return item.status === 'pending';
+    if (activeTab === 'submitted') return item.status === 'submitted';
+    if (activeTab === 'approved') return item.status === 'approved';
+    return true;
+  });
 
   const stats = {
-    total: selectedSeminar?.revision?.items?.length || 0,
-    pending: selectedSeminar?.revision?.items?.filter((i) => i.status === 'pending').length || 0,
-    submitted: selectedSeminar?.revision?.items?.filter((i) => i.status === 'submitted').length || 0,
-    approved: selectedSeminar?.revision?.items?.filter((i) => i.status === 'approved').length || 0,
+    total: selectedSeminar?.revision?.total_items || 0,
+    pending: selectedSeminar?.revision?.pending_items || 0,
+    submitted: selectedSeminar?.revision?.submitted_items || 0,
+    approved: selectedSeminar?.revision?.approved_items || 0,
   };
 
   if (loading) {
@@ -319,6 +327,13 @@ function Revisi() {
 
                       <span className="revisi-detail-category">{item.kategori}</span>
                       <p className="revisi-detail-text">{item.poin_revisi}</p>
+
+                      {item.dosen_name && (
+                        <div style={{ marginTop: '8px', fontSize: '13px', color: 'var(--revisi-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <UserRound size={14} />
+                          <span>Dari: {item.dosen_name}</span>
+                        </div>
+                      )}
 
                       {item.mahasiswa_notes && (
                         <div className="revisi-detail-notes">

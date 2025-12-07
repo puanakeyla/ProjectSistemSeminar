@@ -97,7 +97,7 @@ function Revisi() {
     try {
       setSubmitting(true);
       const token = localStorage.getItem('token');
-      await axios.post(`http://localhost:8000/api/dosen/seminars/${selectedSeminar.id}/revision-items`, addForm, {
+      await axios.post(`http://localhost:8000/api/dosen/revisions/${selectedSeminar.id}/items`, addForm, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
