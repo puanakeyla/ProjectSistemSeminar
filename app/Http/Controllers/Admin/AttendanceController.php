@@ -426,6 +426,38 @@ class AttendanceController extends Controller
     }
 
     /**
+     * Get attendance history for a specific mahasiswa
+     */
+    public function getMahasiswaHistory($mahasiswaId): JsonResponse
+    {
+        $attendances = SeminarAttendance::with([
+            'schedule.seminar'
+        ])
+        ->where('mahasiswa_id', $mahasiswaId)
+        ->orderBy('waktu_absen', 'desc')
+        ->get()
+        ->map(function ($attendance) {
+            return [
+                'id' => $attendance->id,
+                'seminar_title' => $attendance->schedule->seminar->judul ?? '-',
+                'seminar_type' => $attendance->schedule->seminar->jenis_seminar ?? '-',
+                'tanggal_seminar' => $attendance->schedule->getFormattedDateTime() ?? '-',
+                'waktu_absen' => $attendance->waktu_absen->format('d M Y H:i'),
+                'metode_absen' => $attendance->metode_absen,
+                'status' => $attendance->status ?? 'present',
+            ];
+        });
+
+        return response()->json([
+            'message' => 'Attendance history retrieved successfully',
+            'data' => [
+                'attendances' => $attendances,
+                'total' => $attendances->count(),
+            ]
+        ]);
+    }
+
+    /**
      * Format attendance data for response
      */
     private function formatAttendanceData(SeminarAttendance $attendance): array

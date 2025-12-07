@@ -291,6 +291,11 @@ export const adminAPI = {
     return response.data;
   },
 
+  getMahasiswaAttendanceHistory: async (mahasiswaId) => {
+    const response = await api.get(`/admin/attendances/mahasiswa/${mahasiswaId}/history`);
+    return response.data;
+  },
+
   // Revision Management
   getRevisions: async (status = null) => {
     const params = status ? { status } : {};

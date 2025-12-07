@@ -22,7 +22,7 @@ function Verification() {
       setError(null);
       const response = await adminAPI.getSeminarsForVerification('pending_verification');
       const seminarsData = response.data || [];
-      
+
       // Show all seminars with pending_verification status (admin can monitor approval progress)
       setSeminars(seminarsData);
     } catch (err) {
@@ -37,7 +37,20 @@ function Verification() {
     try {
       setDetailLoading(true);
       const response = await adminAPI.getSeminarDetail(seminarId);
-      setSeminarDetail(response.data?.seminar || response.data || selectedSeminar);
+      const seminar = response.data?.seminar || response.data || selectedSeminar;
+
+      // Fetch mahasiswa attendance history
+      if (seminar.mahasiswa?.id) {
+        try {
+          const attendanceRes = await adminAPI.getMahasiswaAttendanceHistory(seminar.mahasiswa.id);
+          seminar.mahasiswa_attendance_count = attendanceRes.data?.attendances?.length || attendanceRes.data?.length || 0;
+        } catch (attendanceErr) {
+          console.warn('Could not fetch attendance history:', attendanceErr);
+          seminar.mahasiswa_attendance_count = 0;
+        }
+      }
+
+      setSeminarDetail(seminar);
     } catch (err) {
       console.error('Error fetching seminar detail:', err);
       alert('Gagal memuat detail seminar');
@@ -111,7 +124,7 @@ function Verification() {
       if (seminar.pembimbing2?.id === approval.dosen_id) return 'Pembimbing 2';
       if (seminar.penguji?.id === approval.dosen_id) return 'Penguji';
     }
-    
+
     // Fallback to peran field
     switch (approval.peran) {
       case 'pembimbing1': return 'Pembimbing 1';
@@ -305,6 +318,25 @@ function Verification() {
 
                       <div className="detail-section">
                         <div className="detail-section-header">
+                          <CheckCircle size={16} />
+                          <h3>Riwayat Kehadiran Mahasiswa</h3>
+                        </div>
+                        <div className="attendance-stats">
+                          <div className="stat-card">
+                            <div className="stat-icon">
+                              <Calendar size={24} />
+                            </div>
+                            <div className="stat-content">
+                              <p className="stat-label">Total Kehadiran</p>
+                              <h4 className="stat-value">{seminarDetail.mahasiswa_attendance_count || 0}</h4>
+                              <p className="stat-description">Seminar yang dihadiri</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="detail-section">
+                        <div className="detail-section-header">
                           <User size={16} />
                           <h3>Status Approval Dosen</h3>
                         </div>
@@ -336,8 +368,8 @@ function Verification() {
                                     <div className="approval-dates">
                                       <label>Tanggal Tersedia:</label>
                                       <div className="dates-list">
-                                        {(Array.isArray(approval.available_dates) 
-                                          ? approval.available_dates 
+                                        {(Array.isArray(approval.available_dates)
+                                          ? approval.available_dates
                                           : approval.available_dates.split(',')
                                         ).map((date, i) => (
                                           <span key={i} className="date-chip">

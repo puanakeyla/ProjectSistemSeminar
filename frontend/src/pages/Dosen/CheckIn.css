@@ -1,46 +1,60 @@
+/* Dosen Check-In Page - Modern Design */
 .checkin-wrapper {
-  padding: 32px;
-  background: transparent;
-  min-height: 100vh;
+  padding: 24px;
+  background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
+  min-height: calc(100vh - 80px);
 }
 
+/* Header Section */
 .checkin-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 32px;
-  padding: 24px;
-  background: linear-gradient(135deg, #182742 0%, #223355 100%);
+  background: white;
   border-radius: 16px;
-  box-shadow: 0 8px 24px rgba(10, 25, 41, 0.15);
+  padding: 32px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  border-left: 5px solid #4E8EA2;
 }
 
 .checkin-header h1 {
+  margin: 0 0 8px 0;
   font-size: 28px;
   font-weight: 700;
-  color: white;
-  margin: 0 0 8px 0;
+  color: #0f172a;
   letter-spacing: -0.02em;
 }
 
 .checkin-header p {
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 14px;
   margin: 0;
-  font-weight: 500;
+  font-size: 15px;
+  color: #64748b;
+  font-weight: 400;
 }
 
+/* Loading State */
 .loading-state {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 4rem;
-  gap: 1rem;
+  gap: 16px;
+  background: white;
+  border-radius: 16px;
+  padding: 60px 20px;
+  text-align: center;
+  margin: 40px auto;
+  max-width: 420px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+}
+
+.loading-state h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #0f172a;
 }
 
 .icon-spin {
   animation: spin 1s linear infinite;
+  color: #4E8EA2;
 }
 
 @keyframes spin {
@@ -48,250 +62,319 @@
   to { transform: rotate(360deg); }
 }
 
+/* Content Sections */
 .checkin-content {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 24px;
+}
+
+.section {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
 }
 
 .section-title {
+  margin: 0 0 24px 0;
   font-size: 20px;
   font-weight: 700;
-  color: #182742;
-  margin-bottom: 20px;
+  color: #0f172a;
+  letter-spacing: -0.01em;
   display: flex;
   align-items: center;
   gap: 8px;
-  letter-spacing: -0.01em;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #f1f5f9;
 }
 
+/* Empty State */
 .empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 60px 20px;
   text-align: center;
-  padding: 48px;
-  background: white;
-  border-radius: 16px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 12px;
   border: 2px dashed #cbd5e1;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .empty-state svg {
   color: #94a3b8;
-  margin-bottom: 16px;
 }
 
 .empty-state h3 {
+  margin: 0;
   font-size: 18px;
-  color: #475569;
-  margin-bottom: 8px;
   font-weight: 600;
+  color: #475569;
 }
 
 .empty-state p {
-  color: #94a3b8;
+  margin: 0;
   font-size: 14px;
+  color: #94a3b8;
 }
 
+/* Seminar Cards Grid */
 .seminar-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
   gap: 20px;
 }
 
 .seminar-card {
-  background: white;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
   border-radius: 16px;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: 2px solid #e2e8f0;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  transition: all 0.3s ease;
+  position: relative;
   overflow: hidden;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.seminar-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 5px;
+  height: 100%;
+  background: linear-gradient(180deg, #4E8EA2 0%, #2c5f6f 100%);
 }
 
 .seminar-card:hover {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
   transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(78, 142, 162, 0.15);
+  border-color: #4E8EA2;
 }
 
 .seminar-card.checked-in {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border-color: #86efac;
+}
+
+.seminar-card.checked-in::before {
+  background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+}
+
+/* Card Header */
 .card-header {
-  padding: 20px;
-  border-bottom: 1px solid #e2e8f0;
   display: flex;
   justify-content: space-between;
-  align-items: start;
+  align-items: flex-start;
   gap: 16px;
-  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
 }
 
 .card-header h3 {
-  font-size: 16px;
+  margin: 0;
+  font-size: 18px;
   font-weight: 700;
-  color: #182742;
-  line-height: 1.5;
+  color: #0f172a;
+  line-height: 1.4;
   flex: 1;
-  letter-spacing: -0.01em;
 }
 
 .badge-checked {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 6px 14px;
+  gap: 6px;
+  padding: 6px 12px;
   background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: white;
-  border-radius: 20px;
+  border-radius: 8px;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   white-space: nowrap;
-  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
 }
 
+/* Card Body */
 .card-body {
-  padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 12px;
-} padding: 1.25rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
 }
 
 .info-row {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 10px;
+  font-size: 14px;
   color: #475569;
-  font-size: 0.95rem;
+  padding: 8px 12px;
+  background: rgba(248, 250, 252, 0.7);
+  border-radius: 8px;
+  border: 1px solid #f1f5f9;
 }
 
 .info-row svg {
-  color: #94a3b8;
+  color: #64748b;
   flex-shrink: 0;
 }
 
+.info-row span {
+  font-weight: 500;
+}
+
 .info-row.role-badge {
-  margin-top: 0.5rem;
+  background: transparent;
+  border: none;
+  padding: 0;
 }
 
 .badge {
-  display: inline-block;
-  padding: 0.375rem 0.875rem;
-  background: #3b82f6;
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
   color: white;
-  border-radius: 6px;
-  font-size: 0.875rem;
+  border-radius: 8px;
+  font-size: 12px;
   font-weight: 600;
+  text-transform: capitalize;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
 }
 
+/* Card Footer */
 .card-footer {
-  padding: 20px;
+  margin-top: auto;
+  padding-top: 16px;
   border-top: 1px solid #e2e8f0;
 }
 
-.btn-checkin, .btn-checked {
+.btn-checkin,
+.btn-checked {
   width: 100%;
-  padding: 14px;
+  padding: 14px 20px;
   border: none;
   border-radius: 12px;
-  font-weight: 700;
   font-size: 15px;
+  font-weight: 600;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  letter-spacing: -0.01em;
+  transition: all 0.3s ease;
 }
 
 .btn-checkin {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, #4E8EA2 0%, #2c5f6f 100%);
   color: white;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 4px 12px rgba(78, 142, 162, 0.3);
 }
 
 .btn-checkin:hover:not(:disabled) {
-  background: linear-gradient(135deg, #059669 0%, #047857 100%);
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+  box-shadow: 0 8px 20px rgba(78, 142, 162, 0.4);
 }
 
 .btn-checkin:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-  transform: none;
 }
 
 .btn-checked {
-  background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
-  color: #64748b;
-  cursor: not-allowed;
-  box-shadow: none;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  cursor: default;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
+}
+
+/* History Table */
 .history-table {
-  background: white;
-  border-radius: 16px;
+  overflow-x: auto;
+  border-radius: 12px;
   border: 1px solid #e2e8f0;
-  overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .history-table table {
   width: 100%;
   border-collapse: collapse;
+  background: white;
 }
 
 .history-table thead {
-  background: linear-gradient(135deg, #182742 0%, #223355 100%);
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
 }
 
 .history-table th {
   padding: 16px;
   text-align: left;
-  font-weight: 700;
-  color: white;
   font-size: 13px;
-  border-bottom: none;
-  letter-spacing: 0.02em;
+  font-weight: 700;
+  color: #475569;
   text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid #e2e8f0;
 }
 
 .history-table td {
   padding: 16px;
-  border-bottom: 1px solid #f1f5f9;
-  color: #182742;
   font-size: 14px;
+  color: #1e293b;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.history-table tbody tr {
+  transition: all 0.2s ease;
+}
+
+.history-table tbody tr:hover {
+  background: linear-gradient(90deg, rgba(78, 142, 162, 0.03) 0%, rgba(78, 142, 162, 0.01) 100%);
 }
 
 .history-table tbody tr:last-child td {
   border-bottom: none;
 }
 
-.history-table tbody tr:hover {
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-} border-bottom: none;
-}
-
-.history-table tbody tr:hover {
-  background: #f8fafc;
+.role-badge-small {
+  display: inline-flex;
+  padding: 4px 10px;
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  color: white;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: capitalize;
 }
 
 .history-table small {
+  display: block;
+  font-size: 12px;
   color: #94a3b8;
-  font-size: 0.85rem;
+  margin-top: 2px;
 }
 
-.role-badge-small {
-  padding: 0.25rem 0.625rem;
-  background: #dbeafe;
-  color: #1e40af;
-  border-radius: 4px;
-  font-size: 0.8rem;
-  font-weight: 600;
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .seminar-grid {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  }
 }
 
 @media (max-width: 768px) {
   .checkin-wrapper {
-    padding: 1rem;
+    padding: 16px;
+  }
+
+  .checkin-header {
+    padding: 24px;
+  }
+
+  .checkin-header h1 {
+    font-size: 24px;
+  }
+
+  .section {
+    padding: 16px;
   }
 
   .seminar-grid {
@@ -299,10 +382,27 @@
   }
 
   .history-table {
-    overflow-x: auto;
+    font-size: 12px;
   }
 
-  .history-table table {
-    min-width: 800px;
+  .history-table th,
+  .history-table td {
+    padding: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .checkin-header h1 {
+    font-size: 20px;
+  }
+
+  .card-header h3 {
+    font-size: 16px;
+  }
+
+  .btn-checkin,
+  .btn-checked {
+    padding: 12px 16px;
+    font-size: 14px;
   }
 }

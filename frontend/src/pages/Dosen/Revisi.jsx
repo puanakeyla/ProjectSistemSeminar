@@ -51,10 +51,12 @@ function Revisi() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      const scheduledSeminars = (response.data.data || []).filter(
-        (s) => s.schedule && s.my_role && (s.my_role === 'pembimbing1' || s.my_role === 'pembimbing2' || s.my_role === 'penguji')
+      // Show seminars where dosen is involved (pembimbing/penguji)
+      // Include both scheduled seminars AND pending_verification (for revision before admin approval)
+      const mySeminars = (response.data.data || []).filter(
+        (s) => s.my_role && s.my_role.trim() !== ''
       );
-      setSeminars(scheduledSeminars);
+      setSeminars(mySeminars);
     } catch (err) {
       console.error('Error fetching seminars:', err);
       setError(err.response?.data?.message || 'Gagal memuat data seminar');

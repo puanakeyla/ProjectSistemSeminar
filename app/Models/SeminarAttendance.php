@@ -76,4 +76,15 @@ class SeminarAttendance extends Model
     {
         return $this->metode === 'manual';
     }
+
+    // Relationship untuk revisi
+    public function revisions()
+    {
+        return $this->hasMany(AttendanceRevision::class, 'seminar_attendance_id');
+    }
+
+    public function latestRevision()
+    {
+        return $this->hasOne(AttendanceRevision::class, 'seminar_attendance_id')->latestOfMany();
+    }
 }

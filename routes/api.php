@@ -13,18 +13,21 @@ use App\Http\Controllers\Auth\LogoutController;
 // Admin (Sudah benar pakai alias)
 use App\Http\Controllers\Admin\AttendanceController as AdminAttendanceController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\LecturerVerificationController;
 use App\Http\Controllers\Admin\QRController as AdminQRController;
 use App\Http\Controllers\Admin\ScheduleController as AdminScheduleController;
 use App\Http\Controllers\Admin\VerificationController as AdminVerificationController;
 
 // Dosen (Sudah benar pakai alias)
 use App\Http\Controllers\Dosen\ApprovalController;
+use App\Http\Controllers\Dosen\AttendanceRevisionController as DosenAttendanceRevisionController;
 use App\Http\Controllers\Dosen\DashboardController as DosenDashboardController;
 use App\Http\Controllers\Dosen\RevisionController as DosenRevisionController;
 use App\Http\Controllers\Dosen\SeminarController as DosenSeminarController;
 
 // Mahasiswa (INI YANG DIPERBAIKI)
 use App\Http\Controllers\Mahasiswa\AttendanceController as MahasiswaAttendanceController;
+use App\Http\Controllers\Mahasiswa\AttendanceRevisionController as MahasiswaAttendanceRevisionController;
 use App\Http\Controllers\Mahasiswa\DashboardController as MahasiswaDashboardController;
 use App\Http\Controllers\Mahasiswa\RevisionController as MahasiswaRevisionController;
 use App\Http\Controllers\Mahasiswa\SeminarController as MahasiswaSeminarController;
@@ -91,6 +94,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/attendance/history', [MahasiswaAttendanceController::class, 'getAttendanceHistory']);
         Route::post('/attendance/scan-qr', [MahasiswaAttendanceController::class, 'scanQRAttendance']);
 
+        // Attendance Revisions (NEW)
+        Route::get('/attendance-revisions', [MahasiswaAttendanceRevisionController::class, 'index']);
+        Route::get('/attendance-revisions/{id}', [MahasiswaAttendanceRevisionController::class, 'show']);
+        Route::post('/attendance-revisions', [MahasiswaAttendanceRevisionController::class, 'store']);
+        Route::get('/attendance-revisions/revisable/list', [MahasiswaAttendanceRevisionController::class, 'getRevisableAttendances']);
+        Route::delete('/attendance-revisions/{id}/cancel', [MahasiswaAttendanceRevisionController::class, 'cancel']);
+
         // Revisions
         Route::get('/revisions', [MahasiswaRevisionController::class, 'index']);
         Route::get('/revisions/{id}', [MahasiswaRevisionController::class, 'show']);
@@ -130,6 +140,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Attendance
         Route::post('/attendance/status', [ApprovalController::class, 'updateAttendanceStatus']);
+
+        // Attendance Revisions (NEW)
+        Route::get('/attendance-revisions/pending', [DosenAttendanceRevisionController::class, 'getPendingRevisions']);
+        Route::post('/attendance-revisions/{id}/approve', [DosenAttendanceRevisionController::class, 'approve']);
+        Route::post('/attendance-revisions/{id}/reject', [DosenAttendanceRevisionController::class, 'reject']);
+        Route::post('/attendance-revisions/update-status', [DosenAttendanceRevisionController::class, 'updateAttendanceStatus']);
 
         // Revisions
         Route::get('/revisions', [DosenRevisionController::class, 'index']);
@@ -183,6 +199,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/attendances/manual', [AdminAttendanceController::class, 'manualAttendance']);
         Route::delete('/attendances/{attendanceId}', [AdminAttendanceController::class, 'destroy']);
         Route::get('/attendances/mahasiswa-list', [AdminAttendanceController::class, 'getMahasiswaList']);
+        Route::get('/attendances/mahasiswa/{mahasiswaId}/history', [AdminAttendanceController::class, 'getMahasiswaHistory']); // NEW: Mahasiswa attendance history
+
+        // Lecturer Verification (NEW)
+        Route::get('/lecturer-attendances/unverified', [LecturerVerificationController::class, 'getUnverified']);
+        Route::get('/lecturer-attendances', [LecturerVerificationController::class, 'getAllWithFilter']);
+        Route::put('/lecturer-attendances/{id}/verify', [LecturerVerificationController::class, 'verify']);
+        Route::put('/lecturer-attendances/{id}/unverify', [LecturerVerificationController::class, 'unverify']);
     });
 
     // ==================== SEMINAR OWNER PROTECTED ROUTES ====================

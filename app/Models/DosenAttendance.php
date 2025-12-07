@@ -65,4 +65,21 @@ class DosenAttendance extends Model
             default => ucfirst($this->role),
         };
     }
+
+    // Relationship untuk verifikator admin
+    public function verifier()
+    {
+        return $this->belongsTo(User::class, 'verified_by');
+    }
+
+    // Scope untuk filter verifikasi
+    public function scopeUnverified($query)
+    {
+        return $query->where('is_verified_by_admin', false);
+    }
+
+    public function scopeVerified($query)
+    {
+        return $query->where('is_verified_by_admin', true);
+    }
 }

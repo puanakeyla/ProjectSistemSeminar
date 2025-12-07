@@ -230,13 +230,11 @@ class SeminarController extends Controller
                 ] : null,
                 'schedule' => $seminar->schedule ? [
                     'id' => $seminar->schedule->id,
-                    'tanggal' => $seminar->schedule->tanggal->format('Y-m-d'),
-                    'waktu_mulai' => $seminar->schedule->waktu_mulai->format('H:i'),
-                    'waktu_selesai' => $seminar->schedule->waktu_selesai->format('H:i'),
-                    'ruangan' => $seminar->schedule->ruangan,
-                    'catatan' => $seminar->schedule->catatan,
-                    'formatted_date' => $seminar->schedule->tanggal->format('d M Y'),
-                    'formatted_time' => $seminar->schedule->waktu_mulai->format('H:i') . ' - ' . $seminar->schedule->waktu_selesai->format('H:i'),
+                    'waktu_mulai' => $seminar->schedule->waktu_mulai->format('Y-m-d H:i:s'),
+                    'durasi_menit' => $seminar->schedule->durasi_menit,
+                    'ruangan' => $seminar->schedule->ruang,
+                    'formatted_date' => $seminar->schedule->waktu_mulai->format('d M Y'),
+                    'formatted_time' => $seminar->schedule->waktu_mulai->format('H:i') . ' - ' . $seminar->schedule->waktu_mulai->copy()->addMinutes($seminar->schedule->durasi_menit)->format('H:i'),
                 ] : null,
                 'revision' => $latestRevision ? [
                     'id' => $latestRevision->id,
@@ -286,7 +284,27 @@ class SeminarController extends Controller
             ], 403);
         }
 
-        // NO TIME VALIDATION - Dosen can check-in anytime
+        // TIME VALIDATION: Check if within check-in period
+        // Dosen can check-in: 2 hours before until 1 hour after seminar ends
+        $checkInStartTime = $schedule->waktu_mulai->copy()->subHours(2);
+        $checkInEndTime = $schedule->getEndTime()->addHour();
+        $now = now();
+
+        if ($now < $checkInStartTime) {
+            $hoursUntil = $now->diffInHours($checkInStartTime);
+            return response()->json([
+                'message' => "Check-in belum dapat dilakukan. Silakan check-in {$hoursUntil} jam lagi (2 jam sebelum seminar dimulai).",
+                'waktu_mulai_checkin' => $checkInStartTime->format('d M Y H:i'),
+                'waktu_seminar' => $schedule->waktu_mulai->format('d M Y H:i'),
+            ], 422);
+        }
+
+        if ($now > $checkInEndTime) {
+            return response()->json([
+                'message' => 'Waktu check-in telah berakhir (1 jam setelah seminar selesai).',
+                'waktu_selesai_checkin' => $checkInEndTime->format('d M Y H:i'),
+            ], 422);
+        }
 
         // Determine dosen role
         $role = '';
@@ -321,6 +339,9 @@ class SeminarController extends Controller
             'status' => 'hadir',
             'confirmed_at' => now(),
         ]);
+
+        // Broadcast event ke admin untuk real-time notification
+        broadcast(new \App\Events\LecturerCheckedIn($attendance))->toOthers();
 
         return response()->json([
             'message' => 'Check-in berhasil dicatat',

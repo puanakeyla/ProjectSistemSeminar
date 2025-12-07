@@ -14,6 +14,10 @@ class SeminarSchedule extends Model
         'waktu_mulai',
         'durasi_menit',
         'ruang',
+        'lokasi',
+        'latitude',
+        'longitude',
+        'radius_meter',
         'qr_code_path',
         'status',
     ];
@@ -170,7 +174,7 @@ class SeminarSchedule extends Model
         $now = now();
         return $query->where('waktu_mulai', '<=', $now->copy()->addMinutes($gracePeriodBefore))
             ->where(function($q) use ($now, $gracePeriodAfter) {
-                $q->whereRaw('DATE_ADD(waktu_mulai, INTERVAL (durasi_menit + ?) MINUTE) >= ?', 
+                $q->whereRaw('DATE_ADD(waktu_mulai, INTERVAL (durasi_menit + ?) MINUTE) >= ?',
                     [$gracePeriodAfter, $now]);
             });
     }

@@ -298,6 +298,38 @@ class ApprovalController extends Controller
             ], 403);
         }
 
+        // TIME VALIDATION: Check if within confirmation period
+        // Dosen can confirm: 24 hours before until 1 hour after seminar ends
+        $confirmationStartTime = $schedule->waktu_mulai->copy()->subHours(24);
+        $confirmationEndTime = $schedule->getEndTime()->addHour();
+        $now = now();
+
+        if ($now < $confirmationStartTime) {
+            $hoursUntil = $now->diffInHours($confirmationStartTime);
+            return response()->json([
+                'message' => "Konfirmasi kehadiran belum dapat dilakukan. Silakan konfirmasi {$hoursUntil} jam lagi (24 jam sebelum seminar).",
+                'waktu_mulai_konfirmasi' => $confirmationStartTime->format('d M Y H:i'),
+            ], 422);
+        }
+
+        if ($now > $confirmationEndTime) {
+            return response()->json([
+                'message' => 'Waktu konfirmasi kehadiran telah berakhir (1 jam setelah seminar selesai).',
+                'waktu_selesai_konfirmasi' => $confirmationEndTime->format('d M Y H:i'),
+            ], 422);
+        }
+
+        // Check if confirming 'tidak_hadir' too close to seminar time
+        if ($validated['status'] === 'tidak_hadir') {
+            $hoursUntilSeminar = $now->diffInHours($schedule->waktu_mulai, false);
+            if ($hoursUntilSeminar < 2 && $hoursUntilSeminar > 0) {
+                return response()->json([
+                    'message' => 'Konfirmasi ketidakhadiran harus dilakukan minimal 2 jam sebelum seminar dimulai untuk memberikan waktu mencari pengganti.',
+                    'waktu_seminar' => $schedule->waktu_mulai->format('d M Y H:i'),
+                ], 422);
+            }
+        }
+
         // Determine dosen role in this seminar
         $role = $this->getDosenRole($seminar, $user);
 

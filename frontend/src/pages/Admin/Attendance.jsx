@@ -5,11 +5,13 @@ import { Calendar, CheckCircle, Loader2, RefreshCcw, Edit3 } from 'lucide-react'
 
 function Attendance() {
   const [attendances, setAttendances] = useState([]);
+  const [lecturerAttendances, setLecturerAttendances] = useState([]);
   const [schedules, setSchedules] = useState([]);
   const [selectedSchedule, setSelectedSchedule] = useState(null);
   const [showManualModal, setShowManualModal] = useState(false);
   const [mahasiswaList, setMahasiswaList] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('mahasiswa'); // 'mahasiswa' or 'dosen'
   const [formData, setFormData] = useState({
     seminar_schedule_id: '',
     mahasiswa_id: '',
@@ -34,12 +36,19 @@ function Attendance() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [attendancesData, schedulesData, mahasiswaData] = await Promise.all([
+      const token = localStorage.getItem('token');
+      const [attendancesData, lecturerData, schedulesData, mahasiswaData] = await Promise.all([
         adminAPI.getAttendances(),
+        fetch('http://localhost:8000/api/admin/lecturer-attendances', {
+          headers: { Authorization: `Bearer ${token}` }
+        }).then(r => r.json()),
         adminAPI.getSchedules(),
         adminAPI.getMahasiswaList()
       ]);
       setAttendances(normalizeArray(attendancesData));
+      // Extract data from pagination response
+      const lecturerList = lecturerData?.data?.data || lecturerData?.data || [];
+      setLecturerAttendances(Array.isArray(lecturerList) ? lecturerList : []);
       setSchedules(normalizeArray(schedulesData).filter(s => s.status === 'scheduled' || s.status === 'completed'));
       setMahasiswaList(normalizeArray(mahasiswaData));
     } catch (err) {
@@ -105,6 +114,24 @@ function Attendance() {
     }
   };
 
+  const handleVerifyLecturer = async (attendanceId) => {
+    try {
+      const token = localStorage.getItem('token');
+      await fetch(`http://localhost:8000/api/admin/lecturer-attendances/${attendanceId}/verify`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      alert('Check-in dosen berhasil diverifikasi');
+      await fetchData();
+    } catch (err) {
+      console.error('Error:', err);
+      alert('Gagal memverifikasi check-in dosen');
+    }
+  };
+
   const formatDate = (dateString) => {
     if (!dateString) return '-';
     const date = new Date(dateString);
@@ -156,15 +183,54 @@ function Attendance() {
           <p>Kelola dan lihat data kehadiran seminar</p>
         </div>
         <div className="header-actions">
-          <button className="btn-manual" onClick={handleAddManual}>
-            <Edit3 className="w-4 h-4" /> Absensi Manual
-          </button>
+          {activeTab === 'mahasiswa' && (
+            <button className="btn-manual" onClick={handleAddManual}>
+              <Edit3 className="w-4 h-4" /> Absensi Manual
+            </button>
+          )}
           <button className="refresh-btn" onClick={fetchData}>
             <RefreshCcw className="w-4 h-4" /> Segarkan
           </button>
         </div>
       </div>
 
+      {/* Tab Switcher */}
+      <div className="tabs-container" style={{marginBottom: '1.5rem', borderBottom: '2px solid #e2e8f0', display: 'flex', gap: '0.5rem'}}>
+        <button
+          className={`tab-btn ${activeTab === 'mahasiswa' ? 'active' : ''}`}
+          onClick={() => setActiveTab('mahasiswa')}
+          style={{
+            padding: '0.75rem 1.5rem',
+            background: activeTab === 'mahasiswa' ? '#f8fafc' : 'none',
+            border: 'none',
+            borderBottom: activeTab === 'mahasiswa' ? '3px solid #4E8EA2' : '3px solid transparent',
+            color: activeTab === 'mahasiswa' ? '#4E8EA2' : '#64748b',
+            fontWeight: 600,
+            cursor: 'pointer',
+            marginBottom: '-2px'
+          }}
+        >
+          👨‍🎓 Absensi Mahasiswa
+        </button>
+        <button
+          className={`tab-btn ${activeTab === 'dosen' ? 'active' : ''}`}
+          onClick={() => setActiveTab('dosen')}
+          style={{
+            padding: '0.75rem 1.5rem',
+            background: activeTab === 'dosen' ? '#f8fafc' : 'none',
+            border: 'none',
+            borderBottom: activeTab === 'dosen' ? '3px solid #4E8EA2' : '3px solid transparent',
+            color: activeTab === 'dosen' ? '#4E8EA2' : '#64748b',
+            fontWeight: 600,
+            cursor: 'pointer',
+            marginBottom: '-2px'
+          }}
+        >
+          👨‍🏫 Check-in Dosen
+        </button>
+      </div>
+
+      {activeTab === 'mahasiswa' ? (
       <div className="attendance-layout">
         {/* Schedules List */}
         <div className="schedules-panel">
@@ -292,6 +358,90 @@ function Attendance() {
           )}
         </div>
       </div>
+      ) : (
+        /* Dosen Check-in View */
+        <div className="lecturer-attendance-view">
+          <div className="panel-header">
+            <h2>Check-in Dosen</h2>
+            <span className="count-badge">{lecturerAttendances.length}</span>
+          </div>
+
+          {lecturerAttendances.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-icon"><CheckCircle size={32} /></div>
+              <h2>Belum Ada Check-in Dosen</h2>
+              <p>Belum ada dosen yang melakukan check-in</p>
+            </div>
+          ) : (
+            <div className="attendance-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>No</th>
+                    <th>Dosen</th>
+                    <th>NIDN</th>
+                    <th>Seminar</th>
+                    <th>Role</th>
+                    <th>Waktu Check-in</th>
+                    <th>Status</th>
+                    <th>Verifikasi</th>
+                    <th>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lecturerAttendances.map((attendance, index) => (
+                    <tr key={attendance.id}>
+                      <td>{index + 1}</td>
+                      <td>
+                        <strong>{attendance.dosen?.name || '-'}</strong>
+                      </td>
+                      <td>{attendance.dosen?.nidn || '-'}</td>
+                      <td className="seminar-cell">
+                        {attendance.schedule?.seminar?.judul || '-'}
+                      </td>
+                      <td>
+                        <span className="role-badge">
+                          {attendance.role === 'pembimbing1' ? '👨‍🏫 Pembimbing 1' :
+                           attendance.role === 'pembimbing2' ? '👨‍🏫 Pembimbing 2' :
+                           '👨‍⚖️ Penguji'}
+                        </span>
+                      </td>
+                      <td>{formatDate(attendance.confirmed_at)}</td>
+                      <td>
+                        <span className={`status-badge ${attendance.status === 'hadir' ? 'hadir' : 'alpha'}`}>
+                          {attendance.status === 'hadir' ? '✅ Hadir' : '❌ Tidak Hadir'}
+                        </span>
+                      </td>
+                      <td>
+                        {attendance.is_verified_by_admin ? (
+                          <span className="verification-badge verified">
+                            ✓ Terverifikasi
+                          </span>
+                        ) : (
+                          <span className="verification-badge pending">
+                            ⏳ Belum
+                          </span>
+                        )}
+                      </td>
+                      <td>
+                        {!attendance.is_verified_by_admin && (
+                          <button
+                            className="btn-verify"
+                            onClick={() => handleVerifyLecturer(attendance.id)}
+                            title="Verifikasi Check-in"
+                          >
+                            ✓ Verifikasi
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Manual Attendance Modal */}
       {showManualModal && (

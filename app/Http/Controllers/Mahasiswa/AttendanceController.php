@@ -87,6 +87,26 @@ class AttendanceController extends Controller
             ], 422);
         }
 
+        // TIME VALIDATION: Can only register up to 7 days before seminar
+        $registrationStartTime = $schedule->waktu_mulai->copy()->subDays(7);
+        $registrationEndTime = $schedule->waktu_mulai->copy()->subMinutes(30); // Close 30 min before
+        $now = now();
+
+        if ($now < $registrationStartTime) {
+            $daysUntil = $now->diffInDays($registrationStartTime);
+            return response()->json([
+                'message' => "Pendaftaran akan dibuka {$daysUntil} hari lagi (7 hari sebelum seminar).",
+                'waktu_buka_pendaftaran' => $registrationStartTime->format('d M Y H:i'),
+            ], 422);
+        }
+
+        if ($now > $registrationEndTime) {
+            return response()->json([
+                'message' => 'Pendaftaran telah ditutup. Silakan gunakan QR code untuk absensi langsung saat seminar berlangsung.',
+                'waktu_tutup_pendaftaran' => $registrationEndTime->format('d M Y H:i'),
+            ], 422);
+        }
+
         // Register attendance
         $attendance = SeminarAttendance::create([
             'mahasiswa_id' => $user->id,
@@ -161,6 +181,9 @@ class AttendanceController extends Controller
         $validated = $request->validate([
             'qr_token' => 'required_without:qr_content|string|nullable',
             'qr_content' => 'required_without:qr_token|string|nullable',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
+            'manual_reason' => 'nullable|string|max:500',
         ]);
 
         $user = $request->user();
@@ -199,9 +222,64 @@ class AttendanceController extends Controller
             ], 422);
         }
 
-        // REMOVED: Time validation - dapat scan kapan saja
-        // Status always 'present' since no time checking
-        $status = 'present';
+        // TIME VALIDATION: Check if seminar is currently ongoing
+        // Grace period: 15 minutes before start, 30 minutes after end
+        if (!$schedule->isOngoing(15, 30)) {
+            $seminarStatus = $schedule->getSeminarStatus();
+
+            if ($seminarStatus === 'upcoming') {
+                $minutesUntil = $schedule->getMinutesUntilStart();
+                return response()->json([
+                    'message' => "Seminar belum dimulai. QR code dapat dipindai {$minutesUntil} menit lagi (15 menit sebelum seminar dimulai).",
+                    'seminar_status' => 'upcoming',
+                    'waktu_mulai' => $schedule->waktu_mulai->format('d M Y H:i'),
+                ], 422);
+            } elseif ($seminarStatus === 'finished') {
+                return response()->json([
+                    'message' => 'Seminar telah selesai. Waktu absensi telah berakhir.',
+                    'seminar_status' => 'finished',
+                    'waktu_selesai' => $schedule->getEndTime()->format('d M Y H:i'),
+                ], 422);
+            }
+        }
+
+        // Determine attendance status based on time
+        $minutesLate = 0;
+        if (now() > $schedule->waktu_mulai) {
+            $minutesLate = now()->diffInMinutes($schedule->waktu_mulai);
+        }
+
+        // Status: present if on time (within 15 min), late if after start time
+        $status = $minutesLate > 15 ? 'late' : 'present';
+
+        // Validasi geolocation jika koordinat seminar tersedia
+        $distance = null;
+        $validLocation = true;
+        if ($schedule->latitude && $schedule->longitude) {
+            if ($validated['latitude'] && $validated['longitude']) {
+                // Hitung jarak menggunakan Haversine formula
+                $distance = $this->calculateDistance(
+                    $validated['latitude'],
+                    $validated['longitude'],
+                    $schedule->latitude,
+                    $schedule->longitude
+                );
+
+                // Cek apakah dalam radius yang diizinkan
+                $allowedRadius = $schedule->radius_meter ?? 50;
+                if ($distance > $allowedRadius) {
+                    $validLocation = false;
+                    // Jika di luar radius dan tidak ada manual_reason, reject
+                    if (!$validated['manual_reason']) {
+                        return response()->json([
+                            'message' => "Anda berada di luar area seminar. Jarak Anda: {$distance}m (maksimal {$allowedRadius}m)",
+                            'distance' => round($distance, 2),
+                            'allowed_radius' => $allowedRadius,
+                        ], 422);
+                    }
+                }
+            }
+        }
 
         // Record attendance
         $attendance = SeminarAttendance::create([
@@ -213,10 +291,21 @@ class AttendanceController extends Controller
             'metode' => 'qr',
             'status' => $status,
             'qr_token' => $qrToken,
+            'latitude' => $validated['latitude'] ?? null,
+            'longitude' => $validated['longitude'] ?? null,
+            'distance_meter' => $distance,
+            'manual_reason' => $validated['manual_reason'] ?? null,
         ]);
 
+        // Broadcast event ke admin untuk real-time update
+        broadcast(new \App\Events\StudentCheckedIn($attendance))->toOthers();
+
+        $statusMessage = $status === 'late'
+            ? "Absensi berhasil dicatat (Terlambat {$minutesLate} menit)"
+            : 'Absensi berhasil dicatat!';
+
         return response()->json([
-            'message' => 'Absensi berhasil dicatat!',
+            'message' => $statusMessage,
             'data' => [
                 'id' => $attendance->id,
                 'seminar_title' => $schedule->seminar->judul,
@@ -224,7 +313,8 @@ class AttendanceController extends Controller
                 'waktu_absen' => $attendance->waktu_absen->format('d M Y H:i'),
                 'metode_absen' => $attendance->metode_absen,
                 'status' => $status,
-                'status_display' => 'Hadir',
+                'status_display' => $status === 'late' ? 'Terlambat' : 'Hadir',
+                'minutes_late' => $minutesLate,
             ]
         ]);
     }
@@ -246,5 +336,26 @@ class AttendanceController extends Controller
             'message' => 'QR image upload endpoint - requires QR decoder library',
             'note' => 'Please use scanQRAttendance endpoint with qr_token instead'
         ], 501);
+    }
+
+    /**
+     * Calculate distance between two coordinates using Haversine formula
+     * Returns distance in meters
+     */
+    private function calculateDistance($lat1, $lon1, $lat2, $lon2): float
+    {
+        $earthRadius = 6371000; // Earth radius in meters
+
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLon = deg2rad($lon2 - $lon1);
+
+        $a = sin($dLat / 2) * sin($dLat / 2) +
+            cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
+            sin($dLon / 2) * sin($dLon / 2);
+
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+        $distance = $earthRadius * $c;
+
+        return round($distance, 2);
     }
 }
