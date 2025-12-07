@@ -33,6 +33,8 @@ function Dashboard() {
     attended: 0
   });
   const [recentActivities, setRecentActivities] = useState([]);
+  const [scheduledSeminars, setScheduledSeminars] = useState([]);
+  const [cancelledSeminars, setCancelledSeminars] = useState([]);
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState('');
 
@@ -53,52 +55,51 @@ function Dashboard() {
   ], []);
 
   useEffect(() => {
+    let isMounted = true;
+    
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem('token');
+        const userStr = localStorage.getItem('user');
+
+        if (userStr) {
+          const user = JSON.parse(userStr);
+          if (isMounted) setUserName(user.name);
+        }
+
+        const response = await axios.get(`${API_URL}/mahasiswa/dashboard`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (!isMounted) return;
+
+        const data = response.data.data;
+        setStats({
+          total: data.counts?.total || 0,
+          approved: data.counts?.approved || 0,
+          pending_verification: data.counts?.pending_verification || 0,
+          revising: data.counts?.revising || 0,
+          attended: data.attended_seminars_count || 0
+        });
+        setRecentActivities(data.recent_seminars || []);
+        setScheduledSeminars(data.scheduled_seminars || []);
+        setCancelledSeminars(data.cancelled_seminars || []);
+      } catch (err) {
+        if (isMounted) {
+          console.error('Error fetching dashboard:', err);
+        }
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
     fetchDashboardData();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
-
-  const fetchDashboardData = async () => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem('token');
-      const userStr = localStorage.getItem('user');
-
-      if (userStr) {
-        const user = JSON.parse(userStr);
-        setUserName(user.name);
-      }
-
-      // Add timeout to prevent hanging
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
-
-      const response = await axios.get(`${API_URL}/mahasiswa/dashboard`, {
-        headers: { Authorization: `Bearer ${token}` },
-        signal: controller.signal
-      });
-
-      clearTimeout(timeoutId);
-
-      const data = response.data.data;
-      setStats({
-        total: data.counts?.total || 0,
-        approved: data.counts?.approved || 0,
-        pending_verification: data.counts?.pending_verification || 0,
-        revising: data.counts?.revising || 0,
-        attended: data.attended_seminars_count || 0
-      });
-      setRecentActivities(data.recent_seminars || []);
-      setScheduledSeminars(data.scheduled_seminars || []);
-      setCancelledSeminars(data.cancelled_seminars || []);
-    } catch (err) {
-      if (err.name === 'AbortError') {
-        console.error('Request timeout');
-      } else {
-        console.error('Error fetching dashboard:', err);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
 
   if (loading) {
     return (

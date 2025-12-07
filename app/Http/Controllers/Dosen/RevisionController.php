@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Seminar;
 use App\Models\SeminarRevision;
 use App\Models\SeminarRevisionItem;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -24,7 +25,8 @@ class RevisionController extends Controller
         // Validate request
         $validator = Validator::make($request->all(), [
             'poin_revisi' => 'required|string',
-            'kategori' => 'nullable|string|max:100'
+            'kategori' => 'nullable|string|max:100',
+            'deadline' => 'nullable|date|after:now'
         ]);
 
         if ($validator->fails()) {
@@ -73,7 +75,7 @@ class RevisionController extends Controller
                 'mahasiswa_id' => $seminar->mahasiswa_id,
                 'nomor_revisi' => $maxNomor + 1,
                 'catatan' => 'Revisi dari dosen',
-                'status' => 'in_progress'
+                'status' => 'pending' // Start as pending, will become completed when all items approved
             ]
         );
 
@@ -83,6 +85,7 @@ class RevisionController extends Controller
             'created_by' => $user->id,
             'poin_revisi' => $request->poin_revisi,
             'kategori' => $request->kategori,
+            'deadline' => $request->deadline,
             'status' => 'pending'
         ]);
 
@@ -147,14 +150,35 @@ class RevisionController extends Controller
         if ($request->action === 'approve') {
             $item->status = 'approved';
             $item->validated_at = now();
+            $item->validated_by = $user->id;
             $item->rejection_reason = null;
         } else {
             $item->status = 'rejected';
+            $item->validated_at = now();
+            $item->validated_by = $user->id;
             $item->rejection_reason = $request->rejection_reason;
             $item->revision_count += 1;
         }
 
         $item->save();
+
+        // Send notification to mahasiswa
+        $seminar = $item->revision->seminar;
+        if ($request->action === 'approve') {
+            NotificationService::notifyRevisionApproved($seminar, $item, $user);
+        } else {
+            NotificationService::notifyRevisionRejected($seminar, $item, $user);
+        }
+
+        // Check if ALL items from ALL dosen are approved - auto complete revision
+        $revision = $item->revision;
+        if ($revision->allDosenItemsApproved()) {
+            $revision->status = 'completed';
+            $revision->save();
+            
+            // Send completion notification
+            NotificationService::notifyAllRevisionsCompleted($seminar);
+        }
 
         return response()->json([
             'success' => true,

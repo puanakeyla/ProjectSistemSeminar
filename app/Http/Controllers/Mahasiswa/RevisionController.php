@@ -72,7 +72,6 @@ class RevisionController extends Controller
             $filePath = $file->storeAs('revisions', $fileName, 'public');
 
             $item->file_path = $filePath;
-            $item->file_url = Storage::url($filePath);
         }
 
         // Update item
@@ -80,6 +79,12 @@ class RevisionController extends Controller
         $item->status = 'submitted';
         $item->submitted_at = now();
         $item->save();
+
+        // Send notification to dosen
+        \App\Services\NotificationService::notifyRevisionSubmitted(
+            $item->revision->seminar,
+            $item
+        );
 
         return response()->json([
             'success' => true,

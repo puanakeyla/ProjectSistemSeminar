@@ -299,4 +299,16 @@ class Seminar extends Model
 
         return $status;
     }
+
+    /**
+     * Get URL for seminar file
+     */
+    public function getFileUrl(): ?string
+    {
+        if (!$this->file_berkas) {
+            return null;
+        }
+
+        return asset('storage/' . $this->file_berkas);
+    }
 }

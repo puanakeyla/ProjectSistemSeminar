@@ -189,6 +189,16 @@
   transform: translateY(-2px);
 }
 
+.revisi-item-approved {
+  border-color: rgba(34, 197, 94, 0.3);
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.03), rgba(34, 197, 94, 0.08));
+}
+
+.revisi-item-approved:hover {
+  border-color: rgba(34, 197, 94, 0.5);
+  box-shadow: 0 20px 48px rgba(34, 197, 94, 0.2);
+}
+
 .revisi-item-header {
   display: flex;
   justify-content: space-between;
@@ -515,6 +525,50 @@
 
 .revisi-file-link:hover {
   background: rgba(29, 78, 216, 0.15);
+}
+
+.revisi-file-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.revisi-file-btn {
+  flex: 1;
+  cursor: pointer;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.revisi-file-btn-open {
+  background: var(--revisi-primary);
+  color: white;
+}
+
+.revisi-file-btn-open:hover {
+  background: rgba(29, 78, 216, 0.9);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(29, 78, 216, 0.2);
+}
+
+.revisi-file-btn-download {
+  background: var(--revisi-success);
+  color: white;
+}
+
+.revisi-file-btn-download:hover {
+  background: rgba(34, 197, 94, 0.9);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(34, 197, 94, 0.2);
 }
 
 .revisi-rejection {

@@ -26,7 +26,13 @@ class SeminarController extends Controller
                 'pembimbing1:id,name',
                 'pembimbing2:id,name',
                 'penguji:id,name',
-                'schedule:id,seminar_id,waktu_mulai,durasi_menit,ruang,status'
+                'schedule:id,seminar_id,waktu_mulai,durasi_menit,ruang,status',
+                'revisions' => function($query) {
+                    $query->select(['id', 'seminar_id', 'status'])
+                          ->latest()
+                          ->limit(1)
+                          ->with(['items:id,revision_id,status']);
+                }
             ])
             ->where(function($query) use ($user) {
                 $query->where('pembimbing1_id', $user->id)
@@ -38,17 +44,22 @@ class SeminarController extends Controller
             ->orderBy('created_at', 'desc')
             ->limit(100) // Limit to prevent timeout
             ->get()
+            ->unique('id') // Remove duplicates by ID (in case dosen has multiple roles)
+            ->values() // Reset array keys
             ->map(function($seminar) use ($user) {
 
-                // Determine dosen role
-                $role = '';
+                // Determine dosen role - prioritize primary role
+                $roles = [];
                 if ($seminar->pembimbing1_id == $user->id) {
-                    $role = 'Pembimbing 1';
-                } elseif ($seminar->pembimbing2_id == $user->id) {
-                    $role = 'Pembimbing 2';
-                } elseif ($seminar->penguji_id == $user->id) {
-                    $role = 'Penguji';
+                    $roles[] = 'Pembimbing 1';
                 }
+                if ($seminar->pembimbing2_id == $user->id) {
+                    $roles[] = 'Pembimbing 2';
+                }
+                if ($seminar->penguji_id == $user->id) {
+                    $roles[] = 'Penguji';
+                }
+                $role = implode(', ', $roles); // Show all roles if multiple
 
                 return [
                     'id' => $seminar->id,
@@ -88,6 +99,13 @@ class SeminarController extends Controller
                         'is_today' => $seminar->schedule->waktu_mulai->isToday(),
                         'is_upcoming' => $seminar->schedule->waktu_mulai->isFuture(),
                         'is_past' => $seminar->schedule->waktu_mulai->isPast(),
+                    ] : null,
+                    'revision' => $seminar->revisions->first() ? [
+                        'id' => $seminar->revisions->first()->id,
+                        'status' => $seminar->revisions->first()->status,
+                        'total_items' => $seminar->revisions->first()->items->count(),
+                        'approved_items' => $seminar->revisions->first()->items->where('status', 'approved')->count(),
+                        'progress' => $seminar->revisions->first()->getProgressPercentage(),
                     ] : null,
                     'created_at' => $seminar->created_at->format('d M Y H:i'),
                 ];
@@ -154,6 +172,7 @@ class SeminarController extends Controller
                     'items' => $items->map(function($item) {
                         return [
                             'id' => $item->id,
+                            'revision_id' => $item->revision_id,
                             'poin_revisi' => $item->poin_revisi,
                             'kategori' => $item->kategori,
                             'status' => $item->status,
@@ -164,6 +183,11 @@ class SeminarController extends Controller
                             'file_url' => $item->getFileUrl(),
                             'rejection_reason' => $item->rejection_reason,
                             'revision_count' => $item->revision_count,
+                            'deadline' => $item->deadline?->format('d M Y H:i'),
+                            'is_late' => $item->isLate(),
+                            'late_duration' => $item->getLateDuration(),
+                            'is_deadline_approaching' => $item->isDeadlineApproaching(),
+                            'is_deadline_passed' => $item->isDeadlinePassed(),
                             'submitted_at' => $item->submitted_at?->format('d M Y H:i'),
                             'validated_at' => $item->validated_at?->format('d M Y H:i'),
                             'validator' => $item->validator ? $item->validator->name : null,
@@ -176,6 +200,7 @@ class SeminarController extends Controller
             $myItems = $latestRevision->items->where('created_by', $user->id)->map(function($item) {
                 return [
                     'id' => $item->id,
+                    'revision_id' => $item->revision_id,
                     'poin_revisi' => $item->poin_revisi,
                     'kategori' => $item->kategori,
                     'status' => $item->status,
@@ -186,6 +211,11 @@ class SeminarController extends Controller
                     'file_url' => $item->getFileUrl(),
                     'rejection_reason' => $item->rejection_reason,
                     'revision_count' => $item->revision_count,
+                    'deadline' => $item->deadline?->format('d M Y H:i'),
+                    'is_late' => $item->isLate(),
+                    'late_duration' => $item->getLateDuration(),
+                    'is_deadline_approaching' => $item->isDeadlineApproaching(),
+                    'is_deadline_passed' => $item->isDeadlinePassed(),
                     'submitted_at' => $item->submitted_at?->format('d M Y H:i'),
                     'validated_at' => $item->validated_at?->format('d M Y H:i'),
                     'validator' => $item->validator ? $item->validator->name : null,
@@ -248,7 +278,9 @@ class SeminarController extends Controller
                     'items_by_dosen' => $itemsByDosen,
                     'my_items' => $myItems,
                     'approval_status' => $seminar->getRevisionApprovalStatus(),
+                    'seminar_file_url' => $seminar->getFileUrl(), // File seminar asli
                 ] : null,
+                'seminar_file_url' => $seminar->getFileUrl(), // Juga taruh di luar revision untuk akses lebih mudah
                 'created_at' => $seminar->created_at->format('d M Y H:i'),
             ]
         ]);

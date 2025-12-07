@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Bell, X, Check, Calendar, XCircle } from 'lucide-react';
+import { Bell, X, Check, Calendar, XCircle, FileEdit } from 'lucide-react';
 import { notificationAPI } from '../../services/api';
 import './NotificationBell.css';
 
@@ -103,12 +103,18 @@ function NotificationBell() {
         return <XCircle size={20} className="notif-icon-cancelled" />;
       case 'seminar_approved':
         return <Check size={20} className="notif-icon-success" />;
+      case 'admin_verification_approved':
+        return <Check size={20} className="notif-icon-success" />;
+      case 'admin_verification_rejected':
+        return <XCircle size={20} className="notif-icon-rejected" />;
       case 'seminar_scheduled':
         return <Calendar size={20} className="notif-icon-info" />;
       case 'seminar_rescheduled':
         return <Calendar size={20} className="notif-icon-warning" />;
       case 'new_seminar_submission':
         return <Bell size={20} className="notif-icon-new" />;
+      case 'revision_added':
+        return <FileEdit size={20} className="notif-icon-warning" />;
       default:
         return <Bell size={20} className="notif-icon-default" />;
     }
@@ -124,6 +130,22 @@ function NotificationBell() {
           <div className="notif-meta">
             <span className="meta-label">Ditolak oleh:</span>
             <span className="meta-value">{data.rejected_by}</span>
+          </div>
+        )}
+        
+        {/* Verified By Info */}
+        {data.verified_by && (
+          <div className="notif-meta">
+            <span className="meta-label">Diverifikasi oleh:</span>
+            <span className="meta-value">{data.verified_by}</span>
+          </div>
+        )}
+        
+        {/* Rejection Reason */}
+        {data.rejection_reason && (
+          <div className="notif-meta">
+            <span className="meta-label">Alasan:</span>
+            <span className="meta-value">{data.rejection_reason}</span>
           </div>
         )}
         
@@ -172,6 +194,28 @@ function NotificationBell() {
           <div className="notif-meta">
             <span className="meta-label">Mahasiswa:</span>
             <span className="meta-value">{data.mahasiswa_name} ({data.mahasiswa_npm})</span>
+          </div>
+        )}
+        
+        {/* Revision Info */}
+        {data.kategori && (
+          <div className="notif-meta">
+            <span className="meta-label">Kategori:</span>
+            <span className="meta-value">{data.kategori}</span>
+          </div>
+        )}
+        
+        {data.poin_revisi && (
+          <div className="notif-meta reason">
+            <span className="meta-label">Detail Revisi:</span>
+            <span className="meta-value">{data.poin_revisi}</span>
+          </div>
+        )}
+        
+        {data.dosen_name && !data.mahasiswa_name && (
+          <div className="notif-meta">
+            <span className="meta-label">Dari Dosen:</span>
+            <span className="meta-value">{data.dosen_name}</span>
           </div>
         )}
       </div>

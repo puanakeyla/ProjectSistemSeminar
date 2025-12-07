@@ -103,6 +103,7 @@ class SeminarController extends Controller
                     'items' => $items->map(function($item) {
                         return [
                             'id' => $item->id,
+                            'revision_id' => $item->revision_id,
                             'poin_revisi' => $item->poin_revisi,
                             'kategori' => $item->kategori,
                             'status' => $item->status,
@@ -113,6 +114,11 @@ class SeminarController extends Controller
                             'file_url' => $item->getFileUrl(),
                             'rejection_reason' => $item->rejection_reason,
                             'revision_count' => $item->revision_count,
+                            'deadline' => $item->deadline?->format('d M Y H:i'),
+                            'is_late' => $item->isLate(),
+                            'late_duration' => $item->getLateDuration(),
+                            'is_deadline_approaching' => $item->isDeadlineApproaching(),
+                            'is_deadline_passed' => $item->isDeadlinePassed(),
                             'submitted_at' => $item->submitted_at?->format('d M Y H:i'),
                             'validated_at' => $item->validated_at?->format('d M Y H:i'),
                             'validator' => $item->validator ? $item->validator->name : null,
@@ -133,6 +139,7 @@ class SeminarController extends Controller
                 'rejected_items' => $latestRevision->items->where('status', 'rejected')->count(),
                 'items_by_dosen' => $itemsByDosen,
                 'approval_status' => $seminar->getRevisionApprovalStatus(),
+                'seminar_file_url' => $seminar->getFileUrl(), // File seminar asli
             ];
         }
 

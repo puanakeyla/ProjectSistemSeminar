@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Seminar;
 use App\Models\SeminarApproval;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\Rule;
@@ -155,6 +156,13 @@ class VerificationController extends Controller
         }
 
         $seminar->update($updateData);
+
+        // Send notifications
+        if ($validated['status'] === 'approved') {
+            NotificationService::notifyAdminVerificationApproved($seminar, $request->user());
+        } else {
+            NotificationService::notifyAdminVerificationRejected($seminar, $request->user(), $validated['alasan']);
+        }
 
         $message = $validated['status'] === 'approved'
             ? 'Seminar berhasil diverifikasi dan siap dijadwalkan'

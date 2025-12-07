@@ -13,6 +13,7 @@ class SeminarRevisionItem extends Model
     protected $fillable = [
         'revision_id',
         'created_by',
+        'deadline',
         'poin_revisi',
         'kategori',
         'status',
@@ -26,6 +27,7 @@ class SeminarRevisionItem extends Model
     ];
 
     protected $casts = [
+        'deadline' => 'datetime',
         'submitted_at' => 'datetime',
         'validated_at' => 'datetime',
         'revision_count' => 'integer',
@@ -150,5 +152,58 @@ class SeminarRevisionItem extends Model
         $this->revision_count++;
         
         return $this->save();
+    }
+
+    // Check if submission is late
+    public function isLate(): bool
+    {
+        if (!$this->deadline || !$this->submitted_at) {
+            return false;
+        }
+        
+        return $this->submitted_at->greaterThan($this->deadline);
+    }
+
+    // Get late duration in human readable format
+    public function getLateDuration(): ?string
+    {
+        if (!$this->isLate()) {
+            return null;
+        }
+        
+        $deadline = $this->deadline;
+        $submitted = $this->submitted_at;
+        
+        $diff = $submitted->diff($deadline);
+        
+        if ($diff->d > 0) {
+            return $diff->d . ' hari ' . $diff->h . ' jam';
+        } elseif ($diff->h > 0) {
+            return $diff->h . ' jam ' . $diff->i . ' menit';
+        } elseif ($diff->i > 0) {
+            return $diff->i . ' menit ' . $diff->s . ' detik';
+        } else {
+            return $diff->s . ' detik';
+        }
+    }
+
+    // Check if deadline is approaching (within 24 hours)
+    public function isDeadlineApproaching(): bool
+    {
+        if (!$this->deadline || $this->status !== 'pending') {
+            return false;
+        }
+        
+        return now()->diffInHours($this->deadline, false) <= 24 && now()->diffInHours($this->deadline, false) > 0;
+    }
+
+    // Check if deadline has passed
+    public function isDeadlinePassed(): bool
+    {
+        if (!$this->deadline) {
+            return false;
+        }
+        
+        return now()->greaterThan($this->deadline);
     }
 }

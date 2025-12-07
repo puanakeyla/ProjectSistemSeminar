@@ -46,10 +46,21 @@ function Revisi() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
+      // Show all seminars with schedule and revision (including completed)
       const scheduledWithRevisions = (response.data.data || []).filter(
-        (s) => s.schedule && s.revision && s.revision.status !== 'completed'
+        (s) => s.schedule && s.revision
       );
-      setSeminars(scheduledWithRevisions);
+      
+      // Deduplicate by seminar id - keep only unique seminars
+      const uniqueSeminars = scheduledWithRevisions.reduce((acc, current) => {
+        const existing = acc.find(item => item.id === current.id);
+        if (!existing) {
+          acc.push(current);
+        }
+        return acc;
+      }, []);
+      
+      setSeminars(uniqueSeminars);
     } catch (err) {
       console.error('Error fetching seminars:', err);
       setError(err.response?.data?.message || 'Gagal memuat data seminar');
@@ -95,7 +106,7 @@ function Revisi() {
       formData.append('file', submitForm.file);
 
       await axios.post(
-        `http://localhost:8000/api/mahasiswa/revision-items/${selectedItem.id}/submit`,
+        `http://localhost:8000/api/mahasiswa/revisions/${selectedItem.revision_id}/items/${selectedItem.id}/submit`,
         formData,
         {
           headers: {
@@ -203,15 +214,31 @@ function Revisi() {
           </div>
         ) : (
           <div className="revisi-list">
-            {seminars.map((seminar) => (
-              <div key={seminar.id} className="revisi-item" onClick={() => handleViewDetail(seminar)}>
-                <div className="revisi-item-header">
-                  <span className="revisi-item-type">
-                    <FileEdit size={16} />
-                    {seminar.jenis_seminar_display}
-                  </span>
-                  <span className="revisi-progress-badge">{seminar.revision?.progress || 0}%</span>
-                </div>
+            {seminars.map((seminar) => {
+              const isAllApproved = seminar.revision?.total_items > 0 && 
+                                   seminar.revision?.approved_items === seminar.revision?.total_items;
+              
+              return (
+                <div 
+                  key={seminar.id} 
+                  className={`revisi-item ${isAllApproved ? 'revisi-item-approved' : ''}`}
+                  onClick={() => handleViewDetail(seminar)}
+                >
+                  <div className="revisi-item-header">
+                    <span className="revisi-item-type">
+                      <FileEdit size={16} />
+                      {seminar.jenis_seminar_display}
+                    </span>
+                    <span className={`revisi-progress-badge ${isAllApproved ? 'badge-success' : ''}`}>
+                      {isAllApproved ? (
+                        <>
+                          <CheckCircle size={14} /> Selesai
+                        </>
+                      ) : (
+                        `${seminar.revision?.progress || 0}%`
+                      )}
+                    </span>
+                  </div>
 
                 <h3 className="revisi-item-title">{seminar.judul}</h3>
 
@@ -250,13 +277,31 @@ function Revisi() {
                 </div>
 
                 <div className="revisi-item-actions">
-                  <button className="revisi-btn revisi-btn-primary">
-                    <FileEdit size={18} />
-                    Kelola Revisi
+                  <button 
+                    className={`revisi-btn ${
+                      seminar.revision?.total_items > 0 && 
+                      seminar.revision?.approved_items === seminar.revision?.total_items
+                        ? 'revisi-btn-success'
+                        : 'revisi-btn-primary'
+                    }`}
+                  >
+                    {seminar.revision?.total_items > 0 && 
+                     seminar.revision?.approved_items === seminar.revision?.total_items ? (
+                      <>
+                        <CheckCircle size={18} />
+                        Revisi Disetujui
+                      </>
+                    ) : (
+                      <>
+                        <FileEdit size={18} />
+                        Kelola Revisi
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
-            ))}
+            );
+            })}
           </div>
         )}
       </div>
@@ -276,6 +321,53 @@ function Revisi() {
             </div>
 
             <div className="revisi-modal-body">
+              {/* File Seminar Asli */}
+              {selectedSeminar.revision?.seminar_file_url && (
+                <div style={{
+                  padding: '12px 16px',
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  borderRadius: '8px',
+                  marginBottom: '16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  color: 'white'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <FileText size={20} />
+                    <div>
+                      <div style={{ fontWeight: '600', fontSize: '14px' }}>File Seminar Asli</div>
+                      <div style={{ fontSize: '12px', opacity: 0.9 }}>
+                        File yang Anda upload saat pengajuan pertama
+                      </div>
+                    </div>
+                  </div>
+                  <a
+                    href={selectedSeminar.revision.seminar_file_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      padding: '8px 16px',
+                      background: 'rgba(255,255,255,0.2)',
+                      borderRadius: '6px',
+                      color: 'white',
+                      textDecoration: 'none',
+                      fontSize: '14px',
+                      fontWeight: '500',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={(e) => e.target.style.background = 'rgba(255,255,255,0.3)'}
+                    onMouseLeave={(e) => e.target.style.background = 'rgba(255,255,255,0.2)'}
+                  >
+                    <Download size={16} />
+                    Lihat File
+                  </a>
+                </div>
+              )}
+
               <div className="revisi-tabs">
                 <button
                   className={`revisi-tab ${activeTab === 'all' ? 'active' : ''}`}
@@ -335,6 +427,51 @@ function Revisi() {
                         </div>
                       )}
 
+                      {item.deadline && (
+                        <div style={{ 
+                          marginTop: '8px', 
+                          fontSize: '13px', 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: '6px',
+                          color: item.is_deadline_passed && item.status !== 'approved' 
+                            ? '#dc3545' 
+                            : item.is_deadline_approaching && item.status === 'pending'
+                            ? '#ff9800'
+                            : 'var(--revisi-muted)'
+                        }}>
+                          <Clock size={14} />
+                          <span>Deadline: {item.deadline}</span>
+                          {item.is_late && (
+                            <span style={{ 
+                              color: '#dc3545', 
+                              fontWeight: '600',
+                              marginLeft: '4px'
+                            }}>
+                              (Terlambat {item.late_duration})
+                            </span>
+                          )}
+                          {item.is_deadline_passed && !item.is_late && item.status === 'pending' && (
+                            <span style={{ 
+                              color: '#dc3545', 
+                              fontWeight: '600',
+                              marginLeft: '4px'
+                            }}>
+                              (Deadline Terlewat)
+                            </span>
+                          )}
+                          {item.is_deadline_approaching && item.status === 'pending' && (
+                            <span style={{ 
+                              color: '#ff9800', 
+                              fontWeight: '600',
+                              marginLeft: '4px'
+                            }}>
+                              (Segera!)
+                            </span>
+                          )}
+                        </div>
+                      )}
+
                       {item.mahasiswa_notes && (
                         <div className="revisi-detail-notes">
                           <div className="revisi-detail-notes-label">Catatan Anda:</div>
@@ -342,31 +479,64 @@ function Revisi() {
                         </div>
                       )}
 
-                      {item.file_url && (
-                        <a href={item.file_url} target="_blank" rel="noopener noreferrer" className="revisi-file-link">
-                          <Download size={16} />
-                          Lihat File
-                        </a>
-                      )}
-
-                      {item.rejection_reason && (
-                        <div className="revisi-rejection">
-                          <div className="revisi-rejection-label">Alasan Penolakan:</div>
-                          <div>{item.rejection_reason}</div>
+                      {item.status === 'rejected' && (
+                        <div style={{
+                          padding: '12px',
+                          background: '#fff3cd',
+                          border: '1px solid #ffc107',
+                          borderRadius: '6px',
+                          marginTop: '12px',
+                          marginBottom: '8px'
+                        }}>
+                          <div style={{ 
+                            fontWeight: '600', 
+                            color: '#856404',
+                            marginBottom: '6px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                          }}>
+                            <AlertTriangle size={16} />
+                            Revisi Ditolak - Silakan Upload Ulang
+                          </div>
+                          {item.rejection_reason && (
+                            <div style={{ fontSize: '13px', color: '#856404' }}>
+                              <strong>Alasan:</strong> {item.rejection_reason}
+                            </div>
+                          )}
                         </div>
                       )}
 
-                      {item.status === 'pending' && (
+                      {item.file_url && (
+                        <div style={{ marginTop: '12px' }}>
+                          <div style={{ fontSize: '12px', color: 'var(--revisi-muted)', marginBottom: '4px' }}>
+                            {item.status === 'rejected' ? 'File yang ditolak:' : 'File Anda:'}
+                          </div>
+                          <a href={item.file_url} target="_blank" rel="noopener noreferrer" className="revisi-file-link">
+                            <Download size={16} />
+                            Lihat File {item.status === 'rejected' && '(Ditolak)'}
+                          </a>
+                        </div>
+                      )}
+
+                      {(item.status === 'pending' || item.status === 'rejected') && (
                         <div className="revisi-detail-actions">
                           <button
-                            className="revisi-btn revisi-btn-success"
+                            className={`revisi-btn ${item.status === 'rejected' ? 'revisi-btn-warning' : 'revisi-btn-success'}`}
                             onClick={() => {
                               setSelectedItem(item);
+                              setSubmitForm({ mahasiswa_notes: '', file: null });
                               setShowSubmitModal(true);
                             }}
+                            style={item.status === 'rejected' ? {
+                              background: '#ff9800',
+                              color: 'white',
+                              fontWeight: '600',
+                              boxShadow: '0 2px 8px rgba(255, 152, 0, 0.3)'
+                            } : {}}
                           >
                             <Upload size={16} />
-                            Submit Revisi
+                            {item.status === 'rejected' ? '🔄 Upload Ulang File' : 'Submit Revisi'}
                           </button>
                         </div>
                       )}

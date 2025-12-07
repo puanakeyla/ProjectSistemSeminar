@@ -68,6 +68,31 @@ class SeminarRevision extends Model
         return $this->items()->approved()->count() === $total;
     }
 
+    // Check if ALL dosen who created items have ALL their items approved
+    public function allDosenItemsApproved(): bool
+    {
+        // Get unique dosen IDs who created items
+        $dosenIds = $this->items()->pluck('created_by')->unique();
+        
+        if ($dosenIds->isEmpty()) {
+            return false;
+        }
+
+        // Check each dosen - all their items must be approved
+        foreach ($dosenIds as $dosenId) {
+            $dosenItems = $this->items()->where('created_by', $dosenId);
+            $totalItems = $dosenItems->count();
+            $approvedItems = $dosenItems->where('status', 'approved')->count();
+            
+            // If ANY dosen has unapproved items, return false
+            if ($approvedItems < $totalItems) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     // Scopes
     public function scopeMenunggu($query)
     {

@@ -712,7 +712,272 @@ class NotificationService
                 'dosen_name' => $dosen->name,
                 'kategori' => $revisionItem->kategori,
                 'poin_revisi' => $revisionItem->poin_revisi,
+                'deadline' => $revisionItem->deadline?->format('d M Y H:i'),
             ]
         );
+    }
+
+    /**
+     * Notify dosen when mahasiswa submits revision
+     */
+    public static function notifyRevisionSubmitted(Seminar $seminar, $revisionItem): void
+    {
+        $title = 'Revisi Disubmit Mahasiswa';
+        $isLate = $revisionItem->isLate();
+        $lateDuration = $isLate ? $revisionItem->getLateDuration() : null;
+        
+        $message = "Mahasiswa {$seminar->mahasiswa->name} telah mengirim revisi untuk seminar \"{$seminar->judul}\".";
+        if ($isLate) {
+            $message .= " (Terlambat: {$lateDuration})";
+        }
+
+        // Notify dosen who created this revision item
+        if ($revisionItem->created_by) {
+            self::createNotification(
+                $revisionItem->created_by,
+                $seminar->id,
+                'revision_submitted',
+                $title,
+                $message,
+                [
+                    'seminar_id' => $seminar->id,
+                    'revision_item_id' => $revisionItem->id,
+                    'mahasiswa_name' => $seminar->mahasiswa->name,
+                    'mahasiswa_npm' => $seminar->mahasiswa->npm,
+                    'kategori' => $revisionItem->kategori,
+                    'poin_revisi' => $revisionItem->poin_revisi,
+                    'is_late' => $isLate,
+                    'late_duration' => $lateDuration,
+                    'submitted_at' => $revisionItem->submitted_at->format('d M Y H:i'),
+                ]
+            );
+        }
+    }
+
+    /**
+     * Notify mahasiswa when dosen approves revision item
+     */
+    public static function notifyRevisionApproved(Seminar $seminar, $revisionItem, User $dosen): void
+    {
+        $title = 'Revisi Disetujui';
+        $message = "Dosen {$dosen->name} telah menyetujui revisi Anda untuk seminar \"{$seminar->judul}\". Kategori: {$revisionItem->kategori}";
+
+        self::createNotification(
+            $seminar->mahasiswa_id,
+            $seminar->id,
+            'revision_approved',
+            $title,
+            $message,
+            [
+                'seminar_id' => $seminar->id,
+                'revision_item_id' => $revisionItem->id,
+                'dosen_name' => $dosen->name,
+                'kategori' => $revisionItem->kategori,
+                'poin_revisi' => $revisionItem->poin_revisi,
+                'validated_at' => $revisionItem->validated_at->format('d M Y H:i'),
+            ]
+        );
+    }
+
+    /**
+     * Notify mahasiswa when dosen rejects revision item
+     */
+    public static function notifyRevisionRejected(Seminar $seminar, $revisionItem, User $dosen): void
+    {
+        $title = 'Revisi Ditolak';
+        $message = "Dosen {$dosen->name} menolak revisi Anda untuk seminar \"{$seminar->judul}\". Silakan perbaiki dan kirim ulang.";
+
+        self::createNotification(
+            $seminar->mahasiswa_id,
+            $seminar->id,
+            'revision_rejected',
+            $title,
+            $message,
+            [
+                'seminar_id' => $seminar->id,
+                'revision_item_id' => $revisionItem->id,
+                'dosen_name' => $dosen->name,
+                'kategori' => $revisionItem->kategori,
+                'poin_revisi' => $revisionItem->poin_revisi,
+                'rejection_reason' => $revisionItem->rejection_reason,
+                'validated_at' => $revisionItem->validated_at->format('d M Y H:i'),
+            ]
+        );
+    }
+
+    /**
+     * Notify mahasiswa when all revisions are completed
+     */
+    public static function notifyAllRevisionsCompleted(Seminar $seminar): void
+    {
+        $title = '✅ Semua Revisi Selesai';
+        $message = "Selamat! Semua revisi untuk seminar \"{$seminar->judul}\" telah disetujui oleh dosen. Proses revisi selesai.";
+
+        self::createNotification(
+            $seminar->mahasiswa_id,
+            $seminar->id,
+            'all_revisions_completed',
+            $title,
+            $message,
+            [
+                'seminar_id' => $seminar->id,
+                'judul' => $seminar->judul,
+                'tipe' => $seminar->tipe,
+            ]
+        );
+    }
+
+    /**
+     * Send notification when admin verifies (approves) seminar
+     */
+    public static function notifyAdminVerificationApproved(Seminar $seminar, User $admin): void
+    {
+        $title = 'Seminar Diverifikasi Admin';
+        $message = "Seminar \"{$seminar->judul}\" telah diverifikasi dan disetujui oleh admin. Seminar Anda siap untuk dijadwalkan.";
+
+        // Notify mahasiswa
+        self::createNotification(
+            $seminar->mahasiswa_id,
+            $seminar->id,
+            'admin_verification_approved',
+            $title,
+            $message,
+            [
+                'seminar_id' => $seminar->id,
+                'judul' => $seminar->judul,
+                'tipe' => $seminar->tipe,
+                'verified_by' => $admin->name,
+            ]
+        );
+
+        // Notify pembimbing 1
+        if ($seminar->pembimbing1_id) {
+            self::createNotification(
+                $seminar->pembimbing1_id,
+                $seminar->id,
+                'admin_verification_approved',
+                $title,
+                "Seminar \"{$seminar->judul}\" mahasiswa {$seminar->mahasiswa->name} ({$seminar->mahasiswa->npm}) telah diverifikasi admin dan siap dijadwalkan.",
+                [
+                    'seminar_id' => $seminar->id,
+                    'mahasiswa_name' => $seminar->mahasiswa->name,
+                    'mahasiswa_npm' => $seminar->mahasiswa->npm,
+                    'verified_by' => $admin->name,
+                ]
+            );
+        }
+
+        // Notify pembimbing 2
+        if ($seminar->pembimbing2_id) {
+            self::createNotification(
+                $seminar->pembimbing2_id,
+                $seminar->id,
+                'admin_verification_approved',
+                $title,
+                "Seminar \"{$seminar->judul}\" mahasiswa {$seminar->mahasiswa->name} ({$seminar->mahasiswa->npm}) telah diverifikasi admin dan siap dijadwalkan.",
+                [
+                    'seminar_id' => $seminar->id,
+                    'mahasiswa_name' => $seminar->mahasiswa->name,
+                    'mahasiswa_npm' => $seminar->mahasiswa->npm,
+                    'verified_by' => $admin->name,
+                ]
+            );
+        }
+
+        // Notify penguji
+        if ($seminar->penguji_id) {
+            self::createNotification(
+                $seminar->penguji_id,
+                $seminar->id,
+                'admin_verification_approved',
+                $title,
+                "Seminar \"{$seminar->judul}\" mahasiswa {$seminar->mahasiswa->name} ({$seminar->mahasiswa->npm}) telah diverifikasi admin dan siap dijadwalkan.",
+                [
+                    'seminar_id' => $seminar->id,
+                    'mahasiswa_name' => $seminar->mahasiswa->name,
+                    'mahasiswa_npm' => $seminar->mahasiswa->npm,
+                    'verified_by' => $admin->name,
+                ]
+            );
+        }
+    }
+
+    /**
+     * Send notification when admin rejects seminar (requests revision)
+     */
+    public static function notifyAdminVerificationRejected(Seminar $seminar, User $admin, string $reason): void
+    {
+        $title = 'Seminar Membutuhkan Revisi';
+        $message = "Seminar \"{$seminar->judul}\" membutuhkan revisi menurut admin. Alasan: {$reason}";
+
+        // Notify mahasiswa
+        self::createNotification(
+            $seminar->mahasiswa_id,
+            $seminar->id,
+            'admin_verification_rejected',
+            $title,
+            $message . ' Silakan lakukan revisi dan ajukan kembali.',
+            [
+                'seminar_id' => $seminar->id,
+                'judul' => $seminar->judul,
+                'tipe' => $seminar->tipe,
+                'rejected_by' => $admin->name,
+                'rejection_reason' => $reason,
+            ]
+        );
+
+        // Notify pembimbing 1
+        if ($seminar->pembimbing1_id) {
+            self::createNotification(
+                $seminar->pembimbing1_id,
+                $seminar->id,
+                'admin_verification_rejected',
+                $title,
+                "Seminar \"{$seminar->judul}\" mahasiswa {$seminar->mahasiswa->name} ({$seminar->mahasiswa->npm}) membutuhkan revisi menurut admin. Alasan: {$reason}",
+                [
+                    'seminar_id' => $seminar->id,
+                    'mahasiswa_name' => $seminar->mahasiswa->name,
+                    'mahasiswa_npm' => $seminar->mahasiswa->npm,
+                    'rejected_by' => $admin->name,
+                    'rejection_reason' => $reason,
+                ]
+            );
+        }
+
+        // Notify pembimbing 2
+        if ($seminar->pembimbing2_id) {
+            self::createNotification(
+                $seminar->pembimbing2_id,
+                $seminar->id,
+                'admin_verification_rejected',
+                $title,
+                "Seminar \"{$seminar->judul}\" mahasiswa {$seminar->mahasiswa->name} ({$seminar->mahasiswa->npm}) membutuhkan revisi menurut admin. Alasan: {$reason}",
+                [
+                    'seminar_id' => $seminar->id,
+                    'mahasiswa_name' => $seminar->mahasiswa->name,
+                    'mahasiswa_npm' => $seminar->mahasiswa->npm,
+                    'rejected_by' => $admin->name,
+                    'rejection_reason' => $reason,
+                ]
+            );
+        }
+
+        // Notify penguji
+        if ($seminar->penguji_id) {
+            self::createNotification(
+                $seminar->penguji_id,
+                $seminar->id,
+                'admin_verification_rejected',
+                $title,
+                "Seminar \"{$seminar->judul}\" mahasiswa {$seminar->mahasiswa->name} ({$seminar->mahasiswa->npm}) membutuhkan revisi menurut admin. Alasan: {$reason}",
+                [
+                    'seminar_id' => $seminar->id,
+                    'mahasiswa_name' => $seminar->mahasiswa->name,
+                    'mahasiswa_npm' => $seminar->mahasiswa->npm,
+                    'rejected_by' => $admin->name,
+                    'rejection_reason' => $reason,
+                ]
+            );
+        }
     }
 }
