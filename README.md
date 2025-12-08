@@ -1,11 +1,169 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# 🎓 SEMAR - Sistem Manajemen Seminar
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Aplikasi web untuk mengelola seminar proposal, skripsi, dan komprehensif mahasiswa dengan fitur persetujuan dosen, penjadwalan otomatis, absensi QR Code, dan sistem revisi.
+
+## 📋 Fitur Utama
+
+### 👨‍🎓 Mahasiswa
+- ✅ Pengajuan seminar (Proposal/Hasil/Kompre)
+- ✅ Upload berkas proposal/skripsi
+- ✅ Tracking status persetujuan dosen
+- ✅ Kelola revisi dari dosen
+- ✅ Submit revisi dengan upload file
+- ✅ Absensi via QR Code
+
+### 👨‍🏫 Dosen
+- ✅ Dashboard persetujuan seminar
+- ✅ Approve/Reject pengajuan mahasiswa
+- ✅ Pilih tanggal ketersediaan
+- ✅ Tambah poin revisi dengan deadline
+- ✅ Validasi revisi mahasiswa
+- ✅ Absensi kehadiran via QR Code
+- ✅ Download proposal mahasiswa
+
+### 👨‍💼 Admin
+- ✅ Dashboard monitoring seminar
+- ✅ Verifikasi seminar yang sudah disetujui
+- ✅ Generate jadwal otomatis
+- ✅ Generate QR Code untuk absensi
+- ✅ Monitoring kehadiran dosen dan mahasiswa
+- ✅ Export data seminar
+
+## 🛠️ Tech Stack
+
+### Backend
+- **Laravel 11** - PHP Framework
+- **Laravel Sanctum** - API Authentication
+- **SQLite** - Database (development)
+- **Storage** - File Management
+
+### Frontend
+- **React 18** - UI Library
+- **Vite** - Build Tool
+- **Axios** - HTTP Client
+- **Zustand** - State Management
+- **Tailwind CSS** - Styling
+- **Lucide React** - Icons
+
+## 🚀 Quick Start
+
+### Prerequisites
+- PHP >= 8.1
+- Composer
+- Node.js >= 18
+- NPM
+
+### Installation
+
+**📖 Lihat [SETUP-GUIDE.md](./SETUP-GUIDE.md) untuk instruksi lengkap!**
+
+Ringkasan singkat:
+
+```bash
+# 1. Clone repository
+git clone https://github.com/puanakeyla/ProjectSistemSeminar.git
+cd ProjectSistemSeminar
+
+# 2. Backend setup
+composer install
+copy .env.example .env
+php artisan key:generate
+php artisan migrate --seed
+php artisan storage:link
+
+# 3. Frontend setup
+cd frontend
+npm install
+
+# 4. Run application (2 terminals)
+# Terminal 1: php artisan serve
+# Terminal 2: cd frontend && npm run dev
+```
+
+## 🔑 Default Login
+
+| Role      | Email                        | Password  |
+|-----------|------------------------------|-----------|
+| Admin     | admin@univ.ac.id            | admin123  |
+| Mahasiswa | andi@student.univ.ac.id     | mhs123    |
+| Dosen     | ahmad.wijaya@univ.ac.id     | dosen123  |
+
+## 📁 Project Structure
+
+```
+ProjectSistemSeminar/
+├── app/                    # Laravel application
+│   ├── Http/Controllers/   # API Controllers
+│   ├── Models/            # Eloquent Models
+│   └── Services/          # Business Logic
+├── database/
+│   ├── migrations/        # Database migrations
+│   └── seeders/           # Database seeders
+├── frontend/              # React application
+│   ├── src/
+│   │   ├── pages/         # Page components
+│   │   ├── components/    # Reusable components
+│   │   ├── stores/        # Zustand stores
+│   │   └── utils/         # Helper functions
+│   └── public/            # Static assets
+├── routes/
+│   └── api.php            # API routes
+└── storage/
+    └── app/public/        # Uploaded files
+        ├── revisions/     # Revision files
+        └── seminar_berkas/ # Seminar documents
+```
+
+## 📚 Documentation
+
+- [Setup Guide](./SETUP-GUIDE.md) - Panduan instalasi lengkap
+- [API Documentation](./docs/API-TESTING.md) - API endpoints dan testing
+- [Testing Guide](./docs/TESTING-README.md) - Panduan testing
+- [Migration Guide](./docs/MIGRATION-GUIDE.md) - Database migrations
+
+## 🔄 Workflow
+
+1. **Mahasiswa** mengajukan seminar dengan upload berkas
+2. **Dosen** (Pembimbing 1, 2, dan Penguji) menyetujui/menolak
+3. **Admin** verifikasi dan generate jadwal otomatis
+4. **Sistem** mencari tanggal yang cocok untuk semua dosen
+5. **Admin** generate QR Code untuk absensi
+6. **Dosen & Mahasiswa** scan QR Code saat seminar
+7. **Dosen** tambahkan poin revisi setelah seminar
+8. **Mahasiswa** kerjakan dan submit revisi
+9. **Dosen** validasi revisi (approve/reject)
+
+## 🎯 Key Features Details
+
+### 🤖 Auto Scheduling
+- Mencari tanggal yang cocok dari pilihan semua dosen
+- Notifikasi otomatis jika tidak ada tanggal yang cocok
+- Saran reschedule jika terjadi konflik
+
+### 📱 QR Code Attendance
+- Generate QR unique per jadwal seminar
+- Validasi lokasi dan waktu check-in
+- Tracking kehadiran real-time
+
+### 📝 Revision System
+- Dosen bisa tambah poin revisi dengan kategori
+- Set deadline untuk setiap poin revisi
+- Mahasiswa submit revisi dengan upload file
+- Dosen validasi dengan approve/reject
+- Counter revisi otomatis jika ditolak
+
+### 🔔 Notification System
+- Real-time notification untuk semua event
+- Bell icon dengan counter unread
+- Notifikasi untuk: approval, scheduling, revisi, dll
+
+## 🤝 Contributing
+
+Pull requests are welcome! For major changes, please open an issue first.
+
+## 📄 License
+
+This project is open-sourced software licensed under the MIT license.
 
 ## About Laravel
 
