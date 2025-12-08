@@ -195,8 +195,8 @@ const SeminarDetail = ({ seminarId }) => {
                           <span>{approval.role_display}</span>
                         </div>
                         <span className={`approval-status status-${approval.status}`}>
-                          {approval.status === 'approved' ? '✓ Disetujui' : 
-                           approval.status === 'rejected' ? '✗ Ditolak' : 
+                          {approval.status === 'approved' ? '✓ Disetujui' :
+                           approval.status === 'rejected' ? '✗ Ditolak' :
                            '⏳ Menunggu'}
                         </span>
                       </div>
@@ -227,7 +227,7 @@ const SeminarDetail = ({ seminarId }) => {
             >
             <div className="revision-header-section">
               <h2>📝 Revisi Kolaboratif</h2>
-              <button 
+              <button
                 className="btn-add-revision"
                 onClick={() => setShowAddRevisionModal(true)}
               >
@@ -306,7 +306,7 @@ const SeminarDetail = ({ seminarId }) => {
                           )}
                         </div>
                       </div>
-                      
+
                       <div className="items-list">
                         {group.items.map((item, itemIndex) => (
                           <div key={itemIndex} className={`item-card item-${item.status}`}>
@@ -316,7 +316,7 @@ const SeminarDetail = ({ seminarId }) => {
                                 {item.status_display}
                               </span>
                             </div>
-                            
+
                             <div className="item-content">
                               <p className="item-text">{item.poin_revisi}</p>
                               {item.kategori && (
@@ -329,7 +329,12 @@ const SeminarDetail = ({ seminarId }) => {
                                 <strong>Catatan Mahasiswa:</strong>
                                 <p>{item.mahasiswa_notes}</p>
                                 {item.file_url && (
-                                  <a href={item.file_url} target="_blank" rel="noopener noreferrer" className="file-link">
+                                  <a
+                                    href={item.file_url?.startsWith('http') ? item.file_url : `http://localhost:8000${item.file_url}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="file-link"
+                                  >
                                     📄 Lihat File
                                   </a>
                                 )}
@@ -351,9 +356,9 @@ const SeminarDetail = ({ seminarId }) => {
                             )}
 
                             {/* Validation Button - Only for items created by current user and submitted */}
-                            {group.dosen_id === seminar.revision.my_items[0]?.id && 
+                            {group.dosen_id === seminar.revision.my_items[0]?.id &&
                              item.status === 'submitted' && (
-                              <button 
+                              <button
                                 className="btn-validate"
                                 onClick={() => openValidateModal(item)}
                               >
@@ -386,7 +391,7 @@ const SeminarDetail = ({ seminarId }) => {
                               {item.status_display}
                             </span>
                           </div>
-                          
+
                           <div className="item-content">
                             <p className="item-text">{item.poin_revisi}</p>
                             {item.kategori && (
@@ -395,7 +400,7 @@ const SeminarDetail = ({ seminarId }) => {
                           </div>
 
                           {item.status === 'submitted' && (
-                            <button 
+                            <button
                               className="btn-validate"
                               onClick={() => openValidateModal(item)}
                             >
@@ -437,7 +442,7 @@ const SeminarDetail = ({ seminarId }) => {
               onClick={(e) => e.stopPropagation()}
             >
               <h2>Tambah Poin Revisi</h2>
-              
+
               <div className="form-group">
                 <label>Catatan Umum (Opsional)</label>
                 <textarea
@@ -483,14 +488,14 @@ const SeminarDetail = ({ seminarId }) => {
               </div>
 
               <div className="modal-actions">
-                <button 
+                <button
                   className="btn-cancel"
                   onClick={() => setShowAddRevisionModal(false)}
                   disabled={submitting}
                 >
                   Batal
                 </button>
-                <button 
+                <button
                   className="btn-submit"
                   onClick={handleSubmitRevision}
                   disabled={submitting || revisionItems.every(item => !item.poin_revisi.trim())}
@@ -521,7 +526,7 @@ const SeminarDetail = ({ seminarId }) => {
               onClick={(e) => e.stopPropagation()}
             >
               <h2>Validasi Poin Revisi</h2>
-              
+
               <div className="item-preview">
                 <p><strong>Poin Revisi:</strong></p>
                 <p>{selectedItem.poin_revisi}</p>
@@ -570,14 +575,14 @@ const SeminarDetail = ({ seminarId }) => {
               )}
 
               <div className="modal-actions">
-                <button 
+                <button
                   className="btn-cancel"
                   onClick={() => setShowValidateModal(false)}
                   disabled={submitting}
                 >
                   Batal
                 </button>
-                <button 
+                <button
                   className="btn-submit"
                   onClick={handleValidateItem}
                   disabled={submitting || (validationStatus === 'rejected' && !rejectionReason.trim())}

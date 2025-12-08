@@ -309,6 +309,6 @@ class Seminar extends Model
             return null;
         }
 
-        return asset('storage/' . $this->file_berkas);
+        return \Illuminate\Support\Facades\Storage::url($this->file_berkas);
     }
 }

@@ -25,9 +25,13 @@ Route::get('/mahasiswa', function () {
 Route::get('/{any?}', function () {
     return response()->json([
         'message' => 'SEMAR Backend API is running!',
-        'frontend' => 'Please access the React frontend application',
+        'frontend' => 'Please access the React frontend application at http://localhost:5173',
         'api_docs' => 'API endpoints are available at /api/*',
-        'login_test' => 'Test login at /api/login with {"email": "mahasiswa@semar.com", "password": "password"}'
+        'login_credentials' => [
+            'admin' => 'admin@univ.ac.id / admin123',
+            'mahasiswa' => 'andi@student.univ.ac.id / mhs123',
+            'dosen' => 'ahmad.wijaya@univ.ac.id / dosen123'
+        ]
     ]);
 })->where('any', '.*');
 

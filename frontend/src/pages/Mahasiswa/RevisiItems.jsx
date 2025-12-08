@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  FileText, 
-  CheckCircle, 
-  Clock, 
-  XCircle, 
-  Upload, 
+import {
+  FileText,
+  CheckCircle,
+  Clock,
+  XCircle,
+  Upload,
   Eye,
   ChevronDown,
   ChevronUp,
@@ -175,7 +175,7 @@ function RevisiItems() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                 >
-                  <div 
+                  <div
                     className="revision-header"
                     onClick={() => toggleRevision(revision.id)}
                   >
@@ -183,7 +183,7 @@ function RevisiItems() {
                       <h4 className="seminar-title">{revision.seminar_judul}</h4>
                       <div className="progress-info">
                         <div className="progress-bar">
-                          <div 
+                          <div
                             className="progress-fill"
                             style={{ width: `${revision.progress}%` }}
                           />
@@ -258,7 +258,7 @@ function RevisiItems() {
 
                               {item.file_url && (
                                 <a
-                                  href={item.file_url}
+                                  href={item.file_url?.startsWith('http') ? item.file_url : `http://localhost:8000${item.file_url}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="btn-view"

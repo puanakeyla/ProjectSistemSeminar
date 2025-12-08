@@ -16,6 +16,7 @@ import {
   MessageSquare,
 } from 'lucide-react';
 import axios from 'axios';
+import { getFullFileUrl } from '../../utils/fileHelper';
 import './Revisi.css';
 
 function Revisi() {
@@ -50,7 +51,7 @@ function Revisi() {
       const scheduledWithRevisions = (response.data.data || []).filter(
         (s) => s.schedule && s.revision
       );
-      
+
       // Deduplicate by seminar id - keep only unique seminars
       const uniqueSeminars = scheduledWithRevisions.reduce((acc, current) => {
         const existing = acc.find(item => item.id === current.id);
@@ -59,7 +60,7 @@ function Revisi() {
         }
         return acc;
       }, []);
-      
+
       setSeminars(uniqueSeminars);
     } catch (err) {
       console.error('Error fetching seminars:', err);
@@ -215,12 +216,12 @@ function Revisi() {
         ) : (
           <div className="revisi-list">
             {seminars.map((seminar) => {
-              const isAllApproved = seminar.revision?.total_items > 0 && 
+              const isAllApproved = seminar.revision?.total_items > 0 &&
                                    seminar.revision?.approved_items === seminar.revision?.total_items;
-              
+
               return (
-                <div 
-                  key={seminar.id} 
+                <div
+                  key={seminar.id}
                   className={`revisi-item ${isAllApproved ? 'revisi-item-approved' : ''}`}
                   onClick={() => handleViewDetail(seminar)}
                 >
@@ -277,15 +278,15 @@ function Revisi() {
                 </div>
 
                 <div className="revisi-item-actions">
-                  <button 
+                  <button
                     className={`revisi-btn ${
-                      seminar.revision?.total_items > 0 && 
+                      seminar.revision?.total_items > 0 &&
                       seminar.revision?.approved_items === seminar.revision?.total_items
                         ? 'revisi-btn-success'
                         : 'revisi-btn-primary'
                     }`}
                   >
-                    {seminar.revision?.total_items > 0 && 
+                    {seminar.revision?.total_items > 0 &&
                      seminar.revision?.approved_items === seminar.revision?.total_items ? (
                       <>
                         <CheckCircle size={18} />
@@ -343,7 +344,7 @@ function Revisi() {
                     </div>
                   </div>
                   <a
-                    href={selectedSeminar.revision.seminar_file_url}
+                    href={getFullFileUrl(selectedSeminar.revision.seminar_file_url)}
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{
@@ -428,14 +429,14 @@ function Revisi() {
                       )}
 
                       {item.deadline && (
-                        <div style={{ 
-                          marginTop: '8px', 
-                          fontSize: '13px', 
-                          display: 'flex', 
-                          alignItems: 'center', 
+                        <div style={{
+                          marginTop: '8px',
+                          fontSize: '13px',
+                          display: 'flex',
+                          alignItems: 'center',
                           gap: '6px',
-                          color: item.is_deadline_passed && item.status !== 'approved' 
-                            ? '#dc3545' 
+                          color: item.is_deadline_passed && item.status !== 'approved'
+                            ? '#dc3545'
                             : item.is_deadline_approaching && item.status === 'pending'
                             ? '#ff9800'
                             : 'var(--revisi-muted)'
@@ -443,8 +444,8 @@ function Revisi() {
                           <Clock size={14} />
                           <span>Deadline: {item.deadline}</span>
                           {item.is_late && (
-                            <span style={{ 
-                              color: '#dc3545', 
+                            <span style={{
+                              color: '#dc3545',
                               fontWeight: '600',
                               marginLeft: '4px'
                             }}>
@@ -452,8 +453,8 @@ function Revisi() {
                             </span>
                           )}
                           {item.is_deadline_passed && !item.is_late && item.status === 'pending' && (
-                            <span style={{ 
-                              color: '#dc3545', 
+                            <span style={{
+                              color: '#dc3545',
                               fontWeight: '600',
                               marginLeft: '4px'
                             }}>
@@ -461,8 +462,8 @@ function Revisi() {
                             </span>
                           )}
                           {item.is_deadline_approaching && item.status === 'pending' && (
-                            <span style={{ 
-                              color: '#ff9800', 
+                            <span style={{
+                              color: '#ff9800',
                               fontWeight: '600',
                               marginLeft: '4px'
                             }}>
@@ -488,8 +489,8 @@ function Revisi() {
                           marginTop: '12px',
                           marginBottom: '8px'
                         }}>
-                          <div style={{ 
-                            fontWeight: '600', 
+                          <div style={{
+                            fontWeight: '600',
                             color: '#856404',
                             marginBottom: '6px',
                             display: 'flex',
@@ -512,7 +513,12 @@ function Revisi() {
                           <div style={{ fontSize: '12px', color: 'var(--revisi-muted)', marginBottom: '4px' }}>
                             {item.status === 'rejected' ? 'File yang ditolak:' : 'File Anda:'}
                           </div>
-                          <a href={item.file_url} target="_blank" rel="noopener noreferrer" className="revisi-file-link">
+                          <a
+                            href={getFullFileUrl(item.file_url)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="revisi-file-link"
+                          >
                             <Download size={16} />
                             Lihat File {item.status === 'rejected' && '(Ditolak)'}
                           </a>

@@ -80,7 +80,7 @@ const SeminarMahasiswa = () => {
       alert(response.data.message);
       setShowSubmitModal(false);
       setSelectedItem(null);
-      
+
       // Refresh seminar detail
       fetchSeminarDetail(selectedSeminar.id);
       fetchSeminars();
@@ -259,7 +259,7 @@ const SeminarMahasiswa = () => {
                 {selectedSeminar.revision && (
                   <div className="detail-section">
                     <h3>📝 Revisi dari Dosen</h3>
-                    
+
                     {/* Progress */}
                     <div className="progress-section">
                       <div className="progress-header">
@@ -267,7 +267,7 @@ const SeminarMahasiswa = () => {
                         <span className="progress-percentage">{selectedSeminar.revision.progress}%</span>
                       </div>
                       <div className="progress-bar large">
-                        <div 
+                        <div
                           className="progress-fill"
                           style={{ width: `${selectedSeminar.revision.progress}%` }}
                         />
@@ -335,7 +335,12 @@ const SeminarMahasiswa = () => {
                                   <strong>📝 Catatan Anda:</strong>
                                   <p>{item.mahasiswa_notes}</p>
                                   {item.file_url && (
-                                    <a href={item.file_url} target="_blank" rel="noopener noreferrer" className="file-link">
+                                    <a
+                                      href={item.file_url?.startsWith('http') ? item.file_url : `http://localhost:8000${item.file_url}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="file-link"
+                                    >
                                       📄 Lihat File Submission
                                     </a>
                                   )}
@@ -348,7 +353,7 @@ const SeminarMahasiswa = () => {
 
                               {/* Action Button */}
                               {(item.status === 'pending' || item.status === 'rejected') && (
-                                <button 
+                                <button
                                   className="btn-submit-item"
                                   onClick={() => openSubmitModal(item)}
                                 >
@@ -425,14 +430,14 @@ const SeminarMahasiswa = () => {
               </div>
 
               <div className="modal-actions">
-                <button 
+                <button
                   className="btn-cancel"
                   onClick={() => setShowSubmitModal(false)}
                   disabled={submitting}
                 >
                   Batal
                 </button>
-                <button 
+                <button
                   className="btn-submit"
                   onClick={handleSubmitItem}
                   disabled={submitting || !submissionFile}

@@ -19,6 +19,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import axios from 'axios';
+import { getFullFileUrl, openFile, downloadFile } from '../../utils/fileHelper';
 import './Revisi.css';
 
 function Revisi() {
@@ -57,7 +58,7 @@ function Revisi() {
       const mySeminars = (response.data.data || []).filter(
         (s) => s.my_role && s.my_role.trim() !== ''
       );
-      
+
       setSeminars(mySeminars);
     } catch (err) {
       console.error('Error fetching seminars:', err);
@@ -153,25 +154,8 @@ function Revisi() {
     }
   };
 
-  const handleOpenFile = (fileUrl) => {
-    if (fileUrl) {
-      const fullUrl = `http://localhost:8000${fileUrl}`;
-      window.open(fullUrl, '_blank', 'noopener,noreferrer');
-    }
-  };
-
-  const handleDownloadFile = (fileUrl, fileName) => {
-    if (fileUrl) {
-      const fullUrl = `http://localhost:8000${fileUrl}`;
-      const a = document.createElement('a');
-      a.href = fullUrl;
-      a.download = fileName || 'revisi_file.pdf';
-      a.target = '_blank';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    }
-  };
+  const handleOpenFile = (fileUrl) => openFile(fileUrl);
+  const handleDownloadFile = (fileUrl, fileName) => downloadFile(fileUrl, fileName);
 
   const myItems = selectedSeminar?.revision?.my_items || [];
   const filteredItems = myItems.filter((item) => {
@@ -248,8 +232,8 @@ function Revisi() {
         ) : (
           <div className="revisi-list">
             {seminars.map((seminar) => (
-              <div 
-                key={seminar.id} 
+              <div
+                key={seminar.id}
                 className={`revisi-item ${seminar.revision?.status === 'completed' ? 'revisi-item-approved' : ''}`}
                 onClick={() => handleViewDetail(seminar)}
               >
@@ -363,7 +347,7 @@ function Revisi() {
                     </div>
                   </div>
                   <a
-                    href={selectedSeminar.revision?.seminar_file_url || selectedSeminar.seminar_file_url}
+                    href={getFullFileUrl(selectedSeminar.revision?.seminar_file_url || selectedSeminar.seminar_file_url)}
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{
@@ -448,14 +432,14 @@ function Revisi() {
                       <p className="revisi-detail-text">{item.poin_revisi}</p>
 
                       {item.deadline && (
-                        <div style={{ 
-                          marginTop: '8px', 
-                          fontSize: '13px', 
-                          display: 'flex', 
-                          alignItems: 'center', 
+                        <div style={{
+                          marginTop: '8px',
+                          fontSize: '13px',
+                          display: 'flex',
+                          alignItems: 'center',
                           gap: '6px',
-                          color: item.is_deadline_passed && item.status !== 'approved' 
-                            ? '#dc3545' 
+                          color: item.is_deadline_passed && item.status !== 'approved'
+                            ? '#dc3545'
                             : item.is_deadline_approaching && item.status === 'pending'
                             ? '#ff9800'
                             : 'var(--revisi-muted)'
@@ -463,8 +447,8 @@ function Revisi() {
                           <Clock size={14} />
                           <span>Deadline: {item.deadline}</span>
                           {item.is_late && (
-                            <span style={{ 
-                              color: '#dc3545', 
+                            <span style={{
+                              color: '#dc3545',
                               fontWeight: '600',
                               marginLeft: '4px'
                             }}>
@@ -472,8 +456,8 @@ function Revisi() {
                             </span>
                           )}
                           {item.is_deadline_approaching && item.status === 'pending' && (
-                            <span style={{ 
-                              color: '#ff9800', 
+                            <span style={{
+                              color: '#ff9800',
                               fontWeight: '600',
                               marginLeft: '4px'
                             }}>
